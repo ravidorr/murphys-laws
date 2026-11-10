@@ -633,6 +633,8 @@ select:focus-visible {
 }
 
 .split-problem {
+  margin: 0;
+  padding-inline-start: var(--space-4);
   color: var(--error-text);
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);

@@ -248,7 +248,7 @@ function openSplitReview({ law, item, card, reviewButton }) {
   const rowsEl = el('div', 'split-rows');
   const addButton = el('button', 'btn split-add', '+ Add a corollary by hand');
   addButton.type = 'button';
-  const problem = el('p', 'split-problem');
+  const problem = el('ul', 'split-problem');
   problem.setAttribute('aria-live', 'polite');
 
   const panel = el('section', 'split-review');
@@ -286,7 +286,8 @@ function openSplitReview({ law, item, card, reviewButton }) {
     approve.textContent = wording.button;
     approve.disabled = busy || problems.length > 0;
     problem.hidden = problems.length === 0;
-    problem.textContent = problems[0] || '';
+    // Every problem is listed, so the moderator sees how much is left to fix instead of finding them one at a time.
+    problem.replaceChildren(...problems.map((message) => el('li', null, message)));
     addButton.disabled = !canAddCorollary(rows);
     for (const view of views) {
       const isCorollary = view.row.treatAs === 'corollary';
@@ -516,9 +517,7 @@ function renderLaw(law, serverCategories = state.categories) {
       if (change.removed) {
         item.remove();
       } else {
-        // The split seed belongs to the saved text; the saved reply does not carry it, so keep it while the text is unchanged.
-        const keepsSeed = law.corollary_candidates && updated.status === 'in_review' && updated.text === law.text;
-        item.replaceWith(renderLaw(keepsSeed ? { ...updated, corollary_candidates: law.corollary_candidates } : updated));
+        item.replaceWith(renderLaw(updated));
       }
       say(`Law #${law.id} updated.${thanks}`);
       await refillIfEmpty(law.id);

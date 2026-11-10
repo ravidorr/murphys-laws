@@ -833,11 +833,11 @@ describe('admin page', () => {
       expect(document.querySelector('.split-review')).not.toBeNull();
     });
 
-    it('keeps the banner after saving a change that leaves the text alone, and drops it when the text changed', async () => {
+    it('shows the banner from the candidates the server returns after a save, and drops it when there are none', async () => {
       await boot(jsonResponse(listReply([splittable()], { categories: cats })));
       await connect();
       (document.getElementById('notes-7') as HTMLInputElement).value = 'checked';
-      fetchMock.mockResolvedValueOnce(jsonResponse({ data: splittable({ admin_notes: 'checked', updated_at: 'v2', corollary_candidates: undefined }) }));
+      fetchMock.mockResolvedValueOnce(jsonResponse({ data: splittable({ admin_notes: 'checked', updated_at: 'v2' }) }));
       click(action('Save edits'));
       await flush();
       expect(document.querySelector('.split-banner')).not.toBeNull();
@@ -847,6 +847,19 @@ describe('admin page', () => {
       click(action('Save edits'));
       await flush();
       expect(document.querySelector('.split-banner')).toBeNull();
+    });
+
+    it('offers the split after a saved edit that added bullets, and then opens the review', async () => {
+      await boot(jsonResponse(listReply([law({ id: 7, title: 'Lights', text: 'A plain law of enough length' })], { categories: cats })));
+      await connect();
+      expect(document.querySelector('.split-banner')).toBeNull();
+      (document.getElementById('text-7') as HTMLTextAreaElement).value = splittable().text;
+      fetchMock.mockResolvedValueOnce(jsonResponse({ data: splittable({ updated_at: 'v2' }) }));
+      click(action('Save edits'));
+      await flush();
+      expect(document.querySelector('.split-banner')).not.toBeNull();
+      click(button('Review split'));
+      expect(document.querySelector('.split-review')).not.toBeNull();
     });
 
     it('opens the review in the card with labeled bullets as corollaries and unlabeled ones kept, then focuses its heading', async () => {
@@ -995,6 +1008,20 @@ describe('admin page', () => {
       click(approveButton());
       await flush();
       expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('lists every problem, not only the first', async () => {
+      await open();
+      const items = () => [...document.querySelectorAll('.split-problem li')].map((li) => li.textContent);
+      change(field(0, 'text'), 'short');
+      change(field(2, 'text'), 'too short');
+      expect(items()).toEqual(['Bullet 1 must be between 10 and 1000 characters.', 'Bullet 3 must be between 10 and 1000 characters.']);
+      expect(approveButton().disabled).toBe(true);
+      change(field(0, 'text'), 'The engine restarts slowly behind a horn.');
+      expect(items()).toEqual(['Bullet 3 must be between 10 and 1000 characters.']);
+      change(field(2, 'text'), 'The green lasts just long enough to miss.');
+      expect(items()).toEqual([]);
+      expect((document.querySelector('.split-problem') as HTMLElement).hidden).toBe(true);
     });
 
     it('enforces the maximum of five corollaries', async () => {
