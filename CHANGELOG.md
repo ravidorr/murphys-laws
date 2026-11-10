@@ -41,6 +41,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Admins can split corollaries out of a submitted law on the moderation page. A law in review whose text is a
+  sentence followed by bullets shows a banner and a "Review split" button; the inline review lists each bullet
+  (labeled ones start as "Corollary", unlabeled ones as "Keep in parent text"), recomposes the parent text live,
+  allows at most five corollaries and approves them in one step. New `POST /api/v1/admin/laws/:id/split` publishes the
+  parent and creates the corollaries as published laws in one transaction (guarded by `updated_at`, 409 when stale;
+  categories copied; children are credited by name only; one thank-you, for the parent). `GET /api/v1/admin/laws`
+  adds `corollary_candidates` to such laws. A parent's status change now carries to its corollaries (leaving
+  published moves published corollaries along, approving publishes in-review ones, rejecting rejects them), and a
+  corollary cannot be published while its law is not. Backend bumped to `2.3.74`; root to `2.6.171`.
 - Foundation for first-class corollaries (no visible change yet). A corollary is a law row linked to its parent
   through `law_relations` (child is `from_law_id`, parent is `to_law_id`, type `COROLLARY_OF`).
   `shared/modules/corollary-parser.ts` finds bulleted corollaries in a law's text (markers `•`, `-`, `*`, `–`,

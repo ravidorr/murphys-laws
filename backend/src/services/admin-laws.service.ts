@@ -1,4 +1,14 @@
 import type Database from 'better-sqlite3';
+import { canOfferSplit, parseCorollaries, type CorollaryItem } from '../../../shared/modules/corollary-parser.ts';
+import {
+  COROLLARY_RELATION,
+  createCorollaryChildren,
+  isChild,
+  LAW_RELATION_ERROR_STATUS,
+  LawRelationError,
+  type CorollaryChildInput,
+  type RelatedLaw,
+} from './law-relations.service.ts';
 
 type Db = InstanceType<typeof Database>;
 
@@ -53,11 +63,55 @@ export interface AdminLaw extends AdminLawRow {
   categories: { id: number; name: string }[];
 }
 
+/** What the review screen is seeded with: the text before the bullets and one entry per bullet. */
+export interface CorollaryCandidates {
+  parent_text: string;
+  items: CorollaryItem[];
+}
+
+export interface AdminListedLaw extends AdminLaw {
+  /** Only on in-review top-level laws whose text has a parent sentence followed by bullets. A seed, never applied unreviewed. */
+  corollary_candidates?: CorollaryCandidates;
+}
+
 export type AdminUpdateResult =
-  | { outcome: 'updated'; law: AdminLaw; previousStatus: AdminLawStatus; previousCategoryIds: number[] }
+  | {
+      outcome: 'updated';
+      law: AdminLaw;
+      previousStatus: AdminLawStatus;
+      previousCategoryIds: number[];
+      /** True when the law is a corollary of another law. */
+      isCorollary: boolean;
+      /** How many corollaries changed status because the law's own status changed. */
+      cascaded: number;
+    }
+  | { outcome: 'invalid_category' }
+  | { outcome: 'parent_not_published'; parentId: number }
+  | { outcome: 'conflict' }
+  | { outcome: 'not_found' };
+
+/** The explicit result of the moderator's review. Nothing here is parsed again on the server. */
+export interface AdminSplitInput {
+  /** The updated_at the page loaded; the split only applies if the law still has it. */
+  expectedUpdatedAt: string;
+  /** Replaces the title when given; null clears it; undefined keeps it. */
+  title?: string | null;
+  /** The parent's law text once the corollaries are taken out. */
+  parentText: string;
+  /** Replaces the law's categories with this single existing category. The children copy the result. */
+  categoryId?: number;
+  adminNotes?: string | null;
+  corollaries: CorollaryChildInput[];
+}
+
+export type AdminSplitResult =
+  | { outcome: 'split'; law: AdminLaw; children: RelatedLaw[]; previousStatus: AdminLawStatus; previousCategoryIds: number[] }
+  | { outcome: 'invalid'; status: 400 | 404; message: string }
   | { outcome: 'invalid_category' }
   | { outcome: 'conflict' }
   | { outcome: 'not_found' };
+
+const NOW = "strftime('%Y-%m-%dT%H:%M:%fZ','now')";
 
 const LAW_COLUMNS = 'id, title, text, status, admin_notes, first_seen_file_path, approval_email_sent_at, created_at, updated_at';
 
@@ -88,7 +142,7 @@ export class AdminLawService {
       .prepare(`SELECT ${LAW_COLUMNS} FROM laws ${where} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`)
       .all(...params, limit, offset) as AdminLawRow[];
 
-    return { data: this.attachDetails(rows), total, counts: this.statusCounts(), categories: this.listCategories() };
+    return { data: this.attachCandidates(this.attachDetails(rows)), total, counts: this.statusCounts(), categories: this.listCategories() };
   }
 
   /** Every category a moderator may pick, in the order shown in the selector. */
@@ -116,7 +170,7 @@ export class AdminLawService {
       sets.push('admin_notes = ?');
       params.push(update.adminNotes);
     }
-    sets.push("updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')");
+    sets.push(`updated_at = ${NOW}`);
 
     const apply = this.db.transaction((): AdminUpdateResult => {
       const before = this.db.prepare('SELECT status FROM laws WHERE id = ?').get(id) as { status: AdminLawStatus } | undefined;
@@ -124,10 +178,16 @@ export class AdminLawService {
         return { outcome: 'not_found' };
       }
 
+      const publishing = update.status === 'published' && before.status !== 'published';
+      const unpublishedParent = publishing ? this.findUnpublishedParent(id) : undefined;
+      if (unpublishedParent !== undefined) {
+        return { outcome: 'parent_not_published', parentId: unpublishedParent };
+      }
+
       if (update.categoryId !== undefined && !this.db.prepare('SELECT 1 FROM categories WHERE id = ?').get(update.categoryId)) {
         return { outcome: 'invalid_category' };
       }
-      const previousCategoryIds = (this.db.prepare('SELECT category_id FROM law_categories WHERE law_id = ? ORDER BY category_id').all(id) as { category_id: number }[]).map((r) => r.category_id);
+      const previousCategoryIds = this.categoryIdsOf(id);
 
       const guard = update.expectedUpdatedAt === undefined ? '' : ' AND updated_at = ?';
       const guardParams = update.expectedUpdatedAt === undefined ? [] : [update.expectedUpdatedAt];
@@ -137,15 +197,81 @@ export class AdminLawService {
       }
 
       if (update.categoryId !== undefined) {
-        // Category listings, counts and searches all read law_categories, so replacing the rows updates them everywhere.
-        this.db.prepare('DELETE FROM law_categories WHERE law_id = ?').run(id);
-        this.db.prepare('INSERT INTO law_categories (law_id, category_id, position) VALUES (?, ?, 0)').run(id, update.categoryId);
+        this.replaceCategory(id, update.categoryId);
       }
 
+      const cascaded = update.status === undefined ? 0 : this.cascadeToCorollaries(id, before.status, update.status);
+
       const row = this.db.prepare(`SELECT ${LAW_COLUMNS} FROM laws WHERE id = ?`).get(id) as AdminLawRow;
-      return { outcome: 'updated', law: this.attachDetails([row])[0], previousStatus: before.status, previousCategoryIds };
+      return {
+        outcome: 'updated',
+        law: this.attachDetails([row])[0],
+        previousStatus: before.status,
+        previousCategoryIds,
+        isCorollary: isChild(this.db, id),
+        cascaded,
+      };
     });
     return apply();
+  }
+
+  /**
+   * Publishes a law in review as a parent and creates its corollaries as published laws, atomically.
+   * The parent is published first because a published corollary needs a published parent. Any failure, including a
+   * broken corollary rule, rolls the whole split back and leaves the law exactly as it was.
+   */
+  splitLaw(id: number, split: AdminSplitInput): AdminSplitResult {
+    const apply = this.db.transaction((): AdminSplitResult => {
+      const before = this.db.prepare('SELECT status FROM laws WHERE id = ?').get(id) as { status: AdminLawStatus } | undefined;
+      if (!before) {
+        return { outcome: 'not_found' };
+      }
+      if (before.status !== 'in_review') {
+        return { outcome: 'invalid', status: 400, message: 'Only a law in review can be split' };
+      }
+      if (split.categoryId !== undefined && !this.db.prepare('SELECT 1 FROM categories WHERE id = ?').get(split.categoryId)) {
+        return { outcome: 'invalid_category' };
+      }
+      const previousCategoryIds = this.categoryIdsOf(id);
+
+      const sets = ['text = ?', "status = 'published'"];
+      const params: (string | number | null)[] = [split.parentText];
+      if (split.title !== undefined) {
+        sets.push('title = ?');
+        params.push(split.title);
+      }
+      if (split.adminNotes !== undefined) {
+        sets.push('admin_notes = ?');
+        params.push(split.adminNotes);
+      }
+      sets.push(`updated_at = ${NOW}`);
+      const result = this.db.prepare(`UPDATE laws SET ${sets.join(', ')} WHERE id = ? AND updated_at = ?`).run(...params, id, split.expectedUpdatedAt);
+      if (result.changes === 0) {
+        return { outcome: 'conflict' };
+      }
+
+      if (split.categoryId !== undefined) {
+        this.replaceCategory(id, split.categoryId);
+      }
+      const submitter = this.db.prepare('SELECT name FROM attributions WHERE law_id = ? ORDER BY id LIMIT 1').get(id) as { name: string | null } | undefined;
+      const children = createCorollaryChildren(this.db, id, split.corollaries, {
+        status: 'published',
+        categoryIds: this.categoryIdsOf(id),
+        submitterName: submitter?.name ?? null,
+      });
+
+      const row = this.db.prepare(`SELECT ${LAW_COLUMNS} FROM laws WHERE id = ?`).get(id) as AdminLawRow;
+      return { outcome: 'split', law: this.attachDetails([row])[0], children, previousStatus: before.status, previousCategoryIds };
+    });
+
+    try {
+      return apply();
+    } catch (error) {
+      if (error instanceof LawRelationError) {
+        return { outcome: 'invalid', status: LAW_RELATION_ERROR_STATUS[error.code], message: error.message };
+      }
+      throw error;
+    }
   }
 
   /** Records the thank-you without touching updated_at, so open admin pages do not see a false conflict. */
@@ -153,6 +279,79 @@ export class AdminLawService {
     this.db
       .prepare("UPDATE laws SET approval_email_sent_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ? AND approval_email_sent_at IS NULL")
       .run(id);
+  }
+
+  private categoryIdsOf(lawId: number): number[] {
+    return (this.db.prepare('SELECT category_id FROM law_categories WHERE law_id = ? ORDER BY category_id').all(lawId) as { category_id: number }[]).map((r) => r.category_id);
+  }
+
+  private replaceCategory(lawId: number, categoryId: number): void {
+    // Category listings, counts and searches all read law_categories, so replacing the rows updates them everywhere.
+    this.db.prepare('DELETE FROM law_categories WHERE law_id = ?').run(lawId);
+    this.db.prepare('INSERT INTO law_categories (law_id, category_id, position) VALUES (?, ?, 0)').run(lawId, categoryId);
+  }
+
+  /** The id of a parent of this law that is not published, or undefined when the law has no such parent. */
+  private findUnpublishedParent(lawId: number): number | undefined {
+    const row = this.db
+      .prepare(
+        `SELECT p.id FROM law_relations r JOIN laws p ON p.id = r.to_law_id
+         WHERE r.from_law_id = ? AND r.relation_type = ? AND p.status != 'published'
+         ORDER BY r.id LIMIT 1`,
+      )
+      .get(lawId, COROLLARY_RELATION) as { id: number } | undefined;
+    return row?.id;
+  }
+
+  /**
+   * Carries a parent's status change to its corollaries (plan section 2.2). Rejected corollaries never come back on
+   * their own, so the count is what really moved.
+   *  - the parent leaves published: its published corollaries follow it (to review or to rejected);
+   *  - the parent is approved: its in-review corollaries are published;
+   *  - the parent is rejected: its in-review corollaries are rejected too.
+   * Each moved corollary gets a new updated_at, so an admin page still showing it sees a conflict, not a stale edit.
+   */
+  private cascadeToCorollaries(parentId: number, from: AdminLawStatus, to: AdminLawStatus): number {
+    if (from === to) {
+      return 0;
+    }
+    const moving: AdminLawStatus[] = [];
+    if (from === 'published') moving.push('published');
+    if (to === 'published' || to === 'rejected') moving.push('in_review');
+    if (moving.length === 0) {
+      return 0;
+    }
+    const placeholders = moving.map(() => '?').join(',');
+    return this.db
+      .prepare(
+        `UPDATE laws SET status = ?, updated_at = ${NOW}
+         WHERE status IN (${placeholders})
+           AND id IN (SELECT from_law_id FROM law_relations WHERE to_law_id = ? AND relation_type = ?)`,
+      )
+      .run(to, ...moving, parentId, COROLLARY_RELATION).changes;
+  }
+
+  /** Adds the split seed to in-review laws that are not themselves corollaries. */
+  private attachCandidates(laws: AdminLaw[]): AdminListedLaw[] {
+    const reviewable = laws.filter((law) => law.status === 'in_review');
+    if (reviewable.length === 0) {
+      return laws;
+    }
+    const placeholders = reviewable.map(() => '?').join(',');
+    const children = new Set(
+      (
+        this.db
+          .prepare(`SELECT DISTINCT from_law_id FROM law_relations WHERE relation_type = ? AND from_law_id IN (${placeholders})`)
+          .all(COROLLARY_RELATION, ...reviewable.map((law) => law.id)) as { from_law_id: number }[]
+      ).map((r) => r.from_law_id),
+    );
+    return laws.map((law): AdminListedLaw => {
+      if (law.status !== 'in_review' || children.has(law.id)) {
+        return law;
+      }
+      const parsed = parseCorollaries(law.text);
+      return canOfferSplit(parsed) ? { ...law, corollary_candidates: { parent_text: parsed.parentText, items: parsed.items } } : law;
+    });
   }
 
   private statusCounts(): Record<AdminLawStatus, number> {

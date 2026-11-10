@@ -30,3 +30,27 @@ export function applyStatusChange(
 export function isListReply(data: unknown): boolean;
 export function isLawReply(data: unknown): boolean;
 export function describeThankYou(thankYou: { status: string; reason?: string } | null | undefined): string;
+
+export const MAX_COROLLARIES: number;
+export const TREAT_OPTIONS: { value: string; label: string }[];
+export interface SplitRow {
+  title: string;
+  text: string;
+  treatAs: string;
+  manual?: boolean;
+}
+export interface SplitCandidates {
+  parent_text: string;
+  items: { title: string | null; text: string; labeled: boolean }[];
+}
+export function countCorollaries(rows: SplitRow[]): number;
+export function canAddCorollary(rows: SplitRow[]): boolean;
+export function seedSplitRows(candidates: SplitCandidates): SplitRow[];
+export function composeParentText(parentText: string, rows: SplitRow[]): string;
+export function describeCandidates(candidates: SplitCandidates): string;
+export function describeSplit(corollaries: number): { button: string; summary: string };
+export function validateSplit(split: { parentText: string; rows: SplitRow[] }): string[];
+export function buildSplitBody(
+  law: AdminLawLike & { updated_at?: string },
+  edits: { title?: string; notes?: string; categoryId?: number; parentText: string; rows: SplitRow[] },
+): Record<string, unknown>;

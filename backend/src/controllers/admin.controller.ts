@@ -1,16 +1,34 @@
 import { getAdminAccess } from '../middleware/admin-auth.ts';
 import { checkRateLimit } from '../middleware/rate-limit.ts';
-import { ADMIN_LAW_STATUSES, type AdminLawStatus, type AdminLawUpdate } from '../services/admin-laws.service.ts';
+import {
+  COROLLARY_TEXT_MAX_LENGTH,
+  COROLLARY_TEXT_MIN_LENGTH,
+  MAX_COROLLARIES_PER_PARENT,
+} from '../../../shared/modules/corollary-parser.ts';
+import { ADMIN_LAW_STATUSES, type AdminLawStatus, type AdminLawUpdate, type AdminSplitInput } from '../services/admin-laws.service.ts';
 import { getVoterIdentifier, readBody, sendJson, notFound, rateLimitExceeded, PayloadTooLargeError } from '../utils/http-helpers.ts';
 
 const MAX_TITLE_LENGTH = 200;
 const MAX_NOTES_LENGTH = 2000;
 const MAX_QUERY_LENGTH = 200;
 const MAX_BODY_BYTES = 16 * 1024;
+// A split carries the parent and up to five corollaries of 1000 characters each, so it gets a larger cap.
+const MAX_SPLIT_BODY_BYTES = 64 * 1024;
 // One plain address: no whitespace, list separators, group or display-name syntax, quotes or brackets.
 const EMAIL_PATTERN = /^[^\s@,;:<>()"\\[\]]+@[^\s@,;:<>()"\\[\]]+\.[^\s@,;:<>()"\\[\]]+$/;
 const MAX_EMAIL_LENGTH = 254;
 const NO_STORE = { 'Cache-Control': 'no-store' };
+const CONFLICT_MESSAGE = 'This law changed since you loaded it. Reload the list and try again.';
+
+type ThankYou = { status: 'queued' } | { status: 'skipped'; reason: string } | null;
+
+/** The audit-log form of the thank-you outcome; undefined when the update was not an approval. */
+function describeThankYou(thankYou: ThankYou): string | undefined {
+  if (thankYou === null) {
+    return undefined;
+  }
+  return thankYou.status === 'queued' ? 'queued' : `skipped:${thankYou.reason}`;
+}
 
 function isStatus(value: unknown): value is AdminLawStatus {
   return typeof value === 'string' && (ADMIN_LAW_STATUSES as readonly string[]).includes(value);
@@ -22,6 +40,84 @@ function parseBoundedInt(value: unknown, { min, max, fallback }: { min: number; 
   }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.max(min, Math.min(max, Math.trunc(parsed))) : fallback;
+}
+
+/** A request body field broke a rule. The message is safe to show to the admin. */
+class BodyError extends Error {}
+
+/** Law text and corollary text share one rule: 10 to 1000 characters once trimmed. */
+function parseText(value: unknown, label: string, notString: string): string {
+  if (typeof value !== 'string') {
+    throw new BodyError(notString);
+  }
+  const text = value.trim();
+  if (text.length < COROLLARY_TEXT_MIN_LENGTH || text.length > COROLLARY_TEXT_MAX_LENGTH) {
+    throw new BodyError(`${label} must be between ${COROLLARY_TEXT_MIN_LENGTH} and ${COROLLARY_TEXT_MAX_LENGTH} characters`);
+  }
+  return text;
+}
+
+/** A title is optional: blank or null clears it. */
+function parseTitle(value: unknown, label: string, notString: string): string | null {
+  if (value === null) {
+    return null;
+  }
+  if (typeof value !== 'string') {
+    throw new BodyError(notString);
+  }
+  const title = value.trim();
+  if (title.length > MAX_TITLE_LENGTH) {
+    throw new BodyError(`${label} must be at most ${MAX_TITLE_LENGTH} characters`);
+  }
+  return title || null;
+}
+
+function parseNotes(value: unknown): string | null {
+  if (value === null) {
+    return null;
+  }
+  if (typeof value !== 'string') {
+    throw new BodyError('admin_notes must be a string or null');
+  }
+  const notes = value.trim();
+  if (notes.length > MAX_NOTES_LENGTH) {
+    throw new BodyError(`admin_notes must be at most ${MAX_NOTES_LENGTH} characters`);
+  }
+  return notes || null;
+}
+
+function parseCategoryId(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
+    throw new BodyError('category_id must be a positive integer');
+  }
+  return value;
+}
+
+/** Compares texts the way a person would: ignoring case and runs of whitespace. */
+const sameText = (text: string) => text.toLowerCase().replace(/\s+/g, ' ');
+
+function parseCorollaryList(value: unknown, parentText: string): { title: string | null; text: string }[] {
+  if (!Array.isArray(value)) {
+    throw new BodyError('corollaries must be a list');
+  }
+  if (value.length < 1 || value.length > MAX_COROLLARIES_PER_PARENT) {
+    throw new BodyError(`Provide between 1 and ${MAX_COROLLARIES_PER_PARENT} corollaries`);
+  }
+  const seen = new Set([sameText(parentText)]);
+  return value.map((entry, index) => {
+    const label = `Corollary ${index + 1}`;
+    if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new BodyError(`${label} must be an object`);
+    }
+    const text = parseText(entry.text, label, `${label} text must be a string`);
+    const title = parseTitle(entry.title ?? null, `${label} title`, `${label} title must be a string or null`);
+    const key = sameText(text);
+    if (seen.has(key)) {
+      throw new BodyError(`${label} repeats another corollary or the law text`);
+    }
+    seen.add(key);
+    return { title, text };
+  });
 }
 
 export class AdminController {
@@ -44,6 +140,10 @@ export class AdminController {
       const law = result.law;
       if (result.previousStatus !== 'in_review' || law.status !== 'published') {
         return null;
+      }
+      // Corollaries are credited by name only and never carry an address; the one thank-you belongs to the parent.
+      if (result.isCorollary) {
+        return { status: 'skipped', reason: 'corollary' };
       }
       if (!this.emailService.isConfigured()) {
         return { status: 'skipped', reason: 'not_configured' };
@@ -135,6 +235,62 @@ export class AdminController {
     return this.json(res, 200, { ...result, limit, offset, status: statusParam, q }, req);
   }
 
+  private parseUpdate(body: Record<string, any>): AdminLawUpdate {
+    const update: AdminLawUpdate = {};
+
+    if (body.status !== undefined) {
+      if (!isStatus(body.status)) {
+        throw new BodyError('Invalid status');
+      }
+      update.status = body.status;
+    }
+    if (body.text !== undefined) {
+      update.text = parseText(body.text, 'Law text', 'Law text must be a string');
+    }
+    if (body.title !== undefined) {
+      update.title = parseTitle(body.title, 'Title', 'Title must be a string or null');
+    }
+    if (body.admin_notes !== undefined) {
+      update.adminNotes = parseNotes(body.admin_notes);
+    }
+    if (body.category_id !== undefined) {
+      update.categoryId = parseCategoryId(body.category_id);
+    }
+    if (Object.keys(update).length === 0) {
+      throw new BodyError('No updatable fields provided');
+    }
+    // Optional: omitted or null means last write wins (a law without updated_at cannot be guarded).
+    if (body.updated_at !== undefined && body.updated_at !== null) {
+      if (typeof body.updated_at !== 'string') {
+        throw new BodyError('updated_at must be a string');
+      }
+      update.expectedUpdatedAt = body.updated_at;
+    }
+    return update;
+  }
+
+  private parseSplit(body: Record<string, any>): AdminSplitInput {
+    if (typeof body.updated_at !== 'string' || body.updated_at === '') {
+      throw new BodyError('updated_at is required');
+    }
+    const parentText = parseText(body.parent_text, 'Law text', 'parent_text must be a string');
+    const split: AdminSplitInput = {
+      expectedUpdatedAt: body.updated_at,
+      parentText,
+      corollaries: parseCorollaryList(body.corollaries, parentText),
+    };
+    if (body.title !== undefined) {
+      split.title = parseTitle(body.title, 'Title', 'Title must be a string or null');
+    }
+    if (body.admin_notes !== undefined) {
+      split.adminNotes = parseNotes(body.admin_notes);
+    }
+    if (body.category_id !== undefined) {
+      split.categoryId = parseCategoryId(body.category_id);
+    }
+    return split;
+  }
+
   async update(req: any, res: any, id: string) {
     if (!this.authorize(req, res)) return;
 
@@ -143,80 +299,11 @@ export class AdminController {
       return this.fail(res, 400, 'Invalid law ID', req);
     }
 
-    let body: any;
-    try {
-      body = await readBody(req, MAX_BODY_BYTES);
-    } catch (error) {
-      if (error instanceof PayloadTooLargeError) {
-        return this.fail(res, 413, 'Request body too large', req);
-      }
-      if (error instanceof SyntaxError) {
-        return this.fail(res, 400, 'Invalid JSON body', req);
-      }
-      throw error;
-    }
-    if (body === null || typeof body !== 'object' || Array.isArray(body)) {
-      return this.fail(res, 400, 'Body must be a JSON object', req);
-    }
+    const body = await this.readObject(req, res, MAX_BODY_BYTES);
+    if (body === null) return;
 
-    const update: AdminLawUpdate = {};
-
-    if (body.status !== undefined) {
-      if (!isStatus(body.status)) {
-        return this.fail(res, 400, 'Invalid status', req);
-      }
-      update.status = body.status;
-    }
-
-    if (body.text !== undefined) {
-      if (typeof body.text !== 'string') {
-        return this.fail(res, 400, 'Law text must be a string', req);
-      }
-      const text = body.text.trim();
-      if (text.length < 10 || text.length > 1000) {
-        return this.fail(res, 400, 'Law text must be between 10 and 1000 characters', req);
-      }
-      update.text = text;
-    }
-
-    if (body.title !== undefined) {
-      if (body.title !== null && typeof body.title !== 'string') {
-        return this.fail(res, 400, 'Title must be a string or null', req);
-      }
-      if (body.title && body.title.trim().length > MAX_TITLE_LENGTH) {
-        return this.fail(res, 400, `Title must be at most ${MAX_TITLE_LENGTH} characters`, req);
-      }
-      update.title = body.title ? body.title.trim() || null : null;
-    }
-
-    if (body.admin_notes !== undefined) {
-      if (body.admin_notes !== null && typeof body.admin_notes !== 'string') {
-        return this.fail(res, 400, 'admin_notes must be a string or null', req);
-      }
-      if (body.admin_notes && body.admin_notes.trim().length > MAX_NOTES_LENGTH) {
-        return this.fail(res, 400, `admin_notes must be at most ${MAX_NOTES_LENGTH} characters`, req);
-      }
-      update.adminNotes = body.admin_notes ? body.admin_notes.trim() || null : null;
-    }
-
-    if (body.category_id !== undefined) {
-      if (typeof body.category_id !== 'number' || !Number.isInteger(body.category_id) || body.category_id <= 0) {
-        return this.fail(res, 400, 'category_id must be a positive integer', req);
-      }
-      update.categoryId = body.category_id;
-    }
-
-    if (Object.keys(update).length === 0) {
-      return this.fail(res, 400, 'No updatable fields provided', req);
-    }
-
-    // Optional: omitted or null means last write wins (a law without updated_at cannot be guarded).
-    if (body.updated_at !== undefined && body.updated_at !== null) {
-      if (typeof body.updated_at !== 'string') {
-        return this.fail(res, 400, 'updated_at must be a string', req);
-      }
-      update.expectedUpdatedAt = body.updated_at;
-    }
+    const update = this.parseBody(req, res, () => this.parseUpdate(body));
+    if (update === null) return;
 
     const result = this.adminLawService.updateLaw(lawId, update);
     const actor = getVoterIdentifier(req);
@@ -228,9 +315,13 @@ export class AdminController {
       console.warn(`Admin update of law ${lawId} from ${actor} rejected: unknown category ${update.categoryId}`);
       return this.fail(res, 400, 'Unknown category', req);
     }
+    if (result.outcome === 'parent_not_published') {
+      console.warn(`Admin update of law ${lawId} from ${actor} rejected: parent ${result.parentId} is not published`);
+      return this.fail(res, 400, `This corollary cannot be published while its law (#${result.parentId}) is not. Approve the law instead.`, req);
+    }
     if (result.outcome === 'conflict') {
       console.warn(`Admin update of law ${lawId} from ${actor} rejected: law changed since it was loaded`);
-      return this.fail(res, 409, 'This law changed since you loaded it. Reload the list and try again.', req);
+      return this.fail(res, 409, CONFLICT_MESSAGE, req);
     }
 
     const thankYou = this.thankSubmitter(result);
@@ -244,8 +335,97 @@ export class AdminController {
       categoryFrom: update.categoryId === undefined ? undefined : result.previousCategoryIds,
       categoryTo: update.categoryId,
       guarded: update.expectedUpdatedAt !== undefined,
-      thankYou: thankYou === null ? undefined : thankYou.status === 'queued' ? 'queued' : `skipped:${thankYou.reason}`,
+      cascaded: result.cascaded || undefined,
+      thankYou: describeThankYou(thankYou),
     }));
-    return this.json(res, 200, { data: result.law, thank_you: thankYou }, req);
+    return this.json(res, 200, { data: result.law, thank_you: thankYou, cascaded: result.cascaded }, req);
+  }
+
+  /**
+   * Publishes a law in review and creates its corollaries as published laws of their own, in one transaction.
+   * The body is the moderator's explicit decision (parent text and each corollary), so nothing is parsed again here.
+   */
+  async split(req: any, res: any, id: string) {
+    if (!this.authorize(req, res)) return;
+
+    const lawId = Number(id);
+    if (!Number.isInteger(lawId) || lawId <= 0) {
+      return this.fail(res, 400, 'Invalid law ID', req);
+    }
+    const body = await this.readObject(req, res, MAX_SPLIT_BODY_BYTES);
+    if (body === null) return;
+
+    const split = this.parseBody(req, res, () => this.parseSplit(body));
+    if (split === null) return;
+
+    const result = this.adminLawService.splitLaw(lawId, split);
+    const actor = getVoterIdentifier(req);
+    if (result.outcome === 'not_found') {
+      console.warn(`Admin split of missing law ${lawId} from ${actor}`);
+      return this.fail(res, 404, 'Law not found', req);
+    }
+    if (result.outcome === 'invalid_category') {
+      console.warn(`Admin split of law ${lawId} from ${actor} rejected: unknown category ${split.categoryId}`);
+      return this.fail(res, 400, 'Unknown category', req);
+    }
+    if (result.outcome === 'conflict') {
+      console.warn(`Admin split of law ${lawId} from ${actor} rejected: law changed since it was loaded`);
+      return this.fail(res, 409, CONFLICT_MESSAGE, req);
+    }
+    if (result.outcome === 'invalid') {
+      console.warn(`Admin split of law ${lawId} from ${actor} rejected: ${result.message}`);
+      return this.fail(res, result.status, result.message, req);
+    }
+
+    // Only the parent is thanked: the corollaries were credited by name and carry no address.
+    const thankYou = this.thankSubmitter(result);
+    console.log(JSON.stringify({
+      event: 'admin_law_split',
+      lawId,
+      actor,
+      corollaryIds: result.children.map((child: { id: number }) => child.id),
+      corollaryCount: result.children.length,
+      fields: ['text', 'title', 'adminNotes', 'categoryId'].filter((field) => field === 'text' || split[field as keyof AdminSplitInput] !== undefined),
+      categoryFrom: split.categoryId === undefined ? undefined : result.previousCategoryIds,
+      categoryTo: split.categoryId,
+      thankYou: describeThankYou(thankYou),
+    }));
+    return this.json(res, 200, { data: result.law, corollaries: result.children, thank_you: thankYou }, req);
+  }
+
+  /** Runs a body parser; when it reports a broken rule the 400 has been sent and null is returned. */
+  private parseBody<T>(req: any, res: any, parse: () => T): T | null {
+    try {
+      return parse();
+    } catch (error) {
+      if (error instanceof BodyError) {
+        this.fail(res, 400, error.message, req);
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /** Reads a JSON object body; when it cannot, the error response has been sent and null is returned. */
+  private async readObject(req: any, res: any, maxBytes: number): Promise<Record<string, any> | null> {
+    let body: any;
+    try {
+      body = await readBody(req, maxBytes);
+    } catch (error) {
+      if (error instanceof PayloadTooLargeError) {
+        this.fail(res, 413, 'Request body too large', req);
+        return null;
+      }
+      if (error instanceof SyntaxError) {
+        this.fail(res, 400, 'Invalid JSON body', req);
+        return null;
+      }
+      throw error;
+    }
+    if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+      this.fail(res, 400, 'Body must be a JSON object', req);
+      return null;
+    }
+    return body;
   }
 }

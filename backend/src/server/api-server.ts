@@ -196,6 +196,7 @@ export function createApiServer(options?: CreateApiServerOptions) {
   router.registerPublicRoute('GET', '/api/v1/og/law/:id.png', '/api/v1/og/law/{id}.png', (req, res, id) => ogImageController.getLawImage(req, res, id));
 
   router.post('/api/v1/admin/laws/:id', (req, res, id) => adminController.update(req, res, id));
+  router.post('/api/v1/admin/laws/:id/split', (req, res, id) => adminController.split(req, res, id));
   router.get('/api/v1/admin/auth/github', (req, res) => adminAuthController.login(req, res));
   router.get('/api/v1/admin/auth/github/callback', (req, res, parsed) => adminAuthController.callback(req, res, parsed));
   router.get('/api/v1/admin/auth/session', (req, res) => adminAuthController.session(req, res));

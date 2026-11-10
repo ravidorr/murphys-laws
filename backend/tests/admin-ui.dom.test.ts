@@ -777,4 +777,325 @@ describe('admin page', () => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe('splitting corollaries out of a law', () => {
+    const PARENT = 'A red light turns green right after you stop watching it.';
+    const candidates = {
+      parent_text: PARENT,
+      items: [
+        { title: 'The Ignition Corollary', text: 'The engine restarts slowly behind a horn.', labeled: true },
+        { title: null, text: 'Remember to breathe while waiting.', labeled: false },
+        { title: 'The Green-Light Corollary', text: 'The green lasts just long enough to miss.', labeled: true },
+      ],
+    };
+    const splittable = (over: Record<string, unknown> = {}) => law({ id: 7, title: 'Lights', text: `${PARENT}\n\n• The Ignition Corollary: x`, corollary_candidates: candidates, ...over });
+    const cats = [{ id: 1, name: 'Cat' }, { id: 2, name: 'Dog' }];
+    const rowsOf = () => [...document.querySelectorAll('.split-row')] as HTMLElement[];
+    const field = (row: number, part: 'treat' | 'title' | 'text') => document.getElementById(`split-7-${row}-${part}`) as HTMLInputElement & HTMLSelectElement;
+    const approveButton = () => document.querySelector('.split-actions .btn-primary') as HTMLButtonElement;
+    const change = (node: HTMLElement, value: string) => {
+      (node as HTMLInputElement).value = value;
+      node.dispatchEvent(new Event(node instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }));
+    };
+    const open = async (over: Record<string, unknown> = {}) => {
+      await boot(jsonResponse(listReply([splittable(over)], { categories: cats })));
+      await connect();
+      click(button('Review split'));
+    };
+    const reply = () => jsonResponse({
+      data: splittable({ status: 'published', updated_at: 'v2' }),
+      corollaries: [{ id: 11 }, { id: 12 }],
+      thank_you: { status: 'queued' },
+    });
+
+    it('shows the banner and the Review split button only for laws with candidates', async () => {
+      await boot(jsonResponse(listReply([splittable(), law({ id: 8, text: 'A plain law of sufficient length' })], { categories: cats })));
+      await connect();
+      const banners = document.querySelectorAll('.split-banner');
+      expect(banners.length).toBe(1);
+      expect(banners[0].textContent).toContain('3 bullets found in the law text, 2 of them labeled as corollaries.');
+      expect(banners[0].querySelector('button')?.textContent).toBe('Review split');
+      expect(document.querySelector('.split-review')).toBeNull();
+    });
+
+    it('opens the review in the card with labeled bullets as corollaries and unlabeled ones kept, then focuses its heading', async () => {
+      await open();
+      const heading = document.querySelector('.split-review h3') as HTMLElement;
+      expect(heading.textContent).toBe('Review the split');
+      expect(document.activeElement).toBe(heading);
+      expect(heading.tabIndex).toBe(-1);
+
+      expect(rowsOf().length).toBe(3);
+      expect([0, 1, 2].map((i) => field(i, 'treat').value)).toEqual(['corollary', 'keep', 'corollary']);
+      expect(field(0, 'title').value).toBe('The Ignition Corollary');
+      expect(field(1, 'text').value).toBe('Remember to breathe while waiting.');
+      expect([...field(0, 'treat').options].map((o) => o.textContent)).toEqual(['Corollary', 'Keep in parent text']);
+      expect((document.getElementById('split-parent-7') as HTMLTextAreaElement).value).toBe(PARENT);
+      expect(approveButton().textContent).toBe('Approve and publish 3 laws');
+      expect(document.querySelector('.split-banner')?.hasAttribute('hidden')).toBe(true);
+      expect(document.getElementById('text-7')?.closest('.field')?.hasAttribute('hidden')).toBe(true);
+      expect(action('Approve')?.closest('.actions')?.hasAttribute('hidden')).toBe(true);
+    });
+
+    it('labels every control, and the buttons and selects are at least as tall as the 44px target', async () => {
+      await open();
+      for (const node of document.querySelectorAll('.split-review input, .split-review textarea, .split-review select')) {
+        expect(document.querySelector(`label[for="${node.id}"]`)?.textContent, node.id).toBeTruthy();
+      }
+      expect(approveButton().classList.contains('btn')).toBe(true);
+    });
+
+    it('recomposes the parent text live when a bullet is kept or released', async () => {
+      await open();
+      const composed = () => document.querySelector('.split-composed') as HTMLElement;
+      expect(composed().hidden).toBe(false);
+      expect(composed().textContent).toContain(`${PARENT}`);
+      expect(composed().textContent).toContain('• Remember to breathe while waiting.');
+      expect(approveButton().textContent).toBe('Approve and publish 3 laws');
+
+      change(field(1, 'treat'), 'corollary');
+      expect(composed().hidden).toBe(true);
+      expect(approveButton().textContent).toBe('Approve and publish 4 laws');
+
+      change(field(0, 'treat'), 'keep');
+      expect(composed().textContent).toContain('• The Ignition Corollary: The engine restarts slowly behind a horn.');
+      expect(approveButton().textContent).toBe('Approve and publish 3 laws');
+      expect(rowsOf()[0].querySelector('.field--title')?.hasAttribute('hidden')).toBe(true);
+    });
+
+    it('updates the preview when the parent text or a kept bullet is edited', async () => {
+      await open();
+      change(document.getElementById('split-parent-7') as HTMLElement, 'Edited parent sentence of the law.');
+      change(field(1, 'text'), 'Edited kept bullet text.');
+      expect(document.querySelector('.split-composed')?.textContent).toContain('Edited parent sentence of the law.\n\n• Edited kept bullet text.');
+    });
+
+    it('sends the explicit body, then reloads the list, reports the thank-you and moves focus to the message', async () => {
+      await open();
+      change(field(0, 'title'), ' The Ignition Corollary! ');
+      fetchMock.mockResolvedValueOnce(reply());
+      fetchMock.mockResolvedValueOnce(jsonResponse(listReply([], { total: 0, counts: { in_review: 0, published: 7, rejected: 0 } })));
+      click(approveButton());
+      await flush();
+
+      const [url, options] = fetchMock.mock.calls[1];
+      expect(url).toBe('/api/v1/admin/laws/7/split');
+      expect(options.method).toBe('POST');
+      expect(options.headers.Authorization).toBe('Bearer secret');
+      expect(JSON.parse(options.body)).toEqual({
+        updated_at: 'v1',
+        parent_text: `${PARENT}\n\n• Remember to breathe while waiting.`,
+        corollaries: [
+          { title: 'The Ignition Corollary!', text: 'The engine restarts slowly behind a horn.' },
+          { title: 'The Green-Light Corollary', text: 'The green lasts just long enough to miss.' },
+        ],
+      });
+      expect(fetchMock.mock.calls[2][0]).toContain('/api/v1/admin/laws?');
+      expect($('message').textContent).toBe('Law #7 was split into 3 laws. Thank-you email is being sent (delivery is not confirmed).');
+      expect(document.activeElement).toBe($('message'));
+      expect(button('Published (7)')).not.toBeNull();
+      expect(document.querySelectorAll('.law').length).toBe(0);
+    });
+
+    it('sends a changed title, notes and category from the card fields', async () => {
+      await open();
+      (document.getElementById('title-7') as HTMLInputElement).value = 'New title';
+      (document.getElementById('notes-7') as HTMLInputElement).value = 'checked';
+      (document.getElementById('category-7') as HTMLSelectElement).value = '2';
+      fetchMock.mockResolvedValueOnce(reply());
+      fetchMock.mockResolvedValueOnce(jsonResponse(listReply([])));
+      click(approveButton());
+      await flush();
+      expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toMatchObject({ title: 'New title', admin_notes: 'checked', category_id: 2 });
+    });
+
+    it('says the split was saved when the list cannot refresh afterwards', async () => {
+      await open();
+      fetchMock.mockResolvedValueOnce(reply());
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'x' }, 500));
+      click(approveButton());
+      await flush();
+      expect($('message').textContent).toBe('Law #7 was split into 3 laws, but the list could not refresh. Click a tab to reload. Thank-you email is being sent (delivery is not confirmed).');
+      expect($('message').classList.contains('is-error')).toBe(true);
+    });
+
+    it('uses singular wording for a single corollary and omits the thank-you when there was none', async () => {
+      await open();
+      change(field(2, 'treat'), 'keep');
+      expect(approveButton().textContent).toBe('Approve and publish 2 laws');
+      fetchMock.mockResolvedValueOnce(jsonResponse({ data: splittable({ status: 'published' }), corollaries: [{ id: 11 }], thank_you: null }));
+      fetchMock.mockResolvedValueOnce(jsonResponse(listReply([])));
+      click(approveButton());
+      await flush();
+      expect($('message').textContent).toBe('Law #7 was split into 2 laws.');
+    });
+
+    it('Cancel returns to the card with the edits intact and focuses the Review split button', async () => {
+      await open();
+      (document.getElementById('notes-7') as HTMLInputElement).value = 'kept';
+      click(button('Cancel'));
+
+      expect(document.querySelector('.split-review')).toBeNull();
+      expect(document.querySelector('.split-banner')?.hasAttribute('hidden')).toBe(false);
+      expect(document.getElementById('text-7')?.closest('.field')?.hasAttribute('hidden')).toBe(false);
+      expect(action('Approve')?.closest('.actions')?.hasAttribute('hidden')).toBe(false);
+      expect((document.getElementById('notes-7') as HTMLInputElement).value).toBe('kept');
+      expect(document.activeElement).toBe(button('Review split'));
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+
+      click(button('Review split'));
+      expect(rowsOf().length).toBe(3);
+    });
+
+    it('disables Approve and explains why when no bullet is a corollary or a text is too short', async () => {
+      await open();
+      const problem = () => document.querySelector('.split-problem') as HTMLElement;
+      expect(problem().hidden).toBe(true);
+      expect(approveButton().disabled).toBe(false);
+
+      change(field(0, 'treat'), 'keep');
+      change(field(2, 'treat'), 'keep');
+      expect(approveButton().disabled).toBe(true);
+      expect(problem().hidden).toBe(false);
+      expect(problem().textContent).toBe('Choose at least one bullet to publish as a corollary.');
+
+      change(field(0, 'treat'), 'corollary');
+      change(field(0, 'text'), 'short');
+      expect(problem().textContent).toBe('Bullet 1 must be between 10 and 1000 characters.');
+      click(approveButton());
+      await flush();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('enforces the maximum of five corollaries', async () => {
+      const items = Array.from({ length: 7 }, (_, i) => ({ title: `Corollary ${i + 1}`, text: `Corollary text number ${i + 1}`, labeled: true }));
+      await open({ corollary_candidates: { parent_text: PARENT, items } });
+
+      expect(rowsOf().length).toBe(7);
+      const treats = () => [0, 1, 2, 3, 4, 5, 6].map((i) => field(i, 'treat').value);
+      expect(treats()).toEqual(['corollary', 'corollary', 'corollary', 'corollary', 'corollary', 'keep', 'keep']);
+      expect(approveButton().textContent).toBe('Approve and publish 6 laws');
+      expect([...field(5, 'treat').options].map((o) => o.disabled)).toEqual([true, false]);
+      expect([...field(0, 'treat').options].map((o) => o.disabled)).toEqual([false, false]);
+      expect((button('+ Add a corollary by hand') as HTMLButtonElement).disabled).toBe(true);
+
+      change(field(4, 'treat'), 'keep');
+      expect([...field(5, 'treat').options].map((o) => o.disabled)).toEqual([false, false]);
+      expect((button('+ Add a corollary by hand') as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    it('adds a corollary by hand, focuses it, and can remove it again', async () => {
+      await open();
+      click(button('+ Add a corollary by hand'));
+      expect(rowsOf().length).toBe(4);
+      expect(field(3, 'treat').value).toBe('corollary');
+      expect(document.activeElement).toBe(field(3, 'title'));
+      expect(approveButton().textContent).toBe('Approve and publish 4 laws');
+      expect(approveButton().disabled).toBe(true);
+      expect(document.querySelector('.split-problem')?.textContent).toBe('Bullet 4 must be between 10 and 1000 characters.');
+
+      change(field(3, 'text'), 'A hand written corollary of the law.');
+      expect(approveButton().disabled).toBe(false);
+      expect(rowsOf()[0].querySelector('.split-remove')).toBeNull();
+
+      click(rowsOf()[3].querySelector('.split-remove'));
+      expect(rowsOf().length).toBe(3);
+      expect(approveButton().textContent).toBe('Approve and publish 3 laws');
+      expect(document.activeElement).toBe(button('+ Add a corollary by hand'));
+    });
+
+    it('relabels the remaining rows after one is removed', async () => {
+      await open();
+      click(button('+ Add a corollary by hand'));
+      click(button('+ Add a corollary by hand'));
+      change(field(3, 'text'), 'First hand written corollary here.');
+      change(field(4, 'text'), 'Second hand written corollary here.');
+      click(rowsOf()[3].querySelector('.split-remove'));
+      expect(rowsOf().map((r) => r.querySelector('legend')?.textContent)).toEqual(['Bullet 1', 'Bullet 2', 'Bullet 3', 'Bullet 4']);
+      expect(field(3, 'text').value).toBe('Second hand written corollary here.');
+    });
+
+    it('reloads the list on a conflict and says to apply the review again', async () => {
+      await open();
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'This law changed since you loaded it.' }, 409));
+      fetchMock.mockResolvedValueOnce(jsonResponse(listReply([splittable({ updated_at: 'v2' })], { categories: cats })));
+      click(approveButton());
+      await flush();
+
+      expect($('message').textContent).toBe('Law #7 changed since you loaded it. The list was reloaded; apply your edit again.');
+      expect(document.querySelector('.split-review')).toBeNull();
+      expect(document.querySelector('.split-banner')?.hasAttribute('hidden')).toBe(false);
+    });
+
+    it('keeps the review open and re-enables the buttons when the server refuses the split', async () => {
+      await open();
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Only a law in review can be split' }, 400));
+      click(approveButton());
+      await flush();
+      expect($('message').textContent).toBe('Only a law in review can be split');
+      expect($('message').classList.contains('is-error')).toBe(true);
+      expect(document.querySelector('.split-review')).not.toBeNull();
+      expect([...document.querySelectorAll('.split-actions button')].every((b) => !(b as HTMLButtonElement).disabled)).toBe(true);
+    });
+
+    it('disconnects when the token is rejected during the split', async () => {
+      await open();
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Unauthorized' }, 401));
+      click(approveButton());
+      await flush();
+      expect($('message').textContent).toContain('Token rejected');
+      expect(document.querySelectorAll('.law').length).toBe(0);
+    });
+
+    it('treats an unreadable success reply as a failure to check', async () => {
+      await open();
+      fetchMock.mockResolvedValueOnce(jsonResponse({ ok: true }));
+      click(approveButton());
+      await flush();
+      expect($('message').textContent).toContain('server reply could not be read');
+      expect(document.querySelector('.split-review')).not.toBeNull();
+    });
+
+    it('removes the card when the law no longer exists', async () => {
+      await open();
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Law not found' }, 404));
+      click(approveButton());
+      await flush();
+      expect(document.querySelector('.law')).toBeNull();
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not offer the split again once the list is reloaded without candidates', async () => {
+      await boot(jsonResponse(listReply([splittable()], { categories: cats })));
+      await connect();
+      fetchMock.mockResolvedValueOnce(jsonResponse(listReply([splittable({ corollary_candidates: undefined })], { categories: cats })));
+      click(button('In review'));
+      await flush();
+      expect(document.querySelector('.split-banner')).toBeNull();
+    });
+  });
+
+  describe('approving a law that has corollaries', () => {
+    it('reloads the list, because the corollaries changed status too', async () => {
+      await boot(jsonResponse(listReply([law(), law({ id: 2, text: 'Second law of enough length' })])));
+      await connect();
+      fetchMock.mockResolvedValueOnce(jsonResponse({ data: law({ status: 'published' }), cascaded: 2 }));
+      fetchMock.mockResolvedValueOnce(jsonResponse(listReply([law({ id: 2, text: 'Second law of enough length' })], { counts: { in_review: 1, published: 7, rejected: 0 } })));
+      click(action('Approve'));
+      await flush();
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect($('message').textContent).toBe('Law #1 updated.');
+      expect(button('Published (7)')).not.toBeNull();
+    });
+
+    it('shows why a corollary cannot be published before its law', async () => {
+      await boot(jsonResponse(listReply([law()])));
+      await connect();
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'This corollary cannot be published while its law (#9) is not. Approve the law instead.' }, 400));
+      click(action('Approve'));
+      await flush();
+      expect($('message').textContent).toContain('Approve the law instead');
+      expect([...document.querySelectorAll('.actions button')].every((b) => !(b as HTMLButtonElement).disabled)).toBe(true);
+    });
+  });
 });
