@@ -25,7 +25,29 @@ export interface Law {
   similarity?: number;
   match_type?: 'exact' | 'fuzzy';
   editorial?: LawEditorial;
+  /** Single-law reads only: the published corollaries of this law, in the order they were linked (the original bullet order for imported laws). */
+  corollaries?: Corollary[];
+  /** Single-law reads only: the published law this one is a corollary of, or null. */
+  corollary_of?: CorollaryParent | null;
+  /** List rows only: id of the published law this one is a corollary of, or null. */
+  corollary_of_id?: number | null;
   [key: string]: unknown;
+}
+
+/** A corollary listed under its parent law. */
+export interface Corollary {
+  id: number;
+  title: string | null;
+  text: string;
+  upvotes: number;
+  downvotes: number;
+}
+
+/** The law a corollary belongs to. */
+export interface CorollaryParent {
+  id: number;
+  title: string | null;
+  text: string;
 }
 
 export interface LawsPage {

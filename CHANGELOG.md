@@ -41,6 +41,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Corollaries on the law page. `GET /api/v1/laws/:id` now returns `corollaries` (published children of a published
+  parent, in the order they were linked, with vote counts) and `corollary_of` (the published parent, or null); list rows
+  carry `corollary_of_id`, and `exclude_corollaries` uses the same published-parent rule, so a corollary whose parent
+  is not published stays listed as an ordinary law. A parent's page shows a Corollaries section above Related laws
+  (linked title, text and vote buttons, or plain counts on the static site; no extra request); a corollary's page shows a "Corollary of" banner and a
+  breadcrumb through its parent. A corollary titled just "Corollary" is named from its text in the cards, the banner
+  and the breadcrumb (the page H1 is unchanged, so the "Law Page H1 for Generic Titles" item stays open). The static
+  site renders both into the HTML from the law list, with no extra requests and no new structured data. The design
+  contract gains `corollary-list`, `corollary-card` and `parent-banner`. The SDK `Law` type, the MCP `get_law` tool
+  and the CLI `get` command show corollaries. Also fixes two web bugs the new cards exposed: a click on the thumb icon
+  inside a vote button was ignored (the icon is an SVG, which the handler skipped), and the law page's own
+  `[data-nav]` handler navigated a second time, without the id, after a breadcrumb link. Backend bumped to `2.3.77`; web to `3.4.72`; SDK to `0.2.2`;
+  CLI to `0.1.3`; MCP to `1.2.6`; root to `2.6.174`.
 - Admins can split corollaries out of a submitted law on the moderation page. A law in review whose text is a
   sentence followed by bullets shows a banner and a "Review split" button; the inline review lists each bullet
   (labeled ones start as "Corollary", unlabeled ones as "Keep in parent text"), recomposes the parent text live,

@@ -144,7 +144,7 @@ interface FetchLawsOptions {
   category_id?: number | string;
   category_slug?: string;
   attribution?: string;
-  /** When true, exclude corollaries (only return laws that are not COROLLARY_OF another) */
+  /** When true, exclude corollaries whose parent law is published (a corollary under an unpublished parent stays listed) */
   exclude_corollaries?: boolean;
 }
 

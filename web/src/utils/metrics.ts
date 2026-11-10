@@ -25,6 +25,7 @@ export type ProductEventName =
   | 'archive.pagination'
   | 'category.click'
   | 'law.related_click'
+  | 'law.corollary_click'
   | 'law.vote'
   | 'law.favorite'
   | 'law.share'

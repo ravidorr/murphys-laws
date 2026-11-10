@@ -173,6 +173,19 @@ describe('get_law tool', () => {
     expect(result.content[0]?.text).toContain("Murphy's Law #9");
   });
 
+  it('includes the corollaries of the law', async () => {
+    const tool = extractTool(registerGetLaw, {
+      getLaw: async () => ({
+        id: 5,
+        text: 'Parent.',
+        corollaries: [{ id: 11, title: 'The Ignition Corollary', text: 'Restart feels slow.', upvotes: 1, downvotes: 0 }],
+      }),
+    });
+    const result = await tool.handler({ law_id: 5 });
+    expect(result.content[0]?.text).toContain('Corollaries (1):');
+    expect(result.content[0]?.text).toContain('#11 The Ignition Corollary');
+  });
+
   it('returns friendly 404 error', async () => {
     const tool = extractTool(registerGetLaw, {
       getLaw: async () => {

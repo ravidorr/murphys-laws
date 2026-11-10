@@ -237,4 +237,15 @@ describe('OpenAPI contract', () => {
       },
     });
   });
+  it('documents corollaries on the law schema', () => {
+    const schemas = (OPENAPI_SPEC.components as unknown as { schemas: Record<string, { properties: Record<string, Record<string, unknown>> }> }).schemas;
+    const props = schemas.Law.properties;
+
+    expect(props.corollary_of_id).toMatchObject({ type: 'integer', nullable: true });
+    expect(props.corollary_of).toMatchObject({ nullable: true, required: ['id', 'title', 'text'], properties: { id: { type: 'integer' }, title: { nullable: true }, text: { type: 'string' } } });
+    expect(props.corollaries).toMatchObject({
+      type: 'array',
+      items: { required: ['id', 'title', 'text', 'upvotes', 'downvotes'], properties: { id: { type: 'integer' }, upvotes: { type: 'integer' }, downvotes: { type: 'integer' } } }
+    });
+  });
 });

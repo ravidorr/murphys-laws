@@ -36,7 +36,7 @@ That's it. No API key, no database, no setup.
 | `search_laws` | Search laws by keyword with optional category filter |
 | `get_random_law` | Get a random Murphy's Law |
 | `get_law_of_the_day` | Get today's featured law (rotates daily) |
-| `get_law` | Get a specific law by ID |
+| `get_law` | Get a specific law by ID, with its corollaries |
 | `list_categories` | List all 55 categories with slugs and law counts |
 | `get_laws_by_category` | Browse laws in a specific category |
 | `submit_law` | Submit a new law for review |

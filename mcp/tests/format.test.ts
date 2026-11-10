@@ -26,6 +26,56 @@ describe('formatLaw', () => {
     expect(out).toContain('Source: https://murphys-laws.com/law/1');
   });
 
+  it('lists the corollaries of a law with their ids and titles', () => {
+    const out = formatLaw({
+      id: 5,
+      text: 'Parent.',
+      corollaries: [
+        { id: 11, title: 'The Ignition Corollary', text: 'Restart feels slow.', upvotes: 3, downvotes: 1 },
+        { id: 12, title: 'Corollary', text: 'The light stays green.', upvotes: 0, downvotes: 0 },
+        { id: 13, title: null, text: 'No title at all.', upvotes: 1, downvotes: 0 },
+        { id: 14, title: 'Disliked', text: 'Nobody likes this one.', upvotes: 0, downvotes: 2 },
+      ],
+    });
+    expect(out).toContain('Corollaries (4):');
+    expect(out).toContain('- #11 The Ignition Corollary: Restart feels slow. (+2)');
+    expect(out).toContain('- #12: The light stays green. (+0)');
+    expect(out).toContain('- #13: No title at all. (+1)');
+    expect(out).toContain('- #14 Disliked: Nobody likes this one. (-2)');
+    expect(out.indexOf('Corollaries (4):')).toBeLessThan(out.indexOf('Source:'));
+  });
+
+  it('names the parent of a corollary', () => {
+    const out = formatLaw({ id: 11, text: 'Child.', corollary_of: { id: 5, title: 'Start-Stop', text: 'Parent text.' } });
+    expect(out).toContain('Corollary of: #5 Start-Stop');
+  });
+
+  it('names a parent without a useful title from its text', () => {
+    const generic = formatLaw({ id: 11, text: 'Child.', corollary_of: { id: 6, title: "Murphy's Law", text: 'Parent text.' } });
+    expect(generic).toContain('Corollary of: #6 "Parent text."');
+    const untitled = formatLaw({ id: 11, text: 'Child.', corollary_of: { id: 7, title: null, text: 'Other parent.' } });
+    expect(untitled).toContain('Corollary of: #7 "Other parent."');
+    const placeholder = formatLaw({ id: 11, text: 'Child.', corollary_of: { id: 8, title: 'Untitled', text: 'Third parent.' } });
+    expect(placeholder).toContain('Corollary of: #8 "Third parent."');
+  });
+
+  it.each(['  CoRoLLary ', 'Untitled', 'Murphys Law', "Murphy's Laws", 'law'])('does not print the generic title %j on a corollary', (title) => {
+    const out = formatLaw({ id: 5, text: 'Parent.', corollaries: [{ id: 12, title, text: 'Child text.', upvotes: 0, downvotes: 0 }] });
+    expect(out).toContain('- #12: Child text. (+0)');
+  });
+
+  it('cuts a long parent text used in place of a generic title', () => {
+    const out = formatLaw({ id: 11, text: 'Child.', corollary_of: { id: 5, title: null, text: 'word '.repeat(60) } });
+    const line = out.split('\n').find((l) => l.startsWith('Corollary of:')) as string;
+    expect(line.endsWith('..."')).toBe(true);
+    expect(line.length).toBeLessThan(130);
+  });
+
+  it('prints no corollary lines when there are none', () => {
+    const out = formatLaw({ id: 5, text: 'Plain.', corollaries: [], corollary_of: null });
+    expect(out).not.toContain('Corollar');
+  });
+
   it('uses id-only header when title missing', () => {
     const law: LawData = { id: 3, text: 't' };
     expect(formatLaw(law)).toMatch(/^Murphy's Law #3\n/);

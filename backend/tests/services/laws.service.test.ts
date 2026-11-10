@@ -702,6 +702,120 @@ describe('LawService', () => {
     });
   });
 
+  describe('corollaries', () => {
+    function insertLaw(text: string, status = 'published', title: string | null = null): number {
+      return Number(db.prepare('INSERT INTO laws (title, text, status) VALUES (?, ?, ?)').run(title, text, status).lastInsertRowid);
+    }
+    function link(childId: number, parentId: number): void {
+      db.prepare("INSERT INTO law_relations (from_law_id, to_law_id, relation_type) VALUES (?, ?, 'COROLLARY_OF')").run(childId, parentId);
+    }
+
+    it('getLaw returns published corollaries in link order with votes', async () => {
+      const parent = insertLaw('Parent law text');
+      const first = insertLaw('First corollary text', 'published', 'First');
+      const second = insertLaw('Second corollary text');
+      link(second, parent);
+      link(first, parent);
+      db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'a')").run(first);
+      db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'down', 'b')").run(first);
+
+      const law = await lawService.getLaw(parent);
+      expect(law?.corollaries).toEqual([
+        { id: second, title: null, text: 'Second corollary text', upvotes: 0, downvotes: 0 },
+        { id: first, title: 'First', text: 'First corollary text', upvotes: 1, downvotes: 1 }
+      ]);
+      expect(law?.corollary_of).toBeNull();
+    });
+
+    it('getLaw hides unpublished corollaries', async () => {
+      const parent = insertLaw('Parent law text');
+      const hidden = insertLaw('Hidden corollary', 'in_review');
+      const rejected = insertLaw('Rejected corollary', 'rejected');
+      link(hidden, parent);
+      link(rejected, parent);
+
+      expect((await lawService.getLaw(parent))?.corollaries).toEqual([]);
+    });
+
+    it('getLaw returns an empty corollaries list for a law without any', async () => {
+      const law = await lawService.getLaw(insertLaw('Plain law'));
+      expect(law?.corollaries).toEqual([]);
+      expect(law?.corollary_of).toBeNull();
+    });
+
+    it('getLaw returns corollary_of for a corollary whose parent is published', async () => {
+      const parent = insertLaw('Parent law text', 'published', 'Parent title');
+      const child = insertLaw('Child corollary text', 'published', 'Corollary');
+      link(child, parent);
+
+      const law = await lawService.getLaw(child);
+      expect(law?.corollary_of).toEqual({ id: parent, title: 'Parent title', text: 'Parent law text' });
+      expect(law?.corollaries).toEqual([]);
+    });
+
+    it('getLaw returns corollary_of null when the parent is not published', async () => {
+      const parent = insertLaw('Parent law text', 'in_review');
+      const child = insertLaw('Child corollary text');
+      link(child, parent);
+
+      expect((await lawService.getLaw(child))?.corollary_of).toBeNull();
+    });
+
+    it('getLaw and listLaws use the first published parent when a child is linked to two', async () => {
+      const draftParent = insertLaw('Draft parent text', 'in_review');
+      const parent = insertLaw('Published parent text');
+      const child = insertLaw('Child corollary text');
+      link(child, draftParent);
+      link(child, parent);
+
+      expect((await lawService.getLaw(child))?.corollary_of).toMatchObject({ id: parent });
+      const { data } = await lawService.listLaws({ limit: 10, offset: 0 });
+      expect(data.find((row) => row.id === child)?.corollary_of_id).toBe(parent);
+    });
+
+    it('listLaws rows carry corollary_of_id when the parent is published', async () => {
+      const parent = insertLaw('Parent law text');
+      const child = insertLaw('Child corollary text');
+      link(child, parent);
+
+      const { data } = await lawService.listLaws({ limit: 10, offset: 0 });
+      const byId = new Map(data.map((row) => [row.id, row]));
+      expect(byId.get(child)?.corollary_of_id).toBe(parent);
+      expect(byId.get(parent)?.corollary_of_id).toBeNull();
+    });
+
+    it('listLaws leaves corollary_of_id null when the parent is not published', async () => {
+      const parent = insertLaw('Parent law text', 'in_review');
+      const child = insertLaw('Child corollary text');
+      link(child, parent);
+
+      const { data } = await lawService.listLaws({ limit: 10, offset: 0 });
+      expect(data).toHaveLength(1);
+      expect(data[0].corollary_of_id).toBeNull();
+    });
+
+    it('listLaws counts a child once even when it is linked twice', async () => {
+      const parent = insertLaw('Parent law text');
+      const child = insertLaw('Child corollary text');
+      link(child, parent);
+      link(child, parent);
+
+      const { data, total } = await lawService.listLaws({ limit: 10, offset: 0 });
+      expect(total).toBe(2);
+      expect(data).toHaveLength(2);
+    });
+
+    it('excludeCorollaries keeps a child whose parent is not published', async () => {
+      const parent = insertLaw('Parent law text', 'in_review');
+      const child = insertLaw('Child corollary text');
+      link(child, parent);
+
+      const { data, total } = await lawService.listLaws({ limit: 10, offset: 0, excludeCorollaries: true });
+      expect(data.map((row) => row.id)).toEqual([child]);
+      expect(total).toBe(1);
+    });
+  });
+
   describe('getLaw with categories', () => {
     it('should return category_id and category_ids for law with categories', async () => {
       const catInfo = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run();

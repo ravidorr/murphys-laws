@@ -149,6 +149,18 @@ describe('MurphysLawsClient', () => {
     expect(calls[0]!.url).toBe('https://api.test/api/v1/laws/a%2Fb');
   });
 
+  it('getLaw returns corollaries and the parent law when the API sends them', async () => {
+    const corollaries = [{ id: 11, title: 'The Ignition Corollary', text: 'Restart feels slow.', upvotes: 3, downvotes: 1 }];
+    queue(jsonResponse(200, { id: 5, text: 'Parent.', corollaries, corollary_of: null }));
+    const parent = await clientWith().getLaw(5);
+    expect(parent.corollaries).toEqual(corollaries);
+    expect(parent.corollary_of).toBeNull();
+
+    queue(jsonResponse(200, { id: 11, text: 'Child.', corollaries: [], corollary_of: { id: 5, title: null, text: 'Parent.' } }));
+    const child = await clientWith().getLaw(11);
+    expect(child.corollary_of?.id).toBe(5);
+  });
+
   it('listCategories returns the data array', async () => {
     const payload = [
       { id: 1, slug: 'x', title: 'X', description: null, law_count: 2 },

@@ -316,6 +316,19 @@ components:
     textColor: "{colors.fg}"
     rounded: "{rounded.xl}"
     typography: "{typography.body-md}"
+  corollary-list:
+    textColor: "{colors.fg}"
+    typography: "{typography.body-md}"
+  corollary-card:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.xl}"
+    typography: "{typography.body-md}"
+  parent-banner:
+    backgroundColor: "{colors.bg}"
+    textColor: "{colors.fg}"
+    rounded: "{rounded.xl}"
+    typography: "{typography.body-sm}"
   proof-point:
     textColor: "{colors.fg}"
     typography: "{typography.body-sm}"
@@ -437,6 +450,14 @@ typography, and size tokens to the shipped primitives:
 - Core: button, outline button, icon button, and icon.
 - Forms: form field, input, select, checkbox, and slider.
 - Cards: card, law-card-mini, category-card, and proof-point.
+- Corollaries: corollary-list, corollary-card, and parent-banner. The list is
+  the Corollaries section on a law page, one corollary-card per corollary (a
+  linked title, the text, and the vote group; the static site shows plain
+  vote counts), under the law card and above
+  Related laws. A corollary titled just "Corollary" is named from its text. The
+  parent-banner is the "Corollary of" link above the title on a corollary's own
+  page. All three render from `web/src/utils/corollaries.ts`, so the app and the
+  static site share one structure.
 - Feedback: calculator result, message, notification, and vote group.
 - Navigation: brand badge, breadcrumb, and pagination.
 - Back to top: a floating 44 px circular icon button (`.back-to-top`, bottom
