@@ -62,6 +62,12 @@ describe('submit form corollaries', () => {
   });
 
   describe('the repeater', () => {
+    it('tells visitors corollaries cannot yet be added to a published law', () => {
+      const help = q<HTMLElement>('#submit-corollaries-help').textContent;
+      expect(help).toContain('Corollaries can only be added to a new law for now, not to one that is already published.');
+      expect(q('[data-corollaries]').getAttribute('aria-describedby')).toBe('submit-corollaries-help');
+    });
+
     it('starts with no boxes, a counter and an enabled add button', () => {
       expect(rows()).toHaveLength(0);
       expect(count()).toBe('0 of 5 added');
