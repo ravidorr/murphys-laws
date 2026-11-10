@@ -174,6 +174,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The migration runner no longer reports a write error in place of what happened to `sqlite3`. When `sqlite3` stops
+  before it has read all of its input, writing the migration to it fails with `EPIPE`, which Node reports as a spawn
+  error, but only if `sqlite3` had stopped before the write finished. `failureReason` in
+  `backend/scripts/migration-runner.ts` put that first, so the message read `spawnSync sqlite3 EPIPE` instead of
+  `sqlite3 was stopped by SIGKILL` or `sqlite3 exited with status N`, depending on the timing. The order is now:
+  sqlite3's own error, a spawn error that is a real cause (not installed, output over the buffer limit), the signal,
+  the exit status; `EPIPE` stays on the error's `cause` and is never the message. An exit 0 that left part of the
+  migration unread is now a failure (it was reported as applied), and is reported as such. This was the cause of the
+  intermittent `migration-runner.test.ts` failure ("reports the signal when sqlite3 is killed, and records nothing")
+  that failed CI twice and passed on re-run; new tests use a migration larger than the pipe buffer so the `EPIPE`
+  always happens and the report never depends on timing. Backend bumped to `2.3.78`; root to `2.6.175`.
 - Daily 404 report of 10 November 2026: more scanner probes are dropped and two sitemap-index guesses are redirected.
   Dropped (`444`, logged to `scanner.log`): Cisco ASA login probes (`/+CSCOE+/logon.html`, `/+CSCOT+/...`),
   `/eventmanager`, `/server-status`, `/server-info`, `/debug/vars`, `/solr/...`, Joomla component assets
