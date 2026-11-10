@@ -48,8 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   law, share its category and are credited by name only: the email stays on the law, so only the law is thanked. The
   moderator's new-submission email lists them, and the thank-you sent on approval lists the ones that went live. In
   `GET /api/v1/admin/laws` a corollary whose law is in the same filtered set is no longer a card of its own: it is
-  attached to the law as `children` (any status), searching a corollary's text returns the law, and the "In review" count
-  and the list total count submissions, not rows (Published and Rejected still count rows). The moderation page shows
+  attached to the law as `children` (any status), searching a corollary's text returns the law, and the list total never
+  counts a nested corollary: the "In review" badge matches it, while the Published and Rejected badges still count rows. The moderation page shows
   the corollaries nested under the law as editable rows with "Reject this corollary", and the buttons read "Approve
   all N" and "Reject all"; corollary edits are saved first, then the law, and the existing status cascade publishes or
   rejects the rest. The submit form gains an optional Corollaries group (up to five boxes with a counter, a

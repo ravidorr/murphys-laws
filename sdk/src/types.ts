@@ -113,7 +113,7 @@ export interface SubmitLawSuccess {
   status: 201;
   data: {
     id: number;
-    title: string;
+    title: string | null;
     text: string;
     status: string;
     /** The corollaries created with the law; empty when none were submitted. */

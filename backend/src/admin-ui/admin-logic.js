@@ -333,3 +333,9 @@ export function validateChildEdits(law, values) {
 export function describeCascade(cascaded) {
   return Number.isInteger(cascaded) && cascaded > 0 ? ` ${plural(cascaded, 'corollary', 'corollaries')} moved with it.` : '';
 }
+
+/** A problem with the law's own text field that the server would refuse, or null. Checked before any corollary is saved. */
+export function validateLawText(text) {
+  const length = text.trim().length;
+  return length < TEXT_MIN || length > TEXT_MAX ? `The law text must be between ${TEXT_MIN} and ${TEXT_MAX} characters.` : null;
+}

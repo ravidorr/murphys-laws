@@ -126,6 +126,16 @@ describe('LawService.submitLaw with corollaries (real migrated schema)', () => {
     expect(db.prepare('SELECT COUNT(*) AS n FROM law_relations').get()).toEqual({ n: 0 });
   });
 
+  it('rolls back the categories and the search index entry of the law when a corollary is refused', async () => {
+    const categoryId = (db.prepare('SELECT id FROM categories ORDER BY id LIMIT 1').get() as { id: number }).id;
+    const before = (db.prepare('SELECT COUNT(*) AS n FROM law_categories').get() as { n: number }).n;
+    await expect(
+      laws.submitLaw({ title: null, text: 'Zebrafish law that must not survive the rollback.', author: null, email: null, categoryId, corollaries: [{ title: null, text: ONE }, { title: null, text: 'too short' }] }),
+    ).rejects.toThrow('Corollary 2');
+    expect((db.prepare('SELECT COUNT(*) AS n FROM law_categories').get() as { n: number }).n).toBe(before);
+    expect(db.prepare("SELECT COUNT(*) AS n FROM laws WHERE text LIKE '%Zebrafish law that must not survive%'").get()).toEqual({ n: 0 });
+  });
+
   it('rolls back when a corollary cannot be inserted after the law was', async () => {
     db.exec("CREATE TRIGGER block_child BEFORE INSERT ON laws WHEN NEW.text = 'Blocked corollary text here' BEGIN SELECT RAISE(ABORT, 'insert blocked'); END;");
     const before = lawCount();

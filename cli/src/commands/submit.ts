@@ -13,7 +13,7 @@ export async function runSubmit(ctx: CommandContext): Promise<CommandOutput> {
     throw new UsageError(`law text must be 10-1000 characters (got ${text.length})`);
   }
 
-  const corollaries = ctx.args.corollaries;
+  const corollaries = ctx.args.corollaries.map((corollary) => corollary.trim());
   if (corollaries.length > MAX_COROLLARIES) {
     throw new UsageError(`a law can have at most ${MAX_COROLLARIES} corollaries (got ${corollaries.length})`);
   }

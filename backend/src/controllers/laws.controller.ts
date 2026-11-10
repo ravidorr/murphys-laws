@@ -1,8 +1,9 @@
 import { checkRateLimit } from '../middleware/rate-limit.ts';
 import { getVoterIdentifier, readBody, sendJson, badRequest, rateLimitExceeded, notFound, PayloadTooLargeError } from '../utils/http-helpers.ts';
-import { parseCorollaryList, type BodyError } from '../utils/corollary-input.ts';
+import { BodyError, parseCorollaryList } from '../utils/corollary-input.ts';
 
-// Room for the law, up to five corollaries with titles, and the contact fields, with multi-byte text.
+// Room for the law, up to five corollaries with titles, and the contact fields, as UTF-8 text. A client that escapes
+// every non-ASCII character as \\uXXXX can send the same content in about three times the bytes and gets a 413.
 const MAX_SUBMIT_BODY_BYTES = 32 * 1024;
 
 function parseBoundedInt(value: unknown, { min, max, fallback }: { min: number; max: number; fallback: number }) {
@@ -156,7 +157,7 @@ export class LawController {
       body = await readBody(req, MAX_SUBMIT_BODY_BYTES);
     } catch (error) {
       if (error instanceof PayloadTooLargeError) {
-        return sendJson(res, 413, { error: 'Request body too large' }, req);
+        return sendJson(res, 413, { error: 'Your submission is too large. Shorten the law or its corollaries and try again.' }, req);
       }
       return badRequest(res, 'Invalid JSON body', req);
     }
@@ -196,8 +197,10 @@ export class LawController {
       try {
         corollaries = parseCorollaryList(body.corollaries, text, 0);
       } catch (error) {
-        // parseCorollaryList only ever throws a BodyError, whose message is written for the caller.
-        return badRequest(res, (error as BodyError).message, req);
+        if (error instanceof BodyError) {
+          return badRequest(res, error.message, req);
+        }
+        throw error;
       }
     }
 

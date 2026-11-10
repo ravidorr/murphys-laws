@@ -184,7 +184,34 @@ describe('submit form corollaries', () => {
       addRow('', 'too short');
       submit();
       expect(request.apiPost).not.toHaveBeenCalled();
-      expect(events('law_submission_failed')).toEqual([['law_submission_failed', expect.objectContaining({ failure_reason: 'corollary_too_short' })]]);
+      expect(events('law_submission_failed')).toEqual([['law_submission_failed', expect.objectContaining({ failure_reason: 'corollary_invalid' })]]);
+    });
+
+    it('names a repeated corollary by its box on screen, even when an earlier box is empty', () => {
+      fillLaw();
+      addRow();
+      addRow('', ONE);
+      addRow('', `  ${ONE.toUpperCase()} `);
+      expect(submitButton().disabled).toBe(true);
+      expect(message().textContent).toBe('Corollary 3 repeats another corollary or the law text');
+
+      type(field(2, 'text'), `  ${LAW.toLowerCase()}`);
+      expect(message().textContent).toBe('Corollary 3 repeats another corollary or the law text');
+      type(field(2, 'text'), TWO);
+      expect(submitButton().disabled).toBe(false);
+    });
+
+    it('refuses a corollary text over 1000 characters or a name over 200, which typing cannot produce but moving bullets can', () => {
+      fillLaw();
+      addRow('', ONE);
+      field(0, 'text').value = 'x'.repeat(1001);
+      field(0, 'text').dispatchEvent(new Event('input', { bubbles: true }));
+      expect(message().textContent).toBe('Corollary 1 text must be at most 1000 characters');
+      field(0, 'text').value = ONE;
+      field(0, 'title').value = 't'.repeat(201);
+      field(0, 'title').dispatchEvent(new Event('input', { bubbles: true }));
+      expect(message().textContent).toBe('Corollary 1 name must be at most 200 characters');
+      expect(submitButton().disabled).toBe(true);
     });
 
     it('words the button after the filled boxes only, and goes back when they are removed', () => {
@@ -356,15 +383,17 @@ describe('submit form corollaries', () => {
       expect(lawText().value).toBe(`${LAW}\n\n• The Delta Corollary: The Delta consequence of the law`);
       expect(hint().hidden).toBe(false);
       expect(q('[data-corollary-hint-text]').textContent).toBe('Looks like your text includes a corollary.');
+      expect(count()).toBe('5 of 5 added. Moved 3 from your law text; 1 stayed in the text because there is no room for more boxes.');
     });
 
-    it('does nothing when there is no room left', () => {
+    it('says there is no room, and changes nothing, when all five boxes are in use', () => {
       for (let i = 0; i < 5; i += 1) addRow('', `Corollary ${i} typed in by the visitor`);
       const text = `${LAW}\n\n• The Ninth Corollary: The ninth consequence of the law`;
       type(lawText(), text);
       q<HTMLButtonElement>('[data-action="move-corollaries"]').click();
       expect(lawText().value).toBe(text);
       expect(rows()).toHaveLength(5);
+      expect(count()).toContain('No room');
     });
 
     it('does nothing when the text no longer parses by the time the button is used', () => {
