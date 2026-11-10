@@ -59,6 +59,17 @@ describe('AdminLawService corollaries (real migrated schema)', () => {
       }
     });
 
+    it('returns fresh candidates from an update, from the text that was just saved', () => {
+      const id = insertLaw('Lights', 'A plain law with no bullets at all in it', 'in_review');
+      const plain = admin.updateLaw(id, { adminNotes: 'x' });
+      expect(plain.outcome === 'updated' && plain.law).not.toHaveProperty('corollary_candidates');
+
+      const edited = admin.updateLaw(id, { text: bulleted });
+      expect(edited.outcome === 'updated' && edited.law.corollary_candidates?.items).toHaveLength(2);
+      const approved = admin.updateLaw(id, { status: 'published' });
+      expect(approved.outcome === 'updated' && approved.law).not.toHaveProperty('corollary_candidates');
+    });
+
     it('does not offer a split for a law that already has corollaries', () => {
       const parent = insertLaw(null, bulleted, 'in_review');
       link(insertLaw(null, 'A submitted corollary of the parent law', 'in_review'), parent);

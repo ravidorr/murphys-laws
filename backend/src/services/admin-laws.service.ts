@@ -78,7 +78,8 @@ export interface AdminListedLaw extends AdminLaw {
 export type AdminUpdateResult =
   | {
       outcome: 'updated';
-      law: AdminLaw;
+      /** With a fresh split seed when the saved text still has corollaries, so the page need not reload to offer it. */
+      law: AdminListedLaw;
       previousStatus: AdminLawStatus;
       previousCategoryIds: number[];
       /** True when the law is a corollary of another law. */
@@ -209,7 +210,7 @@ export class AdminLawService {
       const row = this.db.prepare(`SELECT ${LAW_COLUMNS} FROM laws WHERE id = ?`).get(id) as AdminLawRow;
       return {
         outcome: 'updated',
-        law: this.attachDetails([row])[0],
+        law: this.attachCandidates(this.attachDetails([row]))[0],
         previousStatus: before.status,
         previousCategoryIds,
         isCorollary: isChild(this.db, id),
