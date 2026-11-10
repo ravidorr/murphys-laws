@@ -1368,6 +1368,7 @@ describe('SubmitLawSection component', () => {
 
       await vi.waitFor(() => expect(track).toHaveBeenCalledWith('law_submitted', {
         submission_id: '321',
+        corollary_count: 0,
         category_id: '4',
         category_slug: 'murphys-office-laws',
         has_title: true,

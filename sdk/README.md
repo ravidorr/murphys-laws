@@ -99,11 +99,13 @@ const result = await client.submitLaw({
   text: "Anything that can go wrong, will, and at the worst possible time.",
   author: 'Jane Doe',
   category_slug: 'computers',
+  // Optional: up to 5 consequences that follow from the law, reviewed and published with it.
+  corollaries: [{ title: 'The Retry Corollary', text: 'The second attempt fails in a way the first never did.' }],
 });
 
 switch (result.kind) {
   case 'success':
-    console.log('submitted', result.data.id);
+    console.log('submitted', result.data.id, 'with', result.data.corollaries.length, 'corollaries');
     break;
   case 'rate_limited':
     console.warn(`back off ${result.retryAfter}s`);

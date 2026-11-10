@@ -2,6 +2,8 @@ import { UsageError } from '../parse-args.js';
 import { EXIT_RATE_LIMITED, EXIT_USAGE } from '../exit-codes.js';
 import type { CommandContext, CommandOutput } from './search.js';
 
+const MAX_COROLLARIES = 5;
+
 export async function runSubmit(ctx: CommandContext): Promise<CommandOutput> {
   const text = ctx.args.options.text ?? ctx.args.positionals[0];
   if (!text) {
@@ -11,11 +13,22 @@ export async function runSubmit(ctx: CommandContext): Promise<CommandOutput> {
     throw new UsageError(`law text must be 10-1000 characters (got ${text.length})`);
   }
 
+  const corollaries = ctx.args.corollaries;
+  if (corollaries.length > MAX_COROLLARIES) {
+    throw new UsageError(`a law can have at most ${MAX_COROLLARIES} corollaries (got ${corollaries.length})`);
+  }
+  corollaries.forEach((corollary, index) => {
+    if (corollary.length < 10 || corollary.length > 1000) {
+      throw new UsageError(`corollary ${index + 1} must be 10-1000 characters (got ${corollary.length})`);
+    }
+  });
+
   const result = await ctx.client.submitLaw({
     text,
     title: ctx.args.options.title,
     author: ctx.args.options.author,
     category_slug: ctx.args.options.category,
+    ...(corollaries.length > 0 ? { corollaries: corollaries.map((corollary) => ({ text: corollary })) } : {}),
   });
 
   if (ctx.json) {
@@ -32,6 +45,7 @@ export async function runSubmit(ctx: CommandContext): Promise<CommandOutput> {
       `Status:   ${result.data.status}`,
       `Category: ${ctx.args.options.category ?? '(none)'}`,
       `Author:   ${ctx.args.options.author ?? 'Anonymous'}`,
+      ...result.data.corollaries.map((corollary, index) => `Corollary ${index + 1}: #${corollary.id} ${corollary.text}`),
       '',
       ctx.colors.dim('Laws require manual approval before publication.'),
     ];

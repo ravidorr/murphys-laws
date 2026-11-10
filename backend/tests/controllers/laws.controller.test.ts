@@ -441,7 +441,7 @@ describe('LawController', () => {
                 email: 'test@example.com',
                 category_id: '5'
             });
-            lawService.submitLaw.mockResolvedValue(123);
+            lawService.submitLaw.mockResolvedValue({ id: 123, corollaries: [] });
 
             await lawController.submit(req, res);
 
@@ -450,7 +450,8 @@ describe('LawController', () => {
                 text: 'This is a valid law text.',
                 author: 'Author',
                 email: 'test@example.com',
-                categoryId: 5
+                categoryId: 5,
+                corollaries: []
             });
             expect(emailService.sendNewLawEmail).toHaveBeenCalled();
             expect(res.writeHead).toHaveBeenCalledWith(201, expect.any(Object));
@@ -463,7 +464,7 @@ describe('LawController', () => {
                 author: 'A',
                 email: 'a@example.com'
             });
-            lawService.submitLaw.mockResolvedValue(456);
+            lawService.submitLaw.mockResolvedValue({ id: 456, corollaries: [] });
             emailService.sendNewLawEmail.mockRejectedValue(new Error('SMTP failed'));
 
             await lawController.submit(req, res);
@@ -473,6 +474,108 @@ describe('LawController', () => {
             expect(body.id).toBe(456);
             expect(body.status).toBe('in_review');
             expect(body.message).toContain('successfully');
+        });
+
+        describe('corollaries', () => {
+            const TEXT = 'A red light turns green right after you stop watching it.';
+            const ONE = 'The engine restarts slowly when someone behind you is honking.';
+            const TWO = 'The green lasts just long enough for you to miss it.';
+            const submitWith = async (corollaries: unknown, over: Record<string, unknown> = {}) => {
+                vi.mocked(httpHelpers.readBody).mockResolvedValue({ text: TEXT, author: 'Ann', email: 'ann@example.com', corollaries, ...over });
+                await lawController.submit(req, res);
+            };
+            const status = () => res.writeHead.mock.calls[0][0];
+            const payload = () => JSON.parse(res.end.mock.calls[0][0]);
+
+            it('reads the body with a 32 KB cap', async () => {
+                lawService.submitLaw.mockResolvedValue({ id: 1, corollaries: [] });
+                await submitWith(undefined);
+                expect(vi.mocked(httpHelpers.readBody).mock.calls[0][1]).toBe(32 * 1024);
+            });
+
+            it('answers 413 when the body is over the cap, without touching the service', async () => {
+                vi.mocked(httpHelpers.readBody).mockRejectedValue(new httpHelpers.PayloadTooLargeError());
+                await lawController.submit(req, res);
+                expect(status()).toBe(413);
+                expect(payload()).toEqual({ error: 'Request body too large' });
+                expect(lawService.submitLaw).not.toHaveBeenCalled();
+            });
+
+            it.each([['null', null], ['an array', []], ['a string', 'text']])('rejects a body that is %s', async (_name, body) => {
+                vi.mocked(httpHelpers.readBody).mockResolvedValue(body as never);
+                await lawController.submit(req, res);
+                expect(status()).toBe(400);
+                expect(payload()).toEqual({ error: 'Body must be a JSON object' });
+            });
+
+            it('passes trimmed corollaries to the service and answers with the created ones, in the email too', async () => {
+                const created = [{ id: 11, title: 'Ignition', text: ONE }, { id: 12, title: null, text: TWO }];
+                lawService.submitLaw.mockResolvedValue({ id: 10, corollaries: created });
+
+                await submitWith([{ title: ' Ignition ', text: `  ${ONE}  ` }, { text: TWO }]);
+
+                expect(lawService.submitLaw).toHaveBeenCalledWith(expect.objectContaining({
+                    corollaries: [{ title: 'Ignition', text: ONE }, { title: null, text: TWO }]
+                }));
+                expect(status()).toBe(201);
+                expect(payload()).toMatchObject({ id: 10, status: 'in_review', corollaries: created });
+                expect(emailService.sendNewLawEmail).toHaveBeenCalledWith(expect.objectContaining({ id: 10, corollaries: created }));
+            });
+
+            it('treats an absent or null list as no corollaries and answers with an empty list', async () => {
+                lawService.submitLaw.mockResolvedValue({ id: 10, corollaries: [] });
+                await submitWith(null);
+                expect(lawService.submitLaw).toHaveBeenCalledWith(expect.objectContaining({ corollaries: [] }));
+                expect(payload().corollaries).toEqual([]);
+            });
+
+            it('accepts an empty list and exactly five corollaries', async () => {
+                lawService.submitLaw.mockResolvedValue({ id: 10, corollaries: [] });
+                await submitWith([]);
+                expect(status()).toBe(201);
+
+                res.writeHead.mockClear();
+                const five = [1, 2, 3, 4, 5].map((n) => ({ text: `Corollary number ${n} of the law` }));
+                await submitWith(five);
+                expect(status()).toBe(201);
+            });
+
+            it.each([
+                ['not a list', 'nope', 'corollaries must be a list'],
+                ['an object', { text: ONE }, 'corollaries must be a list'],
+                ['more than five', [1, 2, 3, 4, 5, 6].map((n) => ({ text: `Corollary number ${n} of the law` })), 'Provide at most 5 corollaries'],
+                ['an entry that is not an object', ['text'], 'Corollary 1 must be an object'],
+                ['an entry that is null', [null], 'Corollary 1 must be an object'],
+                ['an entry that is an array', [[ONE]], 'Corollary 1 must be an object'],
+                ['a missing text', [{ title: 'x' }], 'Corollary 1 text must be a string'],
+                ['a text that is not a string', [{ text: 5 }], 'Corollary 1 text must be a string'],
+                ['a text under 10 characters', [{ text: 'too short' }], 'Corollary 1 must be between 10 and 1000 characters'],
+                ['a blank text', [{ text: '          ' }], 'Corollary 1 must be between 10 and 1000 characters'],
+                ['a text over 1000 characters', [{ text: 'a'.repeat(1001) }], 'Corollary 1 must be between 10 and 1000 characters'],
+                ['a title that is not a string', [{ title: 5, text: ONE }], 'Corollary 1 title must be a string or null'],
+                ['a title over 200 characters', [{ title: 't'.repeat(201), text: ONE }], 'Corollary 1 title must be at most 200 characters'],
+                ['a corollary repeating another', [{ text: ONE }, { text: `  ${ONE.toUpperCase()}` }], 'Corollary 2 repeats another corollary or the law text'],
+                ['a corollary equal to the law text', [{ text: TEXT }], 'Corollary 1 repeats another corollary or the law text'],
+            ])('answers 400 for %s', async (_name, corollaries, message) => {
+                await submitWith(corollaries);
+                expect(status()).toBe(400);
+                expect(payload()).toEqual({ error: message });
+                expect(lawService.submitLaw).not.toHaveBeenCalled();
+                expect(emailService.sendNewLawEmail).not.toHaveBeenCalled();
+            });
+
+            it('accepts a corollary title of exactly 200 characters and a text of exactly 10 and 1000', async () => {
+                lawService.submitLaw.mockResolvedValue({ id: 10, corollaries: [] });
+                await submitWith([{ title: 't'.repeat(200), text: 'a'.repeat(10) }, { text: 'b'.repeat(1000) }]);
+                expect(status()).toBe(201);
+            });
+
+            it('turns a refusal from the service into a 400 with its message', async () => {
+                lawService.submitLaw.mockRejectedValue(new Error('A law can have at most 5 corollaries'));
+                await submitWith([{ text: ONE }]);
+                expect(status()).toBe(400);
+                expect(payload()).toEqual({ error: 'A law can have at most 5 corollaries' });
+            });
         });
 
         it('should return 400 if service throws error', async () => {

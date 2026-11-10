@@ -119,6 +119,44 @@ describe('LawDetail corollaries', () => {
     expect(track).not.toHaveBeenCalledWith('law.corollary_click', expect.anything());
   });
 
+  it('opens the submit form from the Add a corollary link and records the click', async () => {
+    const track = vi.spyOn(metricsModule, 'trackProductEvent');
+    const { el, onNavigate } = await mount(parentLaw);
+
+    const link = el.querySelector('.corollary-list-footer a[data-submit-link]') as HTMLAnchorElement;
+    expect(link.textContent).toBe('Add a corollary');
+    expect(link.getAttribute('href')).toBe('/submit');
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 });
+    link.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(onNavigate).toHaveBeenCalledWith('submit');
+    expect(track).toHaveBeenCalledWith('law.corollary_add_click', { surface: 'law_detail' });
+  });
+
+  it.each([
+    ['ctrl', { ctrlKey: true }],
+    ['meta', { metaKey: true }],
+    ['shift', { shiftKey: true }],
+    ['alt', { altKey: true }],
+    ['middle button', { button: 1 }]
+  ])('leaves a %s-click on Add a corollary to the browser', async (_name, init) => {
+    const track = vi.spyOn(metricsModule, 'trackProductEvent');
+    const { el, onNavigate } = await mount(parentLaw);
+
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true, ...init });
+    (el.querySelector('a[data-submit-link]') as HTMLAnchorElement).dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(onNavigate).not.toHaveBeenCalled();
+    expect(track).not.toHaveBeenCalledWith('law.corollary_add_click', expect.anything());
+  });
+
+  it('offers no Add a corollary link on a law that has no corollary section', async () => {
+    const { el } = await mount({ id: 9, title: 'Plain', text: 'A plain law with no corollary fields at all.' });
+    expect(el.querySelector('a[data-submit-link]')).toBeNull();
+  });
+
   it('votes on a corollary without voting on the parent', async () => {
     const { el } = await mount(parentLaw);
 

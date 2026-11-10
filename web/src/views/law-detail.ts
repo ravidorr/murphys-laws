@@ -694,6 +694,15 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       return;
     }
 
+    // The "Add a corollary" link opens the submit form in the app unless the user asked for a new tab
+    if (t.closest('a[data-submit-link]')) {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      e.preventDefault();
+      trackProductEvent('law.corollary_add_click', { surface: 'law_detail' });
+      onNavigate('submit');
+      return;
+    }
+
     // Handle related law card clicks
     const lawCard = t.closest('.law-card-mini') as HTMLElement | null;
     if (lawCard && lawCard.dataset.lawId) {

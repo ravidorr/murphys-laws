@@ -39,7 +39,7 @@ That's it. No API key, no database, no setup.
 | `get_law` | Get a specific law by ID, with its corollaries |
 | `list_categories` | List all 55 categories with slugs and law counts |
 | `get_laws_by_category` | Browse laws in a specific category |
-| `submit_law` | Submit a new law for review |
+| `submit_law` | Submit a new law for review, optionally with up to 5 corollaries |
 
 ## Example Usage
 

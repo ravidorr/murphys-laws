@@ -244,7 +244,7 @@ describe('LawService', () => {
   });
 
   it('should submit a new law', async () => {
-    const lawId = await lawService.submitLaw({
+    const { id: lawId } = await lawService.submitLaw({
       title: 'New Law',
       text: 'Everything that can go wrong...',
       author: 'Murphy',
@@ -325,7 +325,7 @@ describe('LawService', () => {
     const catInfo = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run();
     const categoryId = Number(catInfo.lastInsertRowid);
 
-    const lawId = await lawService.submitLaw({
+    const { id: lawId } = await lawService.submitLaw({
       title: 'Categorized Law',
       text: 'Text',
       author: '',
@@ -350,7 +350,7 @@ describe('LawService', () => {
   });
 
   it('should submit law with author only (no email) and set contact_type text', async () => {
-    const lawId = await lawService.submitLaw({
+    const { id: lawId } = await lawService.submitLaw({
       title: 'T',
       text: 'Author only law',
       author: 'Anonymous Human',
@@ -366,7 +366,7 @@ describe('LawService', () => {
   });
 
   it('uses Anonymous as the attribution name when only an email is submitted', async () => {
-    const lawId = await lawService.submitLaw({
+    const { id: lawId } = await lawService.submitLaw({
       title: 'Email only',
       text: 'An email-only submission preserves contact details privately.',
       email: 'submitter@example.com',
@@ -432,7 +432,7 @@ describe('LawService', () => {
   });
 
   it('should submit law without author and without categoryId', async () => {
-    const lawId = await lawService.submitLaw({
+    const { id: lawId } = await lawService.submitLaw({
       title: '',
       text: 'Anon Law',
       author: '',

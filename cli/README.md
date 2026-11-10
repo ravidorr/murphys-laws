@@ -35,10 +35,11 @@ murphy today
 murphy get <id>
 murphy categories
 murphy category <slug> [--limit N]
-murphy submit <text> [--title T] [--author A] [--category SLUG]
+murphy submit <text> [--title T] [--author A] [--category SLUG] [--corollary TEXT]...
 ```
 
-Submitting is rate-limited per the API's write policy.
+Submitting is rate-limited per the API's write policy. `--corollary` may be repeated up to 5 times; each corollary is
+10-1000 characters and is reviewed and published together with the law.
 
 ## Global flags
 

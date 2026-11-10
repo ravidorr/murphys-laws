@@ -83,12 +83,28 @@ export interface SearchLawsParams {
   order?: 'asc' | 'desc';
 }
 
+/** A consequence that follows from the submitted law. It becomes a law of its own once published. */
+export interface SubmitLawCorollaryInput {
+  /** Up to 200 characters. */
+  title?: string;
+  /** 10-1000 characters. */
+  text: string;
+}
+
 export interface SubmitLawInput {
   text: string;
   title?: string;
   author?: string;
   category_id?: number;
   category_slug?: string;
+  /** Up to 5. They are reviewed and published together with the law, and share its category. */
+  corollaries?: SubmitLawCorollaryInput[];
+}
+
+export interface SubmittedCorollary {
+  id: number;
+  title: string | null;
+  text: string;
 }
 
 export interface SubmitLawSuccess {
@@ -100,6 +116,8 @@ export interface SubmitLawSuccess {
     title: string;
     text: string;
     status: string;
+    /** The corollaries created with the law; empty when none were submitted. */
+    corollaries: SubmittedCorollary[];
     message: string;
   };
 }

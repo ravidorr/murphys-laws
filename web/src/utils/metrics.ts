@@ -26,6 +26,7 @@ export type ProductEventName =
   | 'category.click'
   | 'law.related_click'
   | 'law.corollary_click'
+  | 'law.corollary_add_click'
   | 'law.vote'
   | 'law.favorite'
   | 'law.share'

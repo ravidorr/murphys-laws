@@ -1,5 +1,9 @@
 import { checkRateLimit } from '../middleware/rate-limit.ts';
-import { getVoterIdentifier, readBody, sendJson, badRequest, rateLimitExceeded, notFound } from '../utils/http-helpers.ts';
+import { getVoterIdentifier, readBody, sendJson, badRequest, rateLimitExceeded, notFound, PayloadTooLargeError } from '../utils/http-helpers.ts';
+import { parseCorollaryList, type BodyError } from '../utils/corollary-input.ts';
+
+// Room for the law, up to five corollaries with titles, and the contact fields, with multi-byte text.
+const MAX_SUBMIT_BODY_BYTES = 32 * 1024;
 
 function parseBoundedInt(value: unknown, { min, max, fallback }: { min: number; max: number; fallback: number }) {
   const parsed = Number(value);
@@ -149,9 +153,15 @@ export class LawController {
 
     let body: any;
     try {
-      body = await readBody(req);
-    } catch {
+      body = await readBody(req, MAX_SUBMIT_BODY_BYTES);
+    } catch (error) {
+      if (error instanceof PayloadTooLargeError) {
+        return sendJson(res, 413, { error: 'Request body too large' }, req);
+      }
       return badRequest(res, 'Invalid JSON body', req);
+    }
+    if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+      return badRequest(res, 'Body must be a JSON object', req);
     }
 
     // Validate required fields
@@ -181,23 +191,35 @@ export class LawController {
       return badRequest(res, 'Law text must be less than 1000 characters', req);
     }
 
+    let corollaries: { title: string | null; text: string }[] = [];
+    if (body.corollaries !== undefined && body.corollaries !== null) {
+      try {
+        corollaries = parseCorollaryList(body.corollaries, text, 0);
+      } catch (error) {
+        // parseCorollaryList only ever throws a BodyError, whose message is written for the caller.
+        return badRequest(res, (error as BodyError).message, req);
+      }
+    }
+
     try {
-      const lawId = await this.lawService.submitLaw({ title, text, author, email, categoryId });
+      const submitted = await this.lawService.submitLaw({ title, text, author, email, categoryId, corollaries });
 
       // Send email notification (async, don't wait for it)
       this.emailService.sendNewLawEmail({
-        id: lawId,
+        id: submitted.id,
         title,
         text,
         author,
-        email
+        email,
+        corollaries: submitted.corollaries
       }).catch((err: any) => console.error('Email notification failed:', err));
 
       return sendJson(res, 201, {
-        id: lawId,
+        id: submitted.id,
         title,
         text,
         status: 'in_review',
+        corollaries: submitted.corollaries,
         message: 'Law submitted successfully and is pending review'
       }, req, rateLimit);
     } catch (error: any) {

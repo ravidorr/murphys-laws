@@ -22,6 +22,11 @@ import {
   validateSplit,
   composeParentText,
   buildSplitBody,
+  describeSubmission,
+  describeQueueActions,
+  buildChildUpdates,
+  validateChildEdits,
+  describeCascade,
 } from './admin-logic.js';
 
 const state = { token: '', login: '', status: 'in_review', q: '', offset: 0, total: 0, counts: {}, categories: [] };
@@ -432,6 +437,54 @@ function openSplitReview({ law, item, card, reviewButton }) {
   heading.focus();
 }
 
+/**
+ * The corollaries submitted with a law, as editable rows nested under it. Each has its own Reject button; a rejected one
+ * stays visible but locked. `views` receives the fields of the rows that can still be saved.
+ */
+function renderChildren(law, views, rejectChild) {
+  const section = el('section', 'children');
+  const heading = el('h3', 'children-title', 'Corollaries submitted with this law');
+  heading.id = `children-title-${law.id}`;
+  section.setAttribute('aria-labelledby', heading.id);
+  const rows = el('div', 'children-rows');
+
+  law.children.forEach((child, index) => {
+    const rejected = child.status === 'rejected';
+    const prefix = `child-${child.id}`;
+    const box = el('fieldset', rejected ? 'child-row is-rejected' : 'child-row');
+    box.append(el('legend', null, `Corollary ${index + 1}`));
+
+    const head = el('div', 'child-row-head');
+    head.append(el('span', `pill pill-${child.status}`, STATUS_LABELS[child.status] || child.status));
+    if (!rejected) {
+      const reject = el('button', 'btn btn-danger', 'Reject this corollary');
+      reject.type = 'button';
+      reject.setAttribute('aria-label', `Reject corollary ${index + 1}`);
+      reject.addEventListener('click', () => rejectChild(child));
+      head.append(reject);
+    }
+
+    const childTitle = el('input');
+    childTitle.type = 'text';
+    childTitle.maxLength = 200;
+    childTitle.value = child.title || '';
+    const childText = el('textarea');
+    childText.rows = 2;
+    childText.maxLength = 1000;
+    childText.value = child.text;
+    childTitle.disabled = rejected;
+    childText.disabled = rejected;
+    box.append(head, field(`${prefix}-title`, 'Name', childTitle), field(`${prefix}-text`, 'Text', childText));
+    if (!rejected) {
+      views.push({ child, title: childTitle, text: childText });
+    }
+    rows.append(box);
+  });
+
+  section.append(heading, rows);
+  return section;
+}
+
 function renderLaw(law, serverCategories = state.categories) {
   const item = el('li', 'law card card--section');
   const head = el('div', 'law-head card-header');
@@ -443,6 +496,10 @@ function renderLaw(law, serverCategories = state.categories) {
   const categories = (law.categories || []).map((c) => c.name).join(', ');
   if (categories) {
     head.append(el('span', 'meta', categories));
+  }
+  const submission = describeSubmission(law);
+  if (submission) {
+    head.append(el('span', 'pill-count', submission));
   }
 
   const title = el('input');
@@ -472,11 +529,35 @@ function renderLaw(law, serverCategories = state.categories) {
   category.value = categorySelectValue(law);
 
   const actions = el('div', 'actions card-footer');
+  // What each corollary's fields hold right now, by corollary id; filled in when the fields are built below.
+  const childViews = [];
+  const childValues = () => Object.fromEntries(childViews.map(({ child, title: t, text: x }) => [child.id, { title: t.value, text: x.value }]));
+
+  /** A corollary save that failed leaves the card stale (or half saved), so the list is brought back in line. */
+  const recoverFromChildError = async (error, child) => {
+    setBusy(actions, false);
+    if (error.status === 409 || (error.status === 404 && error.message === 'Law not found')) {
+      const ok = await load({}, false);
+      say(ok
+        ? `Corollary #${child.id} changed since you loaded it. The list was reloaded; apply your edit again.`
+        : error.message, true);
+      return;
+    }
+    handleError(error);
+  };
+
   const save = async (status) => {
     const body = buildUpdateBody(law, { status, title: title.value, text: text.value, notes: notes.value,
       categoryId: category.value === '' ? undefined : Number(category.value),
     });
-    if (Object.keys(body).length === 0) {
+    const values = childValues();
+    const problems = validateChildEdits(law, values);
+    if (problems.length > 0) {
+      say(problems.join(' '), true);
+      return;
+    }
+    const childUpdates = buildChildUpdates(law, values);
+    if (Object.keys(body).length === 0 && childUpdates.length === 0) {
       say(`Law #${law.id} has no changes.`);
       return;
     }
@@ -486,6 +567,22 @@ function renderLaw(law, serverCategories = state.categories) {
 
     setBusy(actions, true);
     const seqAtStart = loadSeq;
+    // Corollary edits go first, each guarded by its own updated_at: approving the law moves the corollaries and would
+    // make their pending edits conflict.
+    for (const update of childUpdates) {
+      const child = law.children.find((candidate) => candidate.id === update.id);
+      try {
+        await api(`/api/v1/admin/laws/${update.id}`, { method: 'POST', body: JSON.stringify(update.body) });
+      } catch (error) {
+        await recoverFromChildError(error, child);
+        return;
+      }
+    }
+    if (Object.keys(body).filter((key) => key !== 'updated_at').length === 0) {
+      const ok = await load({}, false);
+      say(ok ? `Law #${law.id} updated.` : `Law #${law.id} was saved, but the list could not refresh. Click a tab to reload.`, !ok);
+      return;
+    }
     let reply;
     try {
       reply = await api(`/api/v1/admin/laws/${law.id}`, { method: 'POST', body: JSON.stringify(body) });
@@ -500,13 +597,14 @@ function renderLaw(law, serverCategories = state.categories) {
     try {
       const updated = reply.data;
       const thanks = describeThankYou(reply.thank_you);
+      const cascade = describeCascade(reply.cascaded);
       // A list refresh that ran during the save (or is still running) cannot be patched locally, and neither can a
-      // save that moved the law's corollaries along with it.
-      const concurrent = inFlightLoads > 0 || loadSeq !== seqAtStart || !item.isConnected || reply.cascaded > 0;
+      // save that touched the law's corollaries: they were moved with it or saved beside it.
+      const concurrent = inFlightLoads > 0 || loadSeq !== seqAtStart || !item.isConnected || reply.cascaded > 0 || childUpdates.length > 0 || Boolean(law.children);
       loadSeq += 1;
       if (concurrent) {
         const ok = await load({}, false);
-        say(ok ? `Law #${law.id} updated.${thanks}` : `Law #${law.id} was saved, but the list could not refresh. Click a tab to reload.${thanks}`, !ok);
+        say(ok ? `Law #${law.id} updated.${cascade}${thanks}` : `Law #${law.id} was saved, but the list could not refresh. Click a tab to reload.${cascade}${thanks}`, !ok);
         return;
       }
 
@@ -528,22 +626,40 @@ function renderLaw(law, serverCategories = state.categories) {
     }
   };
 
+  /** Rejects one corollary on its own; its law and the other corollaries stay as they are. */
+  const rejectChild = async (child) => {
+    setBusy(item, true);
+    try {
+      await api(`/api/v1/admin/laws/${child.id}`, { method: 'POST', body: JSON.stringify({ status: 'rejected', updated_at: child.updated_at }) });
+    } catch (error) {
+      await recoverFromChildError(error, child);
+      setBusy(item, false);
+      return;
+    }
+    const ok = await load({}, false);
+    say(ok ? `Corollary #${child.id} was rejected. Unsaved edits on the card were discarded.` : `Corollary #${child.id} was rejected, but the list could not refresh. Click a tab to reload.`, !ok);
+  };
+
   const addAction = (label, className, status) => {
     const button = el('button', `btn ${className}`, label);
     button.type = 'button';
     button.addEventListener('click', () => save(status));
     actions.append(button);
   };
+  const wording = describeQueueActions(law);
   if (law.status !== 'published') {
-    addAction('Approve', 'btn-primary', 'published');
+    addAction(wording.approve, 'btn-primary', 'published');
   }
   if (law.status !== 'rejected') {
-    addAction('Reject', 'btn-danger', 'rejected');
+    addAction(wording.reject, 'btn-danger', 'rejected');
   }
   if (law.status !== 'in_review') {
     addAction('Move to review', '', 'in_review');
   }
   addAction('Save edits', '', undefined);
+  if (law.status === 'in_review' && wording.reject !== 'Reject') {
+    actions.append(el('span', 'actions-note', 'Rejecting the law rejects its corollaries'));
+  }
 
   const textField = field(`text-${law.id}`, 'Law', text);
   const body = el('div', 'card-body');
@@ -569,6 +685,9 @@ function renderLaw(law, serverCategories = state.categories) {
     note.append(el('strong', null, describeCandidates(law.corollary_candidates)), ' Split them so each becomes its own law, linked to this one.');
     banner.append(note, reviewButton);
     body.append(banner);
+  }
+  if (law.children && law.children.length > 0) {
+    body.append(renderChildren(law, childViews, rejectChild));
   }
   body.append(field(`category-${law.id}`, 'Category', category), field(`notes-${law.id}`, 'Admin notes', notes));
   item.append(head, body, actions);

@@ -11,6 +11,8 @@ export interface LawSubmissionEmailData {
   text: string;
   author?: string | null;
   email?: string | null;
+  /** Corollaries submitted with the law; the moderator reviews them together with it. */
+  corollaries?: { title?: string | null; text: string }[];
 }
 
 function escapeHtml(value: Escapable): string {
@@ -36,6 +38,12 @@ function escapeHtml(value: Escapable): string {
   });
 }
 
+function corollaryLines(corollaries: LawSubmissionEmailData['corollaries']): string {
+  return (corollaries ?? [])
+    .map((corollary, index) => `Corollary ${index + 1}: ${corollary.title ? `${corollary.title} - ` : ''}${corollary.text}`)
+    .join('\n');
+}
+
 export function createLawSubmissionEmailSubject(
   lawId: number | string,
 ): string {
@@ -46,14 +54,15 @@ export function createLawSubmissionEmailText(
   lawData: LawSubmissionEmailData,
   reviewUrl = 'http://murphys-laws.com/admin',
 ): string {
-  const { id, title, text, author, email } = lawData;
+  const { id, title, text, author, email, corollaries } = lawData;
+  const corollaryBlock = corollaries && corollaries.length > 0 ? `${corollaryLines(corollaries)}\n` : '';
 
   return `A new Murphy's Law has been submitted for review.
 
 Law ID: ${id}
 Title: ${title || '(no title)'}
 Text: ${text}
-Author: ${author || 'Anonymous'}
+${corollaryBlock}Author: ${author || 'Anonymous'}
 Email: ${email || 'Not provided'}
 
 Review at: ${reviewUrl} (or use npm run review locally)
@@ -64,7 +73,13 @@ export function createLawSubmissionEmailHtml(
   lawData: LawSubmissionEmailData,
   reviewUrl = 'http://murphys-laws.com/admin',
 ): string {
-  const { id, title, text, author, email } = lawData;
+  const { id, title, text, author, email, corollaries } = lawData;
+  const corollaryRows = (corollaries ?? [])
+    .map(
+      (corollary, index) =>
+        `<tr><th scope="row">Corollary ${index + 1}:</th><td>${corollary.title ? `<strong>${escapeHtml(corollary.title)}</strong><br>` : ''}${escapeHtml(corollary.text)}</td></tr>`,
+    )
+    .join('\n        ');
   const safeId = escapeHtml(id);
   const safeTitle = escapeHtml(title);
   const safeText = escapeHtml(text);
@@ -80,6 +95,7 @@ export function createLawSubmissionEmailHtml(
         <tr><th scope="row">Law ID:</th><td>${safeId}</td></tr>
         <tr><th scope="row">Title:</th><td>${safeTitle || '<em>(no title)</em>'}</td></tr>
         <tr><th scope="row">Text:</th><td>${safeText}</td></tr>
+        ${corollaryRows}
         <tr><th scope="row">Author:</th><td>${safeAuthor || 'Anonymous'}</td></tr>
         <tr><th scope="row">Email:</th><td>${safeEmail || 'Not provided'}</td></tr>
       </tbody>

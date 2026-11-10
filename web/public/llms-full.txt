@@ -16,7 +16,7 @@ It is a local, stdio-only server: the host starts it with `npx` and talks to it 
 - `get_law` — Get a specific law by ID, with its corollaries
 - `list_categories` — List all categories with slugs and law counts
 - `get_laws_by_category` — Browse laws in a specific category
-- `submit_law` — Submit a new law for review (not published until approved)
+- `submit_law` — Submit a new law for review (not published until approved), optionally with up to 5 corollaries
 
 ### Installation (Claude Desktop)
 
@@ -147,9 +147,14 @@ Request body:
   "title": "Optional title",
   "author": "Optional author name",
   "email": "Optional author email",
-  "category_id": 1
+  "category_id": 1,
+  "corollaries": [
+    {"title": "Optional corollary title (max 200 chars)", "text": "Corollary text (required, 10-1000 chars)"}
+  ]
 }
 ```
+
+`corollaries` is optional: up to 5 consequences that follow from the law. They are created in review next to the law, share its category, are credited by name only, and are published together with it. The body is limited to 32 KB.
 
 Response (201):
 ```json
@@ -158,6 +163,7 @@ Response (201):
   "title": "Optional title",
   "text": "The law text",
   "status": "in_review",
+  "corollaries": [{"id": 1235, "title": "Optional corollary title", "text": "Corollary text"}],
   "message": "Law submitted successfully and is pending review"
 }
 ```

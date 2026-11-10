@@ -1,6 +1,14 @@
 import type Database from 'better-sqlite3';
 import { safeParseJsonArray } from '../utils/helpers.ts';
-import { getCorollaries, getCorollaryOf, COROLLARY_RELATION } from './law-relations.service.ts';
+import {
+  getCorollaries,
+  getCorollaryOf,
+  createCorollaryChildren,
+  COROLLARY_RELATION,
+  LawRelationError,
+  type CorollaryChildInput,
+  type RelatedLaw
+} from './law-relations.service.ts';
 import { isUsefulDuplicateMatch, scoreDuplicateSimilarity } from '../../../shared/modules/duplicate-similarity.ts';
 
 type Db = InstanceType<typeof Database>;
@@ -119,11 +127,18 @@ export function buildFtsMatchQuery(query: string): string {
 }
 
 export interface SubmitLawParams {
-  title: string;
+  title: string | null;
   text: string;
-  author?: string;
-  email?: string;
+  author?: string | null;
+  email?: string | null;
   categoryId?: number | null;
+  /** Corollaries submitted with the law. They are created in review next to it and are not published until it is. */
+  corollaries?: CorollaryChildInput[];
+}
+
+export interface SubmittedLaw {
+  id: number;
+  corollaries: RelatedLaw[];
 }
 
 export class LawService {
@@ -584,7 +599,7 @@ export class LawService {
       .slice(0, limit);
   }
 
-  async submitLaw({ title, text, author, email, categoryId }: SubmitLawParams) {
+  async submitLaw({ title, text, author, email, categoryId, corollaries = [] }: SubmitLawParams): Promise<SubmittedLaw> {
     if (categoryId) {
       const category = this.db.prepare('SELECT 1 FROM categories WHERE id = ?').get(categoryId);
       if (!category) {
@@ -624,9 +639,24 @@ export class LawService {
         insertCatStmt.run(lawId, categoryId);
       }
 
-      return lawId;
+      // The corollaries join the parent's transaction (a savepoint), so a failing one leaves no law behind. They are
+      // credited by name only: the address belongs to the parent, so no corollary can trigger a thank-you.
+      const children = createCorollaryChildren(this.db, lawId, corollaries, {
+        status: 'in_review',
+        categoryIds: categoryId ? [categoryId] : [],
+        submitterName: author || (email ? 'Anonymous' : null)
+      });
+
+      return { id: lawId, corollaries: children };
     });
 
-    return submit();
+    try {
+      return submit();
+    } catch (error) {
+      if (error instanceof LawRelationError) {
+        throw new Error(error.message, { cause: error });
+      }
+      throw error;
+    }
   }
 }

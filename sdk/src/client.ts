@@ -8,6 +8,8 @@ import type {
   SearchLawsParams,
   SubmitLawInput,
   SubmitLawResult,
+  SubmitLawSuccess,
+  SubmittedCorollary,
 } from './types.js';
 
 export const DEFAULT_BASE_URL = 'https://murphys-laws.com';
@@ -114,6 +116,7 @@ export class MurphysLawsClient {
     if (input.title !== undefined) body.title = input.title;
     if (input.author !== undefined) body.author = input.author;
     if (categoryId !== undefined) body.category_id = categoryId;
+    if (input.corollaries !== undefined) body.corollaries = input.corollaries;
 
     const { status, data } = await this.post<Record<string, unknown>>('/api/v1/laws', body);
 
@@ -122,7 +125,8 @@ export class MurphysLawsClient {
         kind: 'success',
         ok: true,
         status: 201,
-        data: data as SubmitLawSuccessData,
+        // A server from before corollaries answers without the list.
+        data: { ...(data as Omit<SubmitLawSuccessData, 'corollaries'>), corollaries: Array.isArray(data.corollaries) ? (data.corollaries as SubmittedCorollary[]) : [] },
       };
     }
 
@@ -155,13 +159,7 @@ export class MurphysLawsClient {
   }
 }
 
-type SubmitLawSuccessData = {
-  id: number;
-  title: string;
-  text: string;
-  status: string;
-  message: string;
-};
+type SubmitLawSuccessData = SubmitLawSuccess['data'];
 
 function stripTrailingSlash(url: string): string {
   return url.endsWith('/') ? url.slice(0, -1) : url;

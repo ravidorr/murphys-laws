@@ -67,6 +67,17 @@ describe('parseArgs', () => {
     expect(r.options.offset).toBe('10');
   });
 
+  it('collects every --corollary in order, in both forms, and leaves other options alone', () => {
+    const r = parseArgs(['submit', 'law text', '--corollary', 'first corollary text', '--title', 'T', '--corollary=second corollary text']);
+    expect(r.corollaries).toEqual(['first corollary text', 'second corollary text']);
+    expect(r.options).toEqual({ title: 'T' });
+    expect(parseArgs(['search', 'foo']).corollaries).toEqual([]);
+  });
+
+  it('rejects --corollary with no value', () => {
+    expect(() => parseArgs(['submit', 'law text', '--corollary'])).toThrow(UsageError);
+  });
+
   it('parses command value flags with = form', () => {
     const r = parseArgs(['search', 'foo', '--limit=5']);
     expect(r.options.limit).toBe('5');

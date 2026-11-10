@@ -54,9 +54,11 @@ describe('AdminLawService corollaries (real migrated schema)', () => {
           { title: null, text: 'Remember to breathe while waiting.', labeled: false },
         ],
       });
-      for (const id of [plain, noParent, publishedBulleted, child]) {
+      for (const id of [plain, noParent, publishedBulleted]) {
         expect(byId(id)).not.toHaveProperty('corollary_candidates');
       }
+      // A corollary waiting with its law is not a card of its own, so it is never offered a split either.
+      expect(byId(child)).toBeUndefined();
     });
 
     it('returns fresh candidates from an update, from the text that was just saved', () => {

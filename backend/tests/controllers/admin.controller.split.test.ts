@@ -22,6 +22,7 @@ describe('AdminController split and corollary rules', () => {
     updateLaw: ReturnType<typeof vi.fn>;
     splitLaw: ReturnType<typeof vi.fn>;
     markApprovalEmailSent: ReturnType<typeof vi.fn>;
+    publishedCorollaries: ReturnType<typeof vi.fn>;
   };
   let emailService: { isConfigured: ReturnType<typeof vi.fn>; sendLawApprovedEmail: ReturnType<typeof vi.fn> };
   let controller: AdminController;
@@ -63,6 +64,7 @@ describe('AdminController split and corollary rules', () => {
       updateLaw: vi.fn(),
       splitLaw: vi.fn(() => splitResult()),
       markApprovalEmailSent: vi.fn(),
+      publishedCorollaries: vi.fn(() => []),
     };
     emailService = { isConfigured: vi.fn(() => true), sendLawApprovedEmail: vi.fn(() => Promise.resolve({ status: 'sent' })) };
     controller = new AdminController(service, emailService);
@@ -268,7 +270,7 @@ describe('AdminController split and corollary rules', () => {
       await split(body());
       await flush();
       expect(emailService.sendLawApprovedEmail).toHaveBeenCalledTimes(1);
-      expect(emailService.sendLawApprovedEmail).toHaveBeenCalledWith('ann@example.com', { id: 5, title: 'T', text: PARENT, name: 'Ann' });
+      expect(emailService.sendLawApprovedEmail).toHaveBeenCalledWith('ann@example.com', { id: 5, title: 'T', text: PARENT, name: 'Ann', corollaries: [] });
       expect(service.markApprovalEmailSent).toHaveBeenCalledWith(5);
       expect(service.markApprovalEmailSent).toHaveBeenCalledTimes(1);
     });

@@ -92,9 +92,22 @@ describe('OpenAPI contract', () => {
       }),
     });
     expect(operation?.requestBody?.content['application/json'].schema.properties).not.toHaveProperty('anonymous');
+    expect(operation?.requestBody?.content['application/json'].schema.properties?.corollaries).toMatchObject({
+      type: 'array',
+      maxItems: 5,
+      items: {
+        required: ['text'],
+        properties: { title: { type: 'string', maxLength: 200, nullable: true }, text: { type: 'string', minLength: 10, maxLength: 1000 } },
+      },
+    });
+    expect(Object.keys(operation!.responses)).toEqual(expect.arrayContaining(['201', '400', '413', '429']));
+    expect(getJsonSchema(operation!.responses['201'])).toMatchObject({
+      required: expect.arrayContaining(['corollaries']),
+      properties: { corollaries: { type: 'array', items: { required: ['id', 'title', 'text'] } } },
+    });
     expect(getJsonSchema(operation!.responses['201'])).toMatchObject({
       type: 'object',
-      required: ['id', 'title', 'text', 'status', 'message'],
+      required: ['id', 'title', 'text', 'status', 'corollaries', 'message'],
       properties: expect.objectContaining({
         id: { type: 'integer' },
         title: { type: 'string', nullable: true },

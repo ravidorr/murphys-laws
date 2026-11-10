@@ -1,14 +1,9 @@
 import { getAdminAccess } from '../middleware/admin-auth.ts';
 import { checkRateLimit } from '../middleware/rate-limit.ts';
-import {
-  COROLLARY_TEXT_MAX_LENGTH,
-  COROLLARY_TEXT_MIN_LENGTH,
-  MAX_COROLLARIES_PER_PARENT,
-} from '../../../shared/modules/corollary-parser.ts';
 import { ADMIN_LAW_STATUSES, type AdminLawStatus, type AdminLawUpdate, type AdminSplitInput } from '../services/admin-laws.service.ts';
+import { BodyError, parseCorollaryList, parseText, parseTitle } from '../utils/corollary-input.ts';
 import { getVoterIdentifier, readBody, sendJson, notFound, rateLimitExceeded, PayloadTooLargeError } from '../utils/http-helpers.ts';
 
-const MAX_TITLE_LENGTH = 200;
 const MAX_NOTES_LENGTH = 2000;
 const MAX_QUERY_LENGTH = 200;
 const MAX_BODY_BYTES = 16 * 1024;
@@ -42,36 +37,6 @@ function parseBoundedInt(value: unknown, { min, max, fallback }: { min: number; 
   return Number.isFinite(parsed) ? Math.max(min, Math.min(max, Math.trunc(parsed))) : fallback;
 }
 
-/** A request body field broke a rule. The message is safe to show to the admin. */
-class BodyError extends Error {}
-
-/** Law text and corollary text share one rule: 10 to 1000 characters once trimmed. */
-function parseText(value: unknown, label: string, notString: string): string {
-  if (typeof value !== 'string') {
-    throw new BodyError(notString);
-  }
-  const text = value.trim();
-  if (text.length < COROLLARY_TEXT_MIN_LENGTH || text.length > COROLLARY_TEXT_MAX_LENGTH) {
-    throw new BodyError(`${label} must be between ${COROLLARY_TEXT_MIN_LENGTH} and ${COROLLARY_TEXT_MAX_LENGTH} characters`);
-  }
-  return text;
-}
-
-/** A title is optional: blank or null clears it. */
-function parseTitle(value: unknown, label: string, notString: string): string | null {
-  if (value === null) {
-    return null;
-  }
-  if (typeof value !== 'string') {
-    throw new BodyError(notString);
-  }
-  const title = value.trim();
-  if (title.length > MAX_TITLE_LENGTH) {
-    throw new BodyError(`${label} must be at most ${MAX_TITLE_LENGTH} characters`);
-  }
-  return title || null;
-}
-
 function parseNotes(value: unknown): string | null {
   if (value === null) {
     return null;
@@ -91,33 +56,6 @@ function parseCategoryId(value: unknown): number {
     throw new BodyError('category_id must be a positive integer');
   }
   return value;
-}
-
-/** Compares texts the way a person would: ignoring case and runs of whitespace. */
-const sameText = (text: string) => text.toLowerCase().replace(/\s+/g, ' ');
-
-function parseCorollaryList(value: unknown, parentText: string): { title: string | null; text: string }[] {
-  if (!Array.isArray(value)) {
-    throw new BodyError('corollaries must be a list');
-  }
-  if (value.length < 1 || value.length > MAX_COROLLARIES_PER_PARENT) {
-    throw new BodyError(`Provide between 1 and ${MAX_COROLLARIES_PER_PARENT} corollaries`);
-  }
-  const seen = new Set([sameText(parentText)]);
-  return value.map((entry, index) => {
-    const label = `Corollary ${index + 1}`;
-    if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) {
-      throw new BodyError(`${label} must be an object`);
-    }
-    const text = parseText(entry.text, label, `${label} text must be a string`);
-    const title = parseTitle(entry.title ?? null, `${label} title`, `${label} title must be a string or null`);
-    const key = sameText(text);
-    if (seen.has(key)) {
-      throw new BodyError(`${label} repeats another corollary or the law text`);
-    }
-    seen.add(key);
-    return { title, text };
-  });
 }
 
 export class AdminController {
@@ -162,8 +100,10 @@ export class AdminController {
         return { status: 'skipped', reason: 'invalid_email' };
       }
 
+      // Only the corollaries that went live with the law; a rejected one is not announced.
+      const corollaries = this.adminLawService.publishedCorollaries(law.id);
       Promise.resolve(
-        this.emailService.sendLawApprovedEmail(attribution.contact_value, { id: law.id, title: law.title, text: law.text, name: attribution.name }),
+        this.emailService.sendLawApprovedEmail(attribution.contact_value, { id: law.id, title: law.title, text: law.text, name: attribution.name, corollaries }),
       )
         .then((outcome: { status: string }) => {
           if (outcome.status === 'sent') {
@@ -277,7 +217,7 @@ export class AdminController {
     const split: AdminSplitInput = {
       expectedUpdatedAt: body.updated_at,
       parentText,
-      corollaries: parseCorollaryList(body.corollaries, parentText),
+      corollaries: parseCorollaryList(body.corollaries, parentText, 1),
     };
     if (body.title !== undefined) {
       split.title = parseTitle(body.title, 'Title', 'Title must be a string or null');

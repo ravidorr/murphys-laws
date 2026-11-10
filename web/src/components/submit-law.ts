@@ -17,6 +17,13 @@ import {
 } from '../utils/category-cache.ts';
 import type { Category } from '../types/app.d.ts';
 import { isUsefulDuplicateMatch } from '@shared/modules/duplicate-similarity.ts';
+import {
+  canOfferSplit,
+  parseCorollaries,
+  COROLLARY_TEXT_MAX_LENGTH,
+  COROLLARY_TEXT_MIN_LENGTH,
+  MAX_COROLLARIES_PER_PARENT
+} from '@shared/modules/corollary-parser.ts';
 
 interface SubmitLawPayload extends Record<string, unknown> {
   text: string;
@@ -25,6 +32,21 @@ interface SubmitLawPayload extends Record<string, unknown> {
   email?: string;
   anonymous?: boolean;
   category_id?: string;
+  corollaries?: { title?: string; text: string }[];
+}
+
+interface CorollaryRowFields {
+  row: HTMLElement;
+  title: HTMLInputElement;
+  text: HTMLTextAreaElement;
+}
+
+const SUBMIT_LABEL = 'Submit Law';
+
+/** "Submit law with 2 corollaries": the button says how many corollaries go with the law. */
+function submitLabel(corollaryCount: number): string {
+  if (corollaryCount === 0) return SUBMIT_LABEL;
+  return `Submit law with ${corollaryCount} ${corollaryCount === 1 ? 'corollary' : 'corollaries'}`;
 }
 
 export function SubmitLawSection() {
@@ -47,6 +69,13 @@ export function SubmitLawSection() {
   const termsRequirement = el.querySelector('[data-requirement="terms"]');
   const nextActions = el.querySelector('[data-submit-next-actions]');
   const duplicateCandidates = el.querySelector('[data-duplicate-candidates]');
+  const corollaryRows = el.querySelector('[data-corollary-rows]') as HTMLElement;
+  const corollaryTemplate = el.querySelector('[data-corollary-template]') as HTMLTemplateElement;
+  const addCorollaryBtn = el.querySelector('[data-action="add-corollary"]') as HTMLButtonElement;
+  const corollaryCount = el.querySelector('[data-corollary-count]') as HTMLElement;
+  const corollaryHint = el.querySelector('[data-corollary-hint]') as HTMLElement;
+  const corollaryHintText = el.querySelector('[data-corollary-hint-text]') as HTMLElement;
+  let corollarySeq = 0;
   let categoriesLoaded = false;
   let duplicateTimer: ReturnType<typeof setTimeout> | undefined;
   let duplicateRequestId = 0;
@@ -141,6 +170,14 @@ export function SubmitLawSection() {
       return;
     }
 
+    // A box with something in it needs a real corollary; an empty box is ignored.
+    const corollaryProblem = findCorollaryProblem();
+    if (corollaryProblem) {
+      showMessage(corollaryProblem, true);
+      submitBtn!.disabled = true;
+      return;
+    }
+
     // The short-text case returned above, so all remaining input clears inline errors.
     clearMessage();
 
@@ -153,6 +190,151 @@ export function SubmitLawSection() {
       submitBtn!.setAttribute('data-tooltip', 'Complete required fields to submit');
     }
   }
+
+  function corollaryFields(): CorollaryRowFields[] {
+    return Array.from(corollaryRows.querySelectorAll<HTMLElement>('[data-corollary-row]')).map((row) => ({
+      row,
+      title: row.querySelector('[data-corollary-title]') as HTMLInputElement,
+      text: row.querySelector('[data-corollary-text]') as HTMLTextAreaElement
+    }));
+  }
+
+  /** Boxes with any content, in order, with the position each has on screen. */
+  function filledCorollaries() {
+    return corollaryFields()
+      .map((fields, index) => ({ ...fields, position: index + 1, title: fields.title.value.trim(), text: fields.text.value.trim() }))
+      .filter((entry) => entry.title !== '' || entry.text !== '');
+  }
+
+  function findCorollaryProblem(): string | null {
+    const short = filledCorollaries().find((entry) => entry.text.length < COROLLARY_TEXT_MIN_LENGTH);
+    return short ? `Corollary ${short.position} text must be at least ${COROLLARY_TEXT_MIN_LENGTH} characters` : null;
+  }
+
+  function currentSubmitLabel(): string {
+    return submitLabel(filledCorollaries().length);
+  }
+
+  /** Keeps labels, ids, the counter and the buttons in step with the boxes on screen. */
+  function renumberCorollaries() {
+    const rows = corollaryFields();
+    rows.forEach(({ row, title, text }, index) => {
+      const n = index + 1;
+      const labelId = `${row.dataset.corollaryId}-label`;
+      row.querySelector('[data-corollary-label]')!.textContent = `Corollary ${n}`;
+      row.querySelector('[data-action="remove-corollary"]')!.setAttribute('aria-label', `Remove corollary ${n}`);
+      (row.querySelector('[data-corollary-title-label]') as HTMLLabelElement).htmlFor = title.id;
+      (row.querySelector('[data-corollary-text-label]') as HTMLLabelElement).htmlFor = text.id;
+      row.setAttribute('aria-labelledby', labelId);
+    });
+    corollaryCount.textContent = `${rows.length} of ${MAX_COROLLARIES_PER_PARENT} added`;
+    addCorollaryBtn.disabled = rows.length >= MAX_COROLLARIES_PER_PARENT;
+    if (submitBtn!.getAttribute('aria-busy') !== 'true') {
+      submitBtn!.querySelector('.btn-text')!.textContent = currentSubmitLabel();
+    }
+  }
+
+  function updateCorollaryCounter(fields: CorollaryRowFields) {
+    const length = fields.text.value.length;
+    const counter = fields.row.querySelector('[data-corollary-counter]') as HTMLElement;
+    counter.textContent = `${length} / ${COROLLARY_TEXT_MAX_LENGTH}`;
+    const trimmed = fields.text.value.trim().length;
+    counter.classList.toggle('submit-char-counter-error', length > 0 && trimmed < COROLLARY_TEXT_MIN_LENGTH);
+  }
+
+  /** Adds an empty box and returns its fields. Callers check the maximum first: the add button is disabled at five. */
+  function addCorollaryRow(): CorollaryRowFields {
+    const row = (corollaryTemplate.content.cloneNode(true) as DocumentFragment).querySelector('[data-corollary-row]') as HTMLElement;
+    corollarySeq += 1;
+    const id = `submit-corollary-${corollarySeq}`;
+    row.dataset.corollaryId = id;
+    row.setAttribute('role', 'group');
+    row.querySelector('[data-corollary-label]')!.id = `${id}-label`;
+    const title = row.querySelector('[data-corollary-title]') as HTMLInputElement;
+    const text = row.querySelector('[data-corollary-text]') as HTMLTextAreaElement;
+    title.id = `${id}-title`;
+    text.id = `${id}-text`;
+    const fields = { row, title, text };
+    const onChange = () => {
+      updateCorollaryCounter(fields);
+      checkSubmitValidity();
+      renumberCorollaries();
+    };
+    title.addEventListener('input', onChange);
+    text.addEventListener('input', onChange);
+    corollaryRows.appendChild(row);
+    hydrateIcons(row);
+    updateCorollaryCounter(fields);
+    renumberCorollaries();
+    return fields;
+  }
+
+  function removeCorollaryRow(row: HTMLElement) {
+    row.remove();
+    renumberCorollaries();
+    checkSubmitValidity();
+    addCorollaryBtn.focus();
+  }
+
+  addCorollaryBtn.addEventListener('click', () => {
+    const fields = addCorollaryRow();
+    trackPendoEvent('law_corollary_added', { corollary_count: corollaryFields().length, via: 'button' });
+    checkSubmitValidity();
+    fields.title.focus();
+  });
+
+  corollaryRows.addEventListener('click', (event) => {
+    const remove = (event.target as Element).closest('[data-action="remove-corollary"]');
+    if (!remove) return;
+    removeCorollaryRow(remove.closest('[data-corollary-row]') as HTMLElement);
+  });
+
+  /** Offers to move bullets written in the law text into boxes, when they look like corollaries. */
+  function updateCorollaryHint() {
+    const parsed = parseCorollaries(textArea?.value || '');
+    const offer = canOfferSplit(parsed) && parsed.items.some((item) => item.labeled);
+    corollaryHint.hidden = !offer;
+    if (offer) {
+      const labeled = parsed.items.filter((item) => item.labeled).length;
+      corollaryHintText.textContent = `Looks like your text includes ${labeled === 1 ? 'a corollary' : `${labeled} corollaries`}.`;
+    }
+  }
+
+  /**
+   * Moves the corollary-labeled bullets into boxes. Unlabeled bullets stay in the law text, and so do labeled ones that
+   * do not fit under the maximum, so nothing the visitor wrote is dropped.
+   */
+  function moveCorollariesIntoBoxes() {
+    const parsed = parseCorollaries(textArea!.value);
+    if (!canOfferSplit(parsed)) return;
+    const empty = corollaryFields().filter(({ title, text }) => title.value.trim() === '' && text.value.trim() === '');
+    let room = empty.length + (MAX_COROLLARIES_PER_PARENT - corollaryFields().length);
+    const kept: string[] = [];
+    let moved = 0;
+    for (const item of parsed.items) {
+      if (item.labeled && room > 0) {
+        const fields = empty.shift() ?? addCorollaryRow();
+        // A labeled bullet always has a title: the label is what makes it labeled.
+        fields.title.value = item.title!;
+        fields.text.value = item.text;
+        updateCorollaryCounter(fields);
+        room -= 1;
+        moved += 1;
+      } else {
+        kept.push(`• ${item.labeled ? `${item.title}: ${item.text}` : item.text}`);
+      }
+    }
+    if (moved === 0) return;
+    textArea!.value = kept.length > 0 ? `${parsed.parentText}\n\n${kept.join('\n')}` : parsed.parentText;
+    renumberCorollaries();
+    checkSubmitValidity();
+    updateCorollaryHint();
+    trackPendoEvent('law_corollary_added', { corollary_count: corollaryFields().length, via: 'text_hint', moved });
+    corollaryCount.textContent = `${corollaryFields().length} of ${MAX_COROLLARIES_PER_PARENT} added. Moved ${moved} from your law text.`;
+    corollaryRows.querySelector<HTMLElement>('[data-corollary-row] [data-corollary-title]')?.focus();
+  }
+
+  el.querySelector('[data-action="move-corollaries"]')!.addEventListener('click', moveCorollariesIntoBoxes);
 
   // Show message (success or error) (template always has messageDiv)
   function showMessage(message: string, isError = false) {
@@ -174,7 +356,7 @@ export function SubmitLawSection() {
     submitBtn!.disabled = isLoading;
     submitBtn!.setAttribute('aria-busy', isLoading ? 'true' : 'false');
     const btnText = submitBtn!.querySelector('.btn-text')!;
-    btnText.textContent = isLoading ? 'Submitting...' : 'Submit Law';
+    btnText.textContent = isLoading ? 'Submitting...' : currentSubmitLabel();
   }
 
   // Submit law to API - Uses generic request helper (eliminates ~80 lines of duplicate code)
@@ -207,6 +389,7 @@ export function SubmitLawSection() {
   textArea?.addEventListener('input', () => {
     checkSubmitValidity();
     clearMessage();
+    updateCorollaryHint();
     if (duplicateTimer) clearTimeout(duplicateTimer);
     duplicateTimer = setTimeout(() => {
       if (!el.isConnected) return;
@@ -314,14 +497,22 @@ export function SubmitLawSection() {
       return;
     }
 
+    const corollaries = filledCorollaries();
+    if (corollaries.some((entry) => entry.text.length < COROLLARY_TEXT_MIN_LENGTH)) {
+      trackSubmissionFailed('corollary_too_short');
+      showError(findCorollaryProblem()!);
+      return;
+    }
+
     // Prepare submission data
-    const lawData = {
+    const lawData: SubmitLawPayload = {
       text,
       title: title || undefined,
       author: anonymous ? undefined : (author || undefined),
       email: anonymous ? undefined : (email || undefined),
       anonymous,
-      category_id: categoryId || undefined
+      category_id: categoryId || undefined,
+      corollaries: corollaries.length > 0 ? corollaries.map((entry) => ({ title: entry.title || undefined, text: entry.text })) : undefined
     };
 
     // Submit to API
@@ -342,12 +533,13 @@ export function SubmitLawSection() {
         has_author: Boolean(lawData.author),
         has_email: Boolean(lawData.email),
         duplicate_warning_shown: duplicateWarningShown,
+        corollary_count: corollaries.length,
       });
       duplicateWarningShown = false;
       reportedDuplicateMatchIds.clear();
 
       showMessage(
-        'Thank you! Your law has been submitted. We review submissions within a few days. Accepted laws appear in the archive. You cannot edit after submission.',
+        `Thank you! Your law ${corollaries.length > 0 ? `and ${corollaries.length === 1 ? 'its corollary have' : `its ${corollaries.length} corollaries have`}` : 'has'} been submitted. We review submissions within a few days${corollaries.length > 0 ? ', and the law and its corollaries are reviewed together' : ''}. Accepted laws appear in the archive. You cannot edit after submission.`,
         false
       );
       showNextActions(categorySlug || undefined);
@@ -362,6 +554,9 @@ export function SubmitLawSection() {
         (el.querySelector('#submit-anonymous') as HTMLInputElement)!.checked = false;
         (el.querySelector('#submit-terms') as HTMLInputElement)!.checked = false;
         (el.querySelector('#submit-website') as HTMLInputElement)!.value = '';
+        corollaryRows.replaceChildren();
+        renumberCorollaries();
+        updateCorollaryHint();
 
         checkSubmitValidity();
       }, 300);

@@ -10,6 +10,8 @@ export interface LawApprovalEmailData {
   title?: string | null;
   text: string;
   name?: string | null;
+  /** The corollaries that were published with the law; rejected ones are left out. */
+  corollaries?: { id: number | string; title?: string | null; text: string }[];
 }
 
 /** Production origin; callers pass their own (the backend uses SITE_URL from its constants). */
@@ -51,11 +53,21 @@ export function getLawUrl(id: number | string, siteUrl = DEFAULT_SITE_URL): stri
   return `${siteUrl.replace(/\/+$/, '')}/law/${encodeURIComponent(String(id))}`;
 }
 
+function corollaryTextBlock(corollaries: LawApprovalEmailData['corollaries'], siteUrl: string): string {
+  if (!corollaries || corollaries.length === 0) {
+    return '';
+  }
+  const items = corollaries
+    .map((corollary) => `- ${corollary.title ? `${corollary.title}: ` : ''}${corollary.text}\n  ${getLawUrl(corollary.id, siteUrl)}`)
+    .join('\n');
+  return `\nPublished with it ${corollaries.length === 1 ? 'as a corollary' : 'as corollaries'}:\n\n${items}\n`;
+}
+
 export function createLawApprovalEmailText(
   lawData: LawApprovalEmailData,
   siteUrl = DEFAULT_SITE_URL,
 ): string {
-  const { id, title, text, name } = lawData;
+  const { id, title, text, name, corollaries } = lawData;
   const heading = title ? `${title}\n` : '';
 
   return `Hi ${greetingName(name)},
@@ -63,7 +75,7 @@ export function createLawApprovalEmailText(
 Thank you for submitting a law to Murphy's Laws. We reviewed it and it is now published:
 
 ${heading}${text}
-
+${corollaryTextBlock(corollaries, siteUrl)}
 See it on the site: ${getLawUrl(id, siteUrl)}
 
 Thanks for contributing, and keep the laws coming.
@@ -79,7 +91,16 @@ export function createLawApprovalEmailHtml(
   lawData: LawApprovalEmailData,
   siteUrl = DEFAULT_SITE_URL,
 ): string {
-  const { id, title, text, name } = lawData;
+  const { id, title, text, name, corollaries } = lawData;
+  const corollaryItems = (corollaries ?? [])
+    .map(
+      (corollary) =>
+        `<li>${corollary.title ? `<strong>${escapeHtml(corollary.title)}</strong>: ` : ''}${escapeHtml(corollary.text)} (<a href="${escapeHtml(getLawUrl(corollary.id, siteUrl))}">see it</a>)</li>`,
+    )
+    .join('\n      ');
+  const corollaryList = corollaryItems
+    ? `<p>Published with it ${corollaries && corollaries.length === 1 ? 'as a corollary' : 'as corollaries'}:</p>\n    <ul>\n      ${corollaryItems}\n    </ul>`
+    : '';
   const safeTitle = escapeHtml(title);
   const safeLawUrl = escapeHtml(getLawUrl(id, siteUrl));
   const safeSiteUrl = escapeHtml(siteUrl);
@@ -91,6 +112,7 @@ export function createLawApprovalEmailHtml(
       ${safeTitle ? `<p><strong>${safeTitle}</strong></p>` : ''}
       <p>${escapeHtml(text)}</p>
     </blockquote>
+    ${corollaryList}
     <p><a href="${safeLawUrl}">See it on the site</a></p>
     <p>Thanks for contributing, and keep the laws coming.</p>
     <p>Murphy's Laws<br><a href="${safeSiteUrl}">${safeSiteUrl}</a></p>

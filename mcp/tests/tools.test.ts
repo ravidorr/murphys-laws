@@ -274,7 +274,7 @@ describe('submit_law tool', () => {
         kind: 'success',
         ok: true,
         status: 201,
-        data: { id: 1, title: '', text: validText, status: 'in_review', message: 'ok' },
+        data: { id: 1, title: '', text: validText, status: 'in_review', corollaries: [], message: 'ok' },
       }),
     });
     expect(tool.name).toBe('submit_law');
@@ -290,7 +290,7 @@ describe('submit_law tool', () => {
           kind: 'success',
           ok: true,
           status: 201,
-          data: { id: 100, title: 'T', text: validText, status: 'in_review', message: 'ok' },
+          data: { id: 100, title: 'T', text: validText, status: 'in_review', corollaries: [], message: 'ok' },
         };
       },
     });
@@ -314,13 +314,43 @@ describe('submit_law tool', () => {
     expect(text).toContain('Status: in_review');
   });
 
+  it('passes corollaries to submitLaw, lists the created ones and leaves the field out when there are none', async () => {
+    const calls: unknown[] = [];
+    const tool = extractTool(registerSubmitLaw, {
+      submitLaw: async (input) => {
+        calls.push(input);
+        return {
+          kind: 'success',
+          ok: true,
+          status: 201,
+          data: {
+            id: 100,
+            title: 'T',
+            text: validText,
+            status: 'in_review',
+            corollaries: input.corollaries ? [{ id: 101, title: 'The Retry Corollary', text: 'The second attempt fails differently.' }] : [],
+            message: 'ok',
+          },
+        };
+      },
+    });
+    const withCorollary = await tool.handler({ text: validText, corollaries: [{ title: 'The Retry Corollary', text: 'The second attempt fails differently.' }] });
+    const without = await tool.handler({ text: validText });
+
+    expect(calls[0]).toEqual({ text: validText, corollaries: [{ title: 'The Retry Corollary', text: 'The second attempt fails differently.' }] });
+    expect(calls[1]).not.toHaveProperty('corollaries');
+    expect(withCorollary.content[0]?.text).toContain('Corollary 1 (ID: 101): "The second attempt fails differently."');
+    expect(without.content[0]?.text).not.toContain('Corollary 1');
+    expect(tool.schema).toHaveProperty('corollaries');
+  });
+
   it('falls back to Anonymous when author missing', async () => {
     const tool = extractTool(registerSubmitLaw, {
       submitLaw: async () => ({
         kind: 'success',
         ok: true,
         status: 201,
-        data: { id: 1, title: '', text: validText, status: 'in_review', message: 'ok' },
+        data: { id: 1, title: '', text: validText, status: 'in_review', corollaries: [], message: 'ok' },
       }),
     });
     const result = await tool.handler({ text: validText });

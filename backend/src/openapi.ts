@@ -50,7 +50,7 @@ export const OPENAPI_SPEC = {
       post: {
         operationId: 'submitLaw',
         summary: 'Submit a new law',
-        description: 'Submit a new law for community review. Rate limited to 3 submissions per minute per IP.',
+        description: 'Submit a new law for community review, optionally with up to 5 corollaries that follow from it. The corollaries are created in review next to the law, credited by name only, and are reviewed and published together with it. Rate limited to 3 submissions per minute per IP (one submission, however many corollaries). The body is limited to 32 KB.',
         'x-ratelimit-limit': 3,
         'x-ratelimit-window': '1m',
         requestBody: {
@@ -66,6 +66,19 @@ export const OPENAPI_SPEC = {
                   author: { type: 'string' },
                   email: { type: 'string', format: 'email' },
                   category_id: { type: 'integer' },
+                  corollaries: {
+                    type: 'array',
+                    maxItems: 5,
+                    description: 'Optional corollaries of this law. Each is a law of its own once published; they share the law\'s category. No two may repeat each other or the law text.',
+                    items: {
+                      type: 'object',
+                      required: ['text'],
+                      properties: {
+                        title: { type: 'string', maxLength: 200, nullable: true },
+                        text: { type: 'string', minLength: 10, maxLength: 1000 },
+                      },
+                    },
+                  },
                 },
               },
             },
@@ -78,12 +91,25 @@ export const OPENAPI_SPEC = {
               'application/json': {
                 schema: {
                   type: 'object',
-                  required: ['id', 'title', 'text', 'status', 'message'],
+                  required: ['id', 'title', 'text', 'status', 'corollaries', 'message'],
                   properties: {
                     id: { type: 'integer' },
                     title: { type: 'string', nullable: true },
                     text: { type: 'string' },
                     status: { type: 'string', enum: ['in_review'] },
+                    corollaries: {
+                      type: 'array',
+                      description: 'The corollaries that were created with the law, in the order submitted. Empty when none were.',
+                      items: {
+                        type: 'object',
+                        required: ['id', 'title', 'text'],
+                        properties: {
+                          id: { type: 'integer' },
+                          title: { type: 'string', nullable: true },
+                          text: { type: 'string' },
+                        },
+                      },
+                    },
                     message: { type: 'string' },
                   },
                 },
@@ -91,6 +117,7 @@ export const OPENAPI_SPEC = {
             },
           },
           '400': { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+          '413': { description: 'Request body larger than 32 KB', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
           '429': { description: 'Rate limit exceeded', content: { 'application/json': { schema: { $ref: '#/components/schemas/RateLimitErrorResponse' } } } },
         },
       },

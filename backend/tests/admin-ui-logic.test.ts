@@ -267,4 +267,65 @@ describe('admin-logic', () => {
       });
     });
   });
+
+  describe('submissions with corollaries', () => {
+    const child = (id: number, over: Record<string, unknown> = {}) => ({ id, title: `Name ${id}`, text: `Corollary text number ${id}`, status: 'in_review', updated_at: `v${id}`, ...over });
+    const submission = (children: unknown[]) => ({ ...law, children }) as Parameters<typeof logic.describeSubmission>[0];
+
+    it('counts only corollaries that are not rejected', () => {
+      const withRejected = submission([child(2), child(3, { status: 'rejected' }), child(4)]);
+      expect(logic.liveChildren(withRejected).map((c) => c.id)).toEqual([2, 4]);
+      expect(logic.liveChildren(law as never)).toEqual([]);
+    });
+
+    it('describes the submission pill and the buttons from the live count', () => {
+      expect(logic.describeSubmission(submission([child(2)]))).toBe('1 law + 1 corollary');
+      expect(logic.describeSubmission(submission([child(2), child(3)]))).toBe('1 law + 2 corollaries');
+      expect(logic.describeSubmission(submission([child(2, { status: 'rejected' })]))).toBe('');
+      expect(logic.describeSubmission(law as never)).toBe('');
+
+      expect(logic.describeQueueActions(submission([child(2), child(3)]))).toEqual({ approve: 'Approve all 3', reject: 'Reject all' });
+      expect(logic.describeQueueActions(submission([child(2), child(3, { status: 'rejected' })]))).toEqual({ approve: 'Approve all 2', reject: 'Reject all' });
+      expect(logic.describeQueueActions(submission([child(2, { status: 'rejected' })]))).toEqual({ approve: 'Approve', reject: 'Reject' });
+      expect(logic.describeQueueActions(law as never)).toEqual({ approve: 'Approve', reject: 'Reject' });
+    });
+
+    it('builds one guarded update per changed live corollary, never for rejected or untouched ones', () => {
+      const card = submission([child(2), child(3), child(4, { status: 'rejected' }), child(5, { updated_at: undefined })]);
+      const values = {
+        2: { title: 'Name 2', text: 'Corollary text number 2' },
+        3: { title: ' ', text: ' Edited corollary text 3 ' },
+        4: { title: 'x', text: 'Changed but rejected text' },
+        5: { title: 'New name', text: 'Corollary text number 5' },
+      };
+      expect(logic.buildChildUpdates(card, values)).toEqual([
+        { id: 3, body: { title: null, text: 'Edited corollary text 3', updated_at: 'v3' } },
+        { id: 5, body: { title: 'New name' } },
+      ]);
+      expect(logic.buildChildUpdates(card, { 3: values[3] }).map((u) => u.id)).toEqual([3]);
+      expect(logic.buildChildUpdates(card, {})).toEqual([]);
+    });
+
+    it('names the corollary that would be refused, by its place on the card', () => {
+      const card = submission([child(2, { status: 'rejected' }), child(3), child(4)]);
+      expect(logic.validateChildEdits(card, {
+        3: { title: 'ok', text: 'too short' },
+        4: { title: 't'.repeat(201), text: 'x'.repeat(1001) },
+      })).toEqual([
+        'Corollary 2 must be between 10 and 1000 characters.',
+        'Corollary 3 must be between 10 and 1000 characters.',
+        'Corollary 3 title must be at most 200 characters.',
+      ]);
+      expect(logic.validateChildEdits(card, { 2: { title: '', text: 'x' }, 3: { title: '', text: 'x'.repeat(10) } })).toEqual([]);
+      expect(logic.validateChildEdits(card, {})).toEqual([]);
+      expect(logic.validateChildEdits(law as never, {})).toEqual([]);
+    });
+
+    it('says how many corollaries moved with a status change', () => {
+      expect(logic.describeCascade(0)).toBe('');
+      expect(logic.describeCascade(undefined)).toBe('');
+      expect(logic.describeCascade(1)).toBe(' 1 corollary moved with it.');
+      expect(logic.describeCascade(3)).toBe(' 3 corollaries moved with it.');
+    });
+  });
 });

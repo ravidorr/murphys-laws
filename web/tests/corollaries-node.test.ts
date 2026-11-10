@@ -13,6 +13,8 @@ describe('corollary markup without a DOM', () => {
     expect(section).toContain('A &lt;b&gt;title&lt;/b&gt;');
     expect(section).toContain('Some &amp; text');
     expect(section).toContain('2 up, 0 down');
+    // The static page links to the submit form too, with a plain href that works without scripts
+    expect(section).toContain('<a href="/submit" data-submit-link>Add a corollary</a>');
     expect(renderParentBanner({ id: 9, title: 'Parent', text: 'Parent text.' })).toContain('href="/law/9"');
   });
 });

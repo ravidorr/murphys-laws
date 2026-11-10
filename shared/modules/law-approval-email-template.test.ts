@@ -54,3 +54,38 @@ describe('law approval email template', () => {
     expect(template.createLawApprovalEmailHtml(law, 'https://staging.example.com')).toContain('https://staging.example.com/law/42');
   });
 });
+
+describe('law approval email template with corollaries', () => {
+  const law = { id: 42, title: 'Start-Stop', text: 'A red light turns green right after you stop.', name: 'Ann' };
+  const corollaries = [
+    { id: 43, title: 'The Ignition Corollary', text: 'The engine <restarts> slowly.' },
+    { id: 44, title: null, text: 'The green lasts just long enough to miss.' },
+  ];
+
+  it('lists each published corollary with its link in the text version', () => {
+    const text = template.createLawApprovalEmailText({ ...law, corollaries });
+    expect(text).toContain('Published with it as corollaries:');
+    expect(text).toContain('- The Ignition Corollary: The engine <restarts> slowly.\n  https://murphys-laws.com/law/43');
+    expect(text).toContain('- The green lasts just long enough to miss.\n  https://murphys-laws.com/law/44');
+    expect(text.indexOf('law/43')).toBeLessThan(text.indexOf('See it on the site'));
+  });
+
+  it('says "as a corollary" for one and adds nothing for none', () => {
+    expect(template.createLawApprovalEmailText({ ...law, corollaries: [corollaries[1]] })).toContain('Published with it as a corollary:');
+    expect(template.createLawApprovalEmailHtml({ ...law, corollaries: [corollaries[1]] })).toContain('Published with it as a corollary:');
+    for (const none of [undefined, []]) {
+      expect(template.createLawApprovalEmailText({ ...law, corollaries: none })).not.toContain('Published with it');
+      expect(template.createLawApprovalEmailHtml({ ...law, corollaries: none })).not.toContain('<ul>');
+    }
+  });
+
+  it('keeps the text version exactly as before when there are no corollaries', () => {
+    expect(template.createLawApprovalEmailText(law)).toContain('A red light turns green right after you stop.\n\nSee it on the site');
+  });
+
+  it('escapes corollary text and titles in the HTML version and links each one', () => {
+    const html = template.createLawApprovalEmailHtml({ ...law, corollaries: [{ id: 43, title: '<b>T</b>', text: 'Fish & <chips>' }] });
+    expect(html).toContain('<li><strong>&lt;b&gt;T&lt;/b&gt;</strong>: Fish &amp; &lt;chips&gt; (<a href="https://murphys-laws.com/law/43">see it</a>)</li>');
+    expect(html).not.toContain('<chips>');
+  });
+});

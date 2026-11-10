@@ -261,3 +261,75 @@ export function buildSplitBody(law, { title, notes, categoryId, parentText, rows
     .map((row) => ({ title: row.title.trim() || null, text: row.text.trim() }));
   return body;
 }
+
+/*
+ * Submissions: a law the submitter sent with corollaries is one card. The server nests the corollaries under it as
+ * `children` (every status); these helpers decide what the card says and sends. A rejected corollary no longer counts.
+ */
+
+/** The corollaries of a card that are still part of the submission: not rejected. */
+export function liveChildren(law) {
+  return (law.children || []).filter((child) => child.status !== 'rejected');
+}
+
+/** The pill on a card with corollaries, "1 law + 2 corollaries"; empty when it has none still in the running. */
+export function describeSubmission(law) {
+  const live = liveChildren(law).length;
+  return live === 0 ? '' : `1 law + ${plural(live, 'corollary', 'corollaries')}`;
+}
+
+/** Button wording: "Approve all 3" counts the law and its corollaries that are not rejected. */
+export function describeQueueActions(law) {
+  const live = liveChildren(law).length;
+  return {
+    approve: live === 0 ? 'Approve' : `Approve all ${live + 1}`,
+    reject: live === 0 ? 'Reject' : 'Reject all',
+  };
+}
+
+/**
+ * The saves a card's corollary fields need: one body per corollary that changed, each carrying its own updated_at guard.
+ * `values` maps a corollary id to what is in its title and text fields. Rejected corollaries are never sent.
+ */
+export function buildChildUpdates(law, values) {
+  const updates = [];
+  for (const child of liveChildren(law)) {
+    const edit = values[child.id];
+    if (!edit) {
+      continue;
+    }
+    const body = buildUpdateBody(child, { title: edit.title, text: edit.text });
+    if (Object.keys(body).length > 0) {
+      if (typeof child.updated_at === 'string') {
+        body.updated_at = child.updated_at;
+      }
+      updates.push({ id: child.id, body });
+    }
+  }
+  return updates;
+}
+
+/** Problems in the corollary fields that the server would refuse, named by the corollary's place on the card. */
+export function validateChildEdits(law, values) {
+  const problems = [];
+  (law.children || []).forEach((child, index) => {
+    const edit = values[child.id];
+    if (child.status === 'rejected' || !edit) {
+      return;
+    }
+    const label = `Corollary ${index + 1}`;
+    const length = edit.text.trim().length;
+    if (length < TEXT_MIN || length > TEXT_MAX) {
+      problems.push(`${label} must be between ${TEXT_MIN} and ${TEXT_MAX} characters.`);
+    }
+    if (edit.title.trim().length > TITLE_MAX) {
+      problems.push(`${label} title must be at most ${TITLE_MAX} characters.`);
+    }
+  });
+  return problems;
+}
+
+/** Appended to the "updated" message when a status change moved the law's corollaries too. */
+export function describeCascade(cascaded) {
+  return Number.isInteger(cascaded) && cascaded > 0 ? ` ${plural(cascaded, 'corollary', 'corollaries')} moved with it.` : '';
+}

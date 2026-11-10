@@ -433,7 +433,10 @@ Submit a new law for review.
   "title": "Murphy's Extended Law",
   "author": "John Doe",
   "email": "john@example.com",
-  "category_id": 5
+  "category_id": 5,
+  "corollaries": [
+    { "title": "The Retry Corollary", "text": "The second attempt fails in a way the first one never did." }
+  ]
 }
 ```
 
@@ -444,6 +447,9 @@ Submit a new law for review.
 | `author` | string | No | Author/submitter name |
 | `email` | string | No | Author email (for attribution) |
 | `category_id` | integer | No | Category to assign the law to |
+| `corollaries` | array | No | Up to 5 corollaries that follow from the law. Each is `{ "title": string (optional, up to 200 characters), "text": string (10-1000 characters) }`. No two may repeat each other or the law text |
+
+The corollaries are created in review next to the law, share its category, are credited by name only (the email is never copied to them), and are reviewed and published together with it. One submission uses one rate-limit token however many corollaries it carries. The request body is limited to 32 KB.
 
 **Response (201):**
 
@@ -453,13 +459,19 @@ Submit a new law for review.
   "title": "Murphy's Extended Law",
   "text": "Everything that can go wrong will go wrong at the worst possible time.",
   "status": "in_review",
+  "corollaries": [
+    { "id": 1502, "title": "The Retry Corollary", "text": "The second attempt fails in a way the first one never did." }
+  ],
   "message": "Law submitted successfully and is pending review"
 }
 ```
 
+`corollaries` is an empty list when none were submitted.
+
 **Error Responses:**
 
-- `400 Bad Request` - Validation error (text too short/long, invalid category)
+- `400 Bad Request` - Validation error (text too short/long, invalid category, more than 5 corollaries, a corollary that is too short or long or repeats another)
+- `413 Payload Too Large` - Request body over 32 KB
 - `429 Too Many Requests` - Rate limit exceeded
 
 ---
