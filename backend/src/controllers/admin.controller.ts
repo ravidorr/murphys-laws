@@ -12,7 +12,7 @@ const MAX_TITLE_LENGTH = 200;
 const MAX_NOTES_LENGTH = 2000;
 const MAX_QUERY_LENGTH = 200;
 const MAX_BODY_BYTES = 16 * 1024;
-// A split carries the parent and up to five corollaries of 1000 characters each, so it gets a larger cap.
+// Room for the parent, up to five corollaries and their titles, with multi-byte text, so a split gets a larger cap.
 const MAX_SPLIT_BODY_BYTES = 64 * 1024;
 // One plain address: no whitespace, list separators, group or display-name syntax, quotes or brackets.
 const EMAIL_PATTERN = /^[^\s@,;:<>()"\\[\]]+@[^\s@,;:<>()"\\[\]]+\.[^\s@,;:<>()"\\[\]]+$/;

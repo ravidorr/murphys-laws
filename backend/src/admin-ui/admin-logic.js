@@ -152,7 +152,7 @@ const TEXT_MIN = 10;
 const TEXT_MAX = 1000;
 const TITLE_MAX = 200;
 
-/** What each bullet can be turned into. There is no "variant": nothing reads that relation. */
+/** What a bullet can become: a corollary of the law, or part of the parent text. No other relation is offered. */
 export const TREAT_OPTIONS = [
   { value: 'corollary', label: 'Corollary' },
   { value: 'keep', label: 'Keep in parent text' },
@@ -212,7 +212,7 @@ export function describeSplit(corollaries) {
   const total = corollaries + 1;
   return {
     button: corollaries === 0 ? 'Approve and publish the law' : `Approve and publish ${total} laws`,
-    summary: `Approving publishes ${total} laws: the parent and ${plural(corollaries, 'corollary', 'corollaries')}. Category, author credit and the approval email are shared, and the submitter gets one email.`,
+    summary: `Approving publishes ${total} laws: the parent and ${plural(corollaries, 'corollary', 'corollaries')}. Category and author name are copied to each corollary, and the submitter gets one thank-you email, for the parent.`,
   };
 }
 
@@ -249,7 +249,7 @@ export function validateSplit({ parentText, rows }) {
   return problems;
 }
 
-/** The explicit request the server applies: the guard, the composed parent text and the corollaries to create. */
+/** The explicit request the server applies: the guard, the composed parent text, the corollaries to create and any title, notes or category change. */
 export function buildSplitBody(law, { title, notes, categoryId, parentText, rows }) {
   const body = { parent_text: composeParentText(parentText, rows) };
   if (typeof law.updated_at === 'string') {
