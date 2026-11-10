@@ -22,6 +22,7 @@ import {
   parseCorollaries,
   COROLLARY_TEXT_MAX_LENGTH,
   COROLLARY_TEXT_MIN_LENGTH,
+  COROLLARY_TITLE_MAX_LENGTH,
   MAX_COROLLARIES_PER_PARENT
 } from '@shared/modules/corollary-parser.ts';
 
@@ -206,9 +207,24 @@ export function SubmitLawSection() {
       .filter((entry) => entry.title !== '' || entry.text !== '');
   }
 
+  /** The same comparison the server makes: ignoring case and runs of whitespace. */
+  const sameText = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim();
+
+  /**
+   * The first problem the server would refuse, worded with the position each box has on screen (the server counts only
+   * the boxes that were sent, so its numbers can differ when an earlier box is empty).
+   */
   function findCorollaryProblem(): string | null {
-    const short = filledCorollaries().find((entry) => entry.text.length < COROLLARY_TEXT_MIN_LENGTH);
-    return short ? `Corollary ${short.position} text must be at least ${COROLLARY_TEXT_MIN_LENGTH} characters` : null;
+    const seen = new Set([sameText(textArea?.value || '')]);
+    for (const entry of filledCorollaries()) {
+      const label = `Corollary ${entry.position}`;
+      if (entry.text.length < COROLLARY_TEXT_MIN_LENGTH) return `${label} text must be at least ${COROLLARY_TEXT_MIN_LENGTH} characters`;
+      if (entry.text.length > COROLLARY_TEXT_MAX_LENGTH) return `${label} text must be at most ${COROLLARY_TEXT_MAX_LENGTH} characters`;
+      if (entry.title.length > COROLLARY_TITLE_MAX_LENGTH) return `${label} name must be at most ${COROLLARY_TITLE_MAX_LENGTH} characters`;
+      if (seen.has(sameText(entry.text))) return `${label} repeats another corollary or the law text`;
+      seen.add(sameText(entry.text));
+    }
+    return null;
   }
 
   function currentSubmitLabel(): string {
@@ -324,13 +340,17 @@ export function SubmitLawSection() {
         kept.push(`• ${item.labeled ? `${item.title}: ${item.text}` : item.text}`);
       }
     }
-    if (moved === 0) return;
+    if (moved === 0) {
+      corollaryCount.textContent = `No room: there are already ${MAX_COROLLARIES_PER_PARENT} corollary boxes. Remove one to move another from your law text.`;
+      return;
+    }
     textArea!.value = kept.length > 0 ? `${parsed.parentText}\n\n${kept.join('\n')}` : parsed.parentText;
     renumberCorollaries();
     checkSubmitValidity();
     updateCorollaryHint();
     trackPendoEvent('law_corollary_added', { corollary_count: corollaryFields().length, via: 'text_hint', moved });
-    corollaryCount.textContent = `${corollaryFields().length} of ${MAX_COROLLARIES_PER_PARENT} added. Moved ${moved} from your law text.`;
+    const stayed = parsed.items.filter((item) => item.labeled).length - moved;
+    corollaryCount.textContent = `${corollaryFields().length} of ${MAX_COROLLARIES_PER_PARENT} added. Moved ${moved} from your law text${stayed > 0 ? `; ${stayed} stayed in the text because there is no room for more boxes` : ''}.`;
     corollaryRows.querySelector<HTMLElement>('[data-corollary-row] [data-corollary-title]')?.focus();
   }
 
@@ -498,8 +518,8 @@ export function SubmitLawSection() {
     }
 
     const corollaries = filledCorollaries();
-    if (corollaries.some((entry) => entry.text.length < COROLLARY_TEXT_MIN_LENGTH)) {
-      trackSubmissionFailed('corollary_too_short');
+    if (findCorollaryProblem()) {
+      trackSubmissionFailed('corollary_invalid');
       showError(findCorollaryProblem()!);
       return;
     }

@@ -119,7 +119,8 @@ describe('AdminLawService review queue with submitted corollaries (real migrated
       const publishedBefore = list('published').counts.published;
       move(a.id, 'published');
       expect(list('published').counts.published).toBe(publishedBefore + 3);
-      // The list nests them, so the badge intentionally differs from the list total (D2).
+      // Decision D2: Published and Rejected badges count rows, while the list nests corollaries under their law, so the badge
+      // is meant to differ from the list total.
       expect(list('published', '', 500).data.filter((l) => l.id === a.id)).toHaveLength(1);
 
       move(a.corollaries[0].id, 'rejected');
@@ -136,6 +137,38 @@ describe('AdminLawService review queue with submitted corollaries (real migrated
       expect(found.total).toBe(1);
       expect(found.data.map((l) => l.id)).toEqual([a.id]);
       expect(found.data[0].children).toHaveLength(1);
+    });
+
+    it('returns a law once, however many of its corollaries match', async () => {
+      const a = await submit('A red light turns green right after you stop watching it.', [
+        { title: null, text: 'Zebrafish enter the crossing with the light.' },
+        { title: null, text: 'More zebrafish follow the first one across.' },
+      ]);
+      const found = list('in_review', 'zebrafish');
+      expect(found.total).toBe(1);
+      expect(found.data.map((l) => l.id)).toEqual([a.id]);
+    });
+
+    it('finds the law from a corollary in the all and published views too, and leaves the corollary out', async () => {
+      const a = await submit('A red light turns green right after you stop watching it.', [{ title: null, text: 'Zebrafish enter the crossing with the light.' }]);
+      const child = a.corollaries[0].id;
+      expect(ids('all', 'zebrafish')).toEqual([a.id]);
+      move(a.id, 'published');
+      expect(ids('published', 'zebrafish')).toEqual([a.id]);
+      expect(ids('all', 'zebrafish')).not.toContain(child);
+    });
+
+    it('pages a search by submissions and attaches children only to the laws on the page', async () => {
+      const first = await submit('First zebrafish law about doors that never close.', [{ title: null, text: ONE }, { title: null, text: TWO }]);
+      const second = await submit('Second law about umbrellas that always flip over.', [{ title: null, text: 'A zebrafish corollary of the second law.' }]);
+      db.prepare("UPDATE laws SET created_at = '2030-01-01T00:00:00.000Z' WHERE id = ?").run(first.id);
+      db.prepare("UPDATE laws SET created_at = '2030-01-02T00:00:00.000Z' WHERE id = ?").run(second.id);
+
+      const page1 = list('in_review', 'zebrafish', 1, 0);
+      const page2 = list('in_review', 'zebrafish', 1, 1);
+      expect(page1.total).toBe(2);
+      expect(page1.data.map((l) => [l.id, l.children?.length])).toEqual([[second.id, 1]]);
+      expect(page2.data.map((l) => [l.id, l.children?.length])).toEqual([[first.id, 2]]);
     });
 
     it("matches a corollary's title and treats LIKE wildcards literally", async () => {
@@ -217,6 +250,26 @@ describe('AdminLawService review queue with submitted corollaries (real migrated
       expect(admin.updateLaw(a.corollaries[0].id, { text: 'Edited text that is long enough here.', expectedUpdatedAt: '2030-01-01T00:00:00.000Z' })).toEqual({ outcome: 'conflict' });
     });
 
+    it('keeps corollaries rejected when their rejected law is approved or sent back to review', async () => {
+      const a = await submit('A red light turns green right after you stop watching it.', [{ title: null, text: ONE }, { title: null, text: TWO }]);
+      move(a.id, 'rejected');
+
+      expect(move(a.id, 'published').cascaded).toBe(0);
+      expect(a.corollaries.map((c) => statusOf(c.id))).toEqual(['rejected', 'rejected']);
+      expect(admin.publishedCorollaries(a.id)).toEqual([]);
+
+      expect(move(a.id, 'in_review').cascaded).toBe(0);
+      expect(a.corollaries.map((c) => statusOf(c.id))).toEqual(['rejected', 'rejected']);
+      expect(admin.listLaws({ status: 'in_review', q: '', limit: 50, offset: 0 }).counts.in_review).toBeGreaterThanOrEqual(1);
+    });
+
+    it('refuses to publish a rejected corollary under a law that is in review', async () => {
+      const a = await submit('A red light turns green right after you stop watching it.', [{ title: null, text: ONE }]);
+      move(a.corollaries[0].id, 'rejected');
+      expect(admin.updateLaw(a.corollaries[0].id, { status: 'published' })).toEqual({ outcome: 'parent_not_published', parentId: a.id });
+      expect(statusOf(a.corollaries[0].id)).toBe('rejected');
+    });
+
     it('lets a corollary be edited in review without touching its law', async () => {
       const a = await submit('A red light turns green right after you stop watching it.', [{ title: null, text: ONE }]);
       const parentStamp = updatedAt(a.id);
@@ -229,6 +282,13 @@ describe('AdminLawService review queue with submitted corollaries (real migrated
   });
 
   describe('card data after an update', () => {
+    it('returns the children with the statuses the cascade gave them', async () => {
+      const a = await submit('A red light turns green right after you stop watching it.', [{ title: null, text: ONE }, { title: null, text: TWO }]);
+      move(a.corollaries[1].id, 'rejected');
+      const result = move(a.id, 'published');
+      expect(result.law.children?.map((c) => c.status)).toEqual(['published', 'rejected']);
+    });
+
     it('returns the in-review law with its children so the card can refresh without a reload', async () => {
       const a = await submit('A red light turns green right after you stop watching it.', [{ title: null, text: ONE }]);
       const result = admin.updateLaw(a.id, { adminNotes: 'check later' });

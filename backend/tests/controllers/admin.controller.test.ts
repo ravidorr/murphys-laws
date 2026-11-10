@@ -317,6 +317,35 @@ describe('AdminController', () => {
         expect(JSON.parse(vi.mocked(console.log).mock.calls[0][0] as string).thankYou).toBe('queued');
       });
 
+      it('sends the thank-you without the corollary list, and logs why, when the lookup fails', async () => {
+        service.publishedCorollaries.mockImplementation(() => { throw new Error('database is locked'); });
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        service.updateLaw.mockReturnValue(approved([ann]));
+        await update({ status: 'published' });
+        await flush();
+
+        expect(thankYou()).toEqual({ status: 'queued' });
+        expect(emailService.sendLawApprovedEmail).toHaveBeenCalledWith('ann@example.com', expect.objectContaining({ corollaries: [] }));
+        expect(console.error).toHaveBeenCalledWith('Thank-you for law ID 5 will not list its corollaries: database is locked');
+      });
+
+      it('names a lookup failure that carries no message', async () => {
+        service.publishedCorollaries.mockImplementation(() => { throw 'boom'; });
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        service.updateLaw.mockReturnValue(approved([ann]));
+        await update({ status: 'published' });
+        expect(console.error).toHaveBeenCalledWith('Thank-you for law ID 5 will not list its corollaries: lookup failed');
+      });
+
+      it('passes the published corollaries to the thank-you', async () => {
+        const published = [{ id: 6, title: null, text: 'A corollary published with it' }];
+        service.publishedCorollaries.mockReturnValue(published);
+        service.updateLaw.mockReturnValue(approved([ann]));
+        await update({ status: 'published' });
+        expect(service.publishedCorollaries).toHaveBeenCalledWith(5);
+        expect(emailService.sendLawApprovedEmail).toHaveBeenCalledWith('ann@example.com', expect.objectContaining({ corollaries: published }));
+      });
+
       it('uses the first valid email contact and ignores invalid ones before it', async () => {
         const bad = { name: 'Bad', contact_type: 'email', contact_value: 'nope' };
         const second = { name: 'Zed', contact_type: 'email', contact_value: 'zed@example.com' };

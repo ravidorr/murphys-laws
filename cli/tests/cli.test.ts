@@ -329,6 +329,21 @@ describe('runCli', () => {
       expect(stdout.output).not.toContain('Corollary 1');
     });
 
+    it('trims each corollary before checking and sending it', async () => {
+      let captured: { corollaries?: { text: string }[] } = {};
+      const behavior = {
+        submitLaw: async (input: { corollaries?: { text: string }[] }) => {
+          captured = input;
+          return { kind: 'success' as const, ok: true as const, status: 201 as const, data: { id: 7, title: null, text: 'Long enough law text here', status: 'in_review', corollaries: [], message: 'ok' } };
+        },
+      };
+      expect(await run(['submit', 'Long enough law text here', '--corollary', '   padded corollary text   '], behavior)).toBe(EXIT_SUCCESS);
+      expect(captured.corollaries).toEqual([{ text: 'padded corollary text' }]);
+
+      expect(await run(['submit', 'Long enough law text here', '--corollary', '    short    '], behavior)).toBe(EXIT_USAGE);
+      expect(stderr.output).toContain('corollary 1 must be 10-1000 characters (got 5)');
+    });
+
     it('rejects more than five corollaries and any outside 10-1000 characters before calling the API', async () => {
       let called = false;
       const behavior = { submitLaw: async () => { called = true; throw new Error('should not be called'); } };

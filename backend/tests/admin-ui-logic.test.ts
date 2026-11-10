@@ -321,6 +321,13 @@ describe('admin-logic', () => {
       expect(logic.validateChildEdits(law as never, {})).toEqual([]);
     });
 
+    it('names a law text the server would refuse, and accepts the limits', () => {
+      expect(logic.validateLawText('short')).toBe('The law text must be between 10 and 1000 characters.');
+      expect(logic.validateLawText(`  ${'x'.repeat(1001)}  `)).toBe('The law text must be between 10 and 1000 characters.');
+      expect(logic.validateLawText('x'.repeat(10))).toBeNull();
+      expect(logic.validateLawText(` ${'x'.repeat(1000)} `)).toBeNull();
+    });
+
     it('says how many corollaries moved with a status change', () => {
       expect(logic.describeCascade(0)).toBe('');
       expect(logic.describeCascade(undefined)).toBe('');

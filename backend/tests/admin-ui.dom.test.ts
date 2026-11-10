@@ -1378,18 +1378,94 @@ describe('admin page', () => {
       expect(requests()).toEqual([]);
     });
 
-    it('stops at the first corollary the server refuses and does not approve the law', async () => {
+    it('stops at the first corollary the server refuses, never approves the law, and reloads with what was saved', async () => {
       await open();
       type('child-11-text', 'First edited corollary text');
       type('child-12-text', 'Second edited corollary text');
       fetchMock
         .mockResolvedValueOnce(jsonResponse({ data: child(11) }))
-        .mockResolvedValueOnce(jsonResponse({ error: 'Corollary text is not allowed' }, 400));
+        .mockResolvedValueOnce(jsonResponse({ error: 'Corollary text is not allowed' }, 400))
+        .mockResolvedValueOnce(jsonResponse(listReply([submission()])));
       click(action('Approve all 3'));
       await flush();
-      expect(requests()).toHaveLength(2);
-      expect($('message').textContent).toBe('Corollary text is not allowed');
+      expect(requests().map((r) => r.split(' ').slice(0, 2).join(' '))).toEqual([
+        'POST /api/v1/admin/laws/11',
+        'POST /api/v1/admin/laws/12',
+        'GET /api/v1/admin/laws?status=in_review&limit=25&offset=0',
+      ]);
+      expect($('message').textContent).toBe('Corollary #12 was not saved: Corollary text is not allowed Saved: #11. The list was reloaded; apply the remaining edits again.');
+      expect($('message').classList.contains('is-error')).toBe(true);
+    });
+
+    it('shows a refused corollary as it is when nothing was saved before it, and keeps the typed edits', async () => {
+      await open();
+      type('child-11-text', 'First edited corollary text');
+      fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Server problem' }, 500));
+      click(action('Approve all 3'));
+      await flush();
+      expect($('message').textContent).toBe('Server problem');
+      expect(requests()).toHaveLength(1);
+      expect(input('child-11-text').value).toBe('First edited corollary text');
       expect([...document.querySelectorAll('.actions button')].every((b) => !(b as HTMLButtonElement).disabled)).toBe(true);
+    });
+
+    it('reloads when the law save fails after corollary edits were saved, so a retry does not conflict with them', async () => {
+      await open();
+      type('child-11-text', 'First edited corollary text');
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ data: child(11) }))
+        .mockResolvedValueOnce(jsonResponse({ error: 'Something broke' }, 500))
+        .mockResolvedValueOnce(jsonResponse(listReply([submission()])));
+      click(action('Approve all 3'));
+      await flush();
+      expect(requests()).toHaveLength(3);
+      expect($('message').textContent).toBe('The law was not saved: Something broke Corollaries saved: #11. The list was reloaded; apply the law edits again.');
+    });
+
+    it('leaves the reload failure message alone when the list cannot be reloaded after a partial save', async () => {
+      await open();
+      type('child-11-text', 'First edited corollary text');
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ data: child(11) }))
+        .mockResolvedValueOnce(jsonResponse({ error: 'Something broke' }, 500))
+        .mockResolvedValueOnce(jsonResponse({ error: 'x' }, 429));
+      click(action('Approve all 3'));
+      await flush();
+      expect($('message').textContent).toBe('Too many requests. Wait a minute and retry.');
+    });
+
+    it('lets a conflict on the law itself take the usual path after corollary edits were saved', async () => {
+      await open();
+      type('child-11-text', 'First edited corollary text');
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ data: child(11) }))
+        .mockResolvedValueOnce(jsonResponse({ error: 'This law changed since you loaded it. Reload the list and try again.' }, 409))
+        .mockResolvedValueOnce(jsonResponse(listReply([submission()])));
+      click(action('Approve all 3'));
+      await flush();
+      expect($('message').textContent).toContain('Law #1 changed since you loaded it');
+    });
+
+    it('checks the law text before saving any corollary, so a predictable refusal never leaves a half save', async () => {
+      await open();
+      type('child-11-text', 'First edited corollary text');
+      type('text-1', 'short');
+      click(action('Approve all 3'));
+      await flush();
+      expect($('message').textContent).toBe('The law text must be between 10 and 1000 characters.');
+      expect(requests()).toEqual([]);
+    });
+
+    it('rejects all without checking or saving corollary fields that are about to be rejected', async () => {
+      await open();
+      type('child-11-text', 'short');
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ data: submission({ status: 'rejected' }), cascaded: 2 }))
+        .mockResolvedValueOnce(jsonResponse(listReply([])));
+      click(action('Reject all'));
+      await flush();
+      expect(requests()).toHaveLength(2);
+      expect(requests()[0]).toBe('POST /api/v1/admin/laws/1 {"status":"rejected","updated_at":"v1"}');
     });
 
     it.each([
@@ -1411,10 +1487,10 @@ describe('admin page', () => {
       fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Gone' }, 409)).mockResolvedValueOnce(jsonResponse({ error: 'x' }, 429));
       click(action('Approve all 3'));
       await flush();
-      expect($('message').textContent).toBe('Gone');
+      expect($('message').textContent).toBe('Too many requests. Wait a minute and retry.');
     });
 
-    it('rejects one corollary on its own, then reloads and says edits were discarded', async () => {
+    it('rejects one corollary on its own, then reloads', async () => {
       await open();
       fetchMock
         .mockResolvedValueOnce(jsonResponse({ data: child(12, { status: 'rejected' }) }))
@@ -1423,9 +1499,25 @@ describe('admin page', () => {
       await flush();
 
       expect(requests()[0]).toBe('POST /api/v1/admin/laws/12 {"status":"rejected","updated_at":"c12"}');
-      expect($('message').textContent).toBe('Corollary #12 was rejected. Unsaved edits on the card were discarded.');
+      expect($('message').textContent).toBe('Corollary #12 was rejected.');
       expect(action('Approve all 2')).not.toBeNull();
       expect(document.querySelectorAll('.child-row.is-rejected').length).toBe(2);
+    });
+
+    it('refuses to reject a corollary while a field on the card has an unsaved edit, so the reload cannot lose it', async () => {
+      await open();
+      type('child-12-text', 'An edit that has not been saved');
+      click(document.querySelector('.child-row button'));
+      await flush();
+      expect($('message').textContent).toBe('Law #1: save or undo your edits before rejecting a corollary.');
+      expect(requests()).toEqual([]);
+      expect(input('child-12-text').value).toBe('An edit that has not been saved');
+
+      type('child-12-text', 'Corollary text number 12');
+      type('notes-1', 'a note');
+      click(document.querySelector('.child-row button'));
+      await flush();
+      expect(requests()).toEqual([]);
     });
 
     it('re-enables the card and shows why when a single reject fails, and recovers from a stale corollary', async () => {
@@ -1448,6 +1540,7 @@ describe('admin page', () => {
       click(document.querySelector('.child-row button'));
       await flush();
       expect($('message').textContent).toBe('Corollary #11 was rejected, but the list could not refresh. Click a tab to reload.');
+      expect([...document.querySelectorAll('.law button')].every((b) => !(b as HTMLButtonElement).disabled)).toBe(true);
     });
 
     it('renders corollary text as text, never as HTML', async () => {

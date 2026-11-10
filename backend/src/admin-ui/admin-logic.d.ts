@@ -73,3 +73,4 @@ export function describeQueueActions(law: AdminSubmissionLike): { approve: strin
 export function buildChildUpdates(law: AdminSubmissionLike, values: ChildValues): { id: number; body: Record<string, string | number | null> }[];
 export function validateChildEdits(law: AdminSubmissionLike, values: ChildValues): string[];
 export function describeCascade(cascaded: unknown): string;
+export function validateLawText(text: string): string | null;

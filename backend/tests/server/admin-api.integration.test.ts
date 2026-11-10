@@ -309,6 +309,42 @@ describe('admin API through the real server and migrated database', () => {
       expect(mockSendMail).toHaveBeenCalledTimes(1);
     });
 
+    it('never shows the submitter address on a corollary, in the queue or on the public pages', async () => {
+      const queueBody = (await request('GET', '/api/v1/admin/laws?status=in_review', { token: TOKEN })).json();
+      const children = queueBody.data[0].children;
+      expect(JSON.stringify(children)).not.toContain('ringo@example.com');
+      expect(children.every((c: Record<string, unknown>) => !('attributions' in c))).toBe(true);
+
+      await request('POST', `/api/v1/admin/laws/${submitted.id}`, { token: TOKEN, body: { status: 'published' } });
+      for (const id of [submitted.id, ...submitted.corollaries.map((c) => c.id)]) {
+        const page = await request('GET', `/api/v1/laws/${id}`);
+        expect(page.status).toBe(200);
+        expect(page.body).not.toContain('ringo@example.com');
+      }
+      expect(JSON.stringify(db.prepare('SELECT * FROM attributions WHERE law_id IN (?, ?)').all(...submitted.corollaries.map((c) => c.id)))).not.toContain('@');
+    });
+
+    it('accepts the largest legal submission in multi-byte text under the 32 KB cap, and stores nothing from a refused one', async () => {
+      const long = (n: number) => `${'中'.repeat(990)} ${n}`;
+      const body = {
+        title: '题'.repeat(200),
+        text: '中'.repeat(1000),
+        author: '名'.repeat(100),
+        email: 'ringo@example.com',
+        corollaries: [1, 2, 3, 4, 5].map((n) => ({ title: '题'.repeat(200), text: long(n) })),
+      };
+      expect(Buffer.byteLength(JSON.stringify(body))).toBeLessThan(32 * 1024);
+      const before = (db.prepare('SELECT COUNT(*) AS n FROM laws').get() as { n: number }).n;
+      const ok = await request('POST', '/api/v1/laws', { body });
+      expect(ok.status).toBe(201);
+      expect(ok.json().corollaries).toHaveLength(5);
+      expect((db.prepare('SELECT COUNT(*) AS n FROM laws').get() as { n: number }).n).toBe(before + 6);
+
+      const refused = await request('POST', '/api/v1/laws', { raw: JSON.stringify({ ...body, pad: 'x'.repeat(33 * 1024) }) });
+      expect(refused.status).toBe(413);
+      expect((db.prepare('SELECT COUNT(*) AS n FROM laws').get() as { n: number }).n).toBe(before + 6);
+    });
+
     it('refuses an oversized or malformed submission body', async () => {
       expect((await request('POST', '/api/v1/laws', { raw: JSON.stringify({ text: 'A perfectly fine law text.', pad: 'x'.repeat(33 * 1024) }) })).status).toBe(413);
       expect((await request('POST', '/api/v1/laws', { body: { text: 'A perfectly fine law text.', corollaries: [{ text: 'short' }] } })).status).toBe(400);

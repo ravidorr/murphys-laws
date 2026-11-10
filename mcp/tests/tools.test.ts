@@ -344,6 +344,24 @@ describe('submit_law tool', () => {
     expect(tool.schema).toHaveProperty('corollaries');
   });
 
+  it('limits corollaries to five, each 10-1000 characters with a title of at most 200', () => {
+    const tool = extractTool(registerSubmitLaw, {});
+    const schema = (tool.schema as Record<string, { safeParse: (value: unknown) => { success: boolean } }>).corollaries!;
+    const ok = (value: unknown) => schema.safeParse(value).success;
+    const entry = (n: number) => ({ text: `Corollary number ${n} of the law` });
+
+    expect(ok(undefined)).toBe(true);
+    expect(ok([])).toBe(true);
+    expect(ok([1, 2, 3, 4, 5].map(entry))).toBe(true);
+    expect(ok([1, 2, 3, 4, 5, 6].map(entry))).toBe(false);
+    expect(ok([{ text: 'x'.repeat(10) }])).toBe(true);
+    expect(ok([{ text: 'x'.repeat(9) }])).toBe(false);
+    expect(ok([{ text: 'x'.repeat(1000) }])).toBe(true);
+    expect(ok([{ text: 'x'.repeat(1001) }])).toBe(false);
+    expect(ok([{ title: 't'.repeat(200), text: 'x'.repeat(10) }])).toBe(true);
+    expect(ok([{ title: 't'.repeat(201), text: 'x'.repeat(10) }])).toBe(false);
+  });
+
   it('falls back to Anonymous when author missing', async () => {
     const tool = extractTool(registerSubmitLaw, {
       submitLaw: async () => ({

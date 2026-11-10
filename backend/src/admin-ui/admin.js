@@ -27,6 +27,7 @@ import {
   buildChildUpdates,
   validateChildEdits,
   describeCascade,
+  validateLawText,
 } from './admin-logic.js';
 
 const state = { token: '', login: '', status: 'in_review', q: '', offset: 0, total: 0, counts: {}, categories: [] };
@@ -533,25 +534,51 @@ function renderLaw(law, serverCategories = state.categories) {
   const childViews = [];
   const childValues = () => Object.fromEntries(childViews.map(({ child, title: t, text: x }) => [child.id, { title: t.value, text: x.value }]));
 
-  /** A corollary save that failed leaves the card stale (or half saved), so the list is brought back in line. */
-  const recoverFromChildError = async (error, child) => {
+  const listIds = (ids) => ids.map((id) => `#${id}`).join(', ');
+
+  /**
+   * A corollary request failed. Edits already saved by this click have new updated_at values the card does not know, so
+   * after any partial save, and after a conflict or a vanished corollary, the list is reloaded and the message says what
+   * was saved. Other failures with nothing saved are shown as they are. When the reload itself fails, its own message
+   * (a lost connection or an ended session) is left on screen.
+   */
+  const recoverFromChildError = async (error, child, saved = []) => {
     setBusy(actions, false);
-    if (error.status === 409 || (error.status === 404 && error.message === 'Law not found')) {
-      const ok = await load({}, false);
-      say(ok
-        ? `Corollary #${child.id} changed since you loaded it. The list was reloaded; apply your edit again.`
-        : error.message, true);
+    const conflict = error.status === 409 || (error.status === 404 && error.message === 'Law not found');
+    if (!conflict && saved.length === 0) {
+      handleError(error);
       return;
     }
-    handleError(error);
+    const ok = await load({}, false);
+    if (!ok) {
+      return;
+    }
+    const kept = saved.length > 0 ? ` Saved: ${listIds(saved)}.` : '';
+    say(conflict
+      ? `Corollary #${child.id} changed since you loaded it. The list was reloaded; apply your edit again.${kept}`
+      : `Corollary #${child.id} was not saved: ${error.message}${kept} The list was reloaded; apply the remaining edits again.`, true);
+  };
+
+  /** True when a field on the card differs from what was loaded, so a reload would throw an edit away. */
+  const hasUnsavedEdits = () => {
+    const lawEdits = buildUpdateBody(law, { title: title.value, text: text.value, notes: notes.value,
+      categoryId: category.value === '' ? undefined : Number(category.value),
+    });
+    return Object.keys(lawEdits).length > 0 || buildChildUpdates(law, childValues()).length > 0;
   };
 
   const save = async (status) => {
     const body = buildUpdateBody(law, { status, title: title.value, text: text.value, notes: notes.value,
       categoryId: category.value === '' ? undefined : Number(category.value),
     });
-    const values = childValues();
+    // Rejecting the law rejects its corollaries, so their fields are neither checked nor saved.
+    const values = status === 'rejected' ? {} : childValues();
+    // A refusal the server is sure to give is caught before the first corollary is saved, so no click ends half saved.
     const problems = validateChildEdits(law, values);
+    const textProblem = body.text === undefined ? null : validateLawText(body.text);
+    if (textProblem) {
+      problems.unshift(textProblem);
+    }
     if (problems.length > 0) {
       say(problems.join(' '), true);
       return;
@@ -569,12 +596,14 @@ function renderLaw(law, serverCategories = state.categories) {
     const seqAtStart = loadSeq;
     // Corollary edits go first, each guarded by its own updated_at: approving the law moves the corollaries and would
     // make their pending edits conflict.
+    const savedChildren = [];
     for (const update of childUpdates) {
       const child = law.children.find((candidate) => candidate.id === update.id);
       try {
         await api(`/api/v1/admin/laws/${update.id}`, { method: 'POST', body: JSON.stringify(update.body) });
+        savedChildren.push(update.id);
       } catch (error) {
-        await recoverFromChildError(error, child);
+        await recoverFromChildError(error, child, savedChildren);
         return;
       }
     }
@@ -590,6 +619,15 @@ function renderLaw(law, serverCategories = state.categories) {
         throw new ApiError('The server reply could not be read. Reload the list to check the law.', 0);
       }
     } catch (error) {
+      if (savedChildren.length > 0 && error.status !== 409) {
+        // The corollary edits are saved but the card still holds their old updated_at, so retrying from it would conflict.
+        setBusy(actions, false);
+        const ok = await load({}, false);
+        if (ok) {
+          say(`The law was not saved: ${error.message} Corollaries saved: ${listIds(savedChildren)}. The list was reloaded; apply the law edits again.`, true);
+        }
+        return;
+      }
       await recoverFromSaveError(error, law, item, actions);
       return;
     }
@@ -628,6 +666,11 @@ function renderLaw(law, serverCategories = state.categories) {
 
   /** Rejects one corollary on its own; its law and the other corollaries stay as they are. */
   const rejectChild = async (child) => {
+    // The list is reloaded afterwards, which would throw away any edit still sitting in a field.
+    if (hasUnsavedEdits()) {
+      say(`Law #${law.id}: save or undo your edits before rejecting a corollary.`, true);
+      return;
+    }
     setBusy(item, true);
     try {
       await api(`/api/v1/admin/laws/${child.id}`, { method: 'POST', body: JSON.stringify({ status: 'rejected', updated_at: child.updated_at }) });
@@ -637,7 +680,13 @@ function renderLaw(law, serverCategories = state.categories) {
       return;
     }
     const ok = await load({}, false);
-    say(ok ? `Corollary #${child.id} was rejected. Unsaved edits on the card were discarded.` : `Corollary #${child.id} was rejected, but the list could not refresh. Click a tab to reload.`, !ok);
+    if (ok) {
+      say(`Corollary #${child.id} was rejected.`);
+      return;
+    }
+    // The card on screen still shows it as live; give the buttons back so the admin can retry or reload.
+    setBusy(item, false);
+    say(`Corollary #${child.id} was rejected, but the list could not refresh. Click a tab to reload.`, true);
   };
 
   const addAction = (label, className, status) => {

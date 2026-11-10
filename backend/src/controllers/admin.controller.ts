@@ -101,7 +101,13 @@ export class AdminController {
       }
 
       // Only the corollaries that went live with the law; a rejected one is not announced.
-      const corollaries = this.adminLawService.publishedCorollaries(law.id);
+      // A failed lookup must not cost the submitter the thank-you, so it is sent without the list.
+      let corollaries: unknown[] = [];
+      try {
+        corollaries = this.adminLawService.publishedCorollaries(law.id);
+      } catch (error) {
+        console.error(`Thank-you for law ID ${law.id} will not list its corollaries: ${error instanceof Error ? error.message : 'lookup failed'}`);
+      }
       Promise.resolve(
         this.emailService.sendLawApprovedEmail(attribution.contact_value, { id: law.id, title: law.title, text: law.text, name: attribution.name, corollaries }),
       )

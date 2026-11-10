@@ -81,7 +81,7 @@ export interface AdminChildLaw {
 }
 
 export interface AdminListedLaw extends AdminLaw {
-  /** The law's corollaries in their original order, on every law that has any. They are not listed as cards of their own. */
+  /** The law's corollaries in their original order, on every law that has any. While their law is in the same status filter they are not cards of their own. */
   children?: AdminChildLaw[];
   /** Only on in-review top-level laws whose text has a parent sentence followed by bullets. A seed, never applied unreviewed. */
   corollary_candidates?: CorollaryCandidates;

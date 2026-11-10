@@ -497,7 +497,7 @@ describe('LawController', () => {
                 vi.mocked(httpHelpers.readBody).mockRejectedValue(new httpHelpers.PayloadTooLargeError());
                 await lawController.submit(req, res);
                 expect(status()).toBe(413);
-                expect(payload()).toEqual({ error: 'Request body too large' });
+                expect(payload()).toEqual({ error: 'Your submission is too large. Shorten the law or its corollaries and try again.' });
                 expect(lawService.submitLaw).not.toHaveBeenCalled();
             });
 
@@ -529,15 +529,25 @@ describe('LawController', () => {
                 expect(payload().corollaries).toEqual([]);
             });
 
-            it('accepts an empty list and exactly five corollaries', async () => {
+            it('accepts an empty list and exactly five corollaries, and hands them to the service whole', async () => {
                 lawService.submitLaw.mockResolvedValue({ id: 10, corollaries: [] });
                 await submitWith([]);
                 expect(status()).toBe(201);
+                expect(lawService.submitLaw).toHaveBeenLastCalledWith(expect.objectContaining({ corollaries: [] }));
 
                 res.writeHead.mockClear();
                 const five = [1, 2, 3, 4, 5].map((n) => ({ text: `Corollary number ${n} of the law` }));
                 await submitWith(five);
                 expect(status()).toBe(201);
+                expect(lawService.submitLaw).toHaveBeenLastCalledWith(expect.objectContaining({
+                    corollaries: five.map((c) => ({ title: null, text: c.text }))
+                }));
+            });
+
+            it('does not turn an unexpected failure while reading the list into a validation message', async () => {
+                const broken = { get text(): string { throw new TypeError('engine detail'); } };
+                await expect(submitWith([broken])).rejects.toThrow('engine detail');
+                expect(lawService.submitLaw).not.toHaveBeenCalled();
             });
 
             it.each([
@@ -568,6 +578,9 @@ describe('LawController', () => {
                 lawService.submitLaw.mockResolvedValue({ id: 10, corollaries: [] });
                 await submitWith([{ title: 't'.repeat(200), text: 'a'.repeat(10) }, { text: 'b'.repeat(1000) }]);
                 expect(status()).toBe(201);
+                expect(lawService.submitLaw).toHaveBeenLastCalledWith(expect.objectContaining({
+                    corollaries: [{ title: 't'.repeat(200), text: 'a'.repeat(10) }, { title: null, text: 'b'.repeat(1000) }]
+                }));
             });
 
             it('turns a refusal from the service into a 400 with its message', async () => {
