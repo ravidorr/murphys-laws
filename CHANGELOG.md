@@ -61,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Buttered Toast formula no longer shrinks to unreadably small text on phones. On screens wider than 768px it still
   scales down to fit its box but never below the phone formula size (`--text-2xl`); at 768px and below it uses the shared
   responsive formula sizes (36px, then 24px at 480px and below) and scrolls sideways inside its own box instead. The
-  formula box is now announced as a labelled group. Web bumped to `3.4.81`; root to `2.6.185`.
+  formula box is now announced as a labelled group. Web bumped to `3.4.82`; root to `2.6.186`.
 
 ### Added
 
