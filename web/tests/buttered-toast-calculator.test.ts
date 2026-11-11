@@ -59,15 +59,15 @@ describe('ButteredToastCalculator view', () => {
     document.body.removeChild(el);
   });
 
-  it('places the formula after the sliders and the result', () => {
+  it('places the formula after the result and before the share card', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
 
     const formula = el.querySelector('#toast-formula-display')!;
-    const firstSlider = input(el, 'toast-height');
     const result = el.querySelector('#toast-result-display')!;
-    expect(firstSlider.compareDocumentPosition(formula) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const share = el.querySelector('#calculator-share-container')!;
     expect(result.compareDocumentPosition(formula) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(formula.compareDocumentPosition(share) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     document.body.removeChild(el);
   });
