@@ -486,6 +486,8 @@ describe('SSG Static Route Content', () => {
     expect(featuredLaws.indexOf('If anything can go wrong')).toBeLessThan(featuredLaws.indexOf('more upvotes'));
     expect(featuredLaws.indexOf('more upvotes')).toBeLessThan(featuredLaws.indexOf('fewer upvotes'));
     expect(featuredLaws).toContain('href="/law/2"');
+    // First paint carries the same underline cue as the client-rendered cards
+    expect(featuredLaws.match(/<a class="law-card-link" href="\/law\/\d+">/g)).toHaveLength(3);
     expect(featuredLaws).toContain("See all Murphy's Laws");
     expect(featuredLaws).not.toContain('href="/submit"');
     expect(submitAction).toContain('article-submit-action');

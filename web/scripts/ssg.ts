@@ -523,7 +523,7 @@ function renderStaticLawCards(laws: Law[], baseUrl: string = SITE_URL): string {
     return `
     <article class="law-card-mini" data-law-id="${safeId}" tabindex="0" role="article" aria-label="${ariaLabel}">
       <p class="law-card-text">
-        <a href="${lawUrl}">${titleText}</a>
+        <a class="law-card-link" href="${lawUrl}">${titleText}</a>
       </p>
       ${attribution ? `<p class="law-card-attrib">${attribution}</p>` : ''}
       <div class="law-card-footer">
