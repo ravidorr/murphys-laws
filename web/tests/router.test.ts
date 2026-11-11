@@ -222,6 +222,64 @@ describe('Router', () => {
     document.body.removeChild(rootEl);
   });
 
+  it('hands over a prerendered main shaped like a static law page, with its repeated heading id', () => {
+    const rootEl = document.createElement('div');
+    rootEl.innerHTML = `<div><main id="main-content"><div class="container page law-detail pt-0">
+      <article class="card card--section law-detail-card"><h1 class="card-title">Static Law</h1></article>
+      <section aria-labelledby="law-context-heading"><h2 id="law-context-heading">In context</h2></section>
+    </div></main></div>`;
+    document.body.appendChild(rootEl);
+    const received: (HTMLElement | null | undefined)[] = [];
+    defineRoute('home', ({ prerendered }) => {
+      received.push(prerendered);
+      return document.createElement('div');
+    });
+
+    startRouter(rootEl);
+
+    expect(received[0]?.id).toBe('main-content');
+    expect(received[0]?.querySelector('.law-detail-card h1')?.textContent).toBe('Static Law');
+    expect(received[0]?.querySelectorAll('#law-context-heading')).toHaveLength(1);
+    document.body.removeChild(rootEl);
+  });
+
+  it('hands null to the first render when the page has no main element', () => {
+    const rootEl = document.createElement('div');
+    rootEl.innerHTML = '<div><p>Loading shell</p></div>';
+    document.body.appendChild(rootEl);
+    const received: (HTMLElement | null | undefined)[] = [];
+    defineRoute('home', ({ prerendered }) => {
+      received.push(prerendered);
+      return document.createElement('div');
+    });
+
+    startRouter(rootEl);
+
+    expect(received).toEqual([null]);
+    document.body.removeChild(rootEl);
+  });
+
+  it('hands the prerendered main to the not-found renderer when the first route is unknown', () => {
+    const rootEl = document.createElement('div');
+    rootEl.innerHTML = '<div><main id="main-content"><p>Prerendered page</p></main></div>';
+    document.body.appendChild(rootEl);
+    defineRoute('home', () => document.createElement('div'));
+    const received: (HTMLElement | null | undefined)[] = [];
+    const notFound = ({ prerendered }: { param?: string | null; prerendered?: HTMLElement | null }) => {
+      received.push(prerendered);
+      const el = document.createElement('div');
+      el.textContent = '404';
+      return el;
+    };
+
+    history.replaceState(null, '', '/undefined-route');
+    startRouter(rootEl, notFound);
+
+    expect(received[0]?.textContent).toBe('Prerendered page');
+    expect(rootEl.textContent).toBe('404');
+    document.body.removeChild(rootEl);
+  });
+
   it('calls cleanup functions when navigating away', async () => {
     const rootEl = document.createElement('div');
     document.body.appendChild(rootEl);
