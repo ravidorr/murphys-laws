@@ -58,6 +58,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   form. The text fills the Law Text box (trimmed, at most 1000 characters) without showing the short-text error, and
   the category is preselected; a category the visitor has already chosen is kept when fresh categories load. Web bumped
   to `3.4.80`; root to `2.6.184`.
+- The Buttered Toast formula no longer shrinks to unreadably small text on phones. On screens wider than 768px it still
+  scales down to fit its box but never below the phone formula size (`--text-2xl`); at 768px and below it uses the shared
+  responsive formula sizes (36px, then 24px at 480px and below) and scrolls sideways inside its own box instead. The
+  formula box is now announced as a labelled group. Web bumped to `3.4.87`; root to `2.6.191`.
 - The Buttered Toast calculator no longer opens with its formula: the sliders come first, and the formula now sits
   directly below the probability result, ahead of the Share Your Results card. Web bumped to `3.4.85`; root to `2.6.189`.
 - When a Browse search finds nothing, the empty state now has a "Clear filters" button beside "Submit a Law". It does

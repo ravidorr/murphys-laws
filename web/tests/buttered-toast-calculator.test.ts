@@ -52,6 +52,7 @@ describe('ButteredToastCalculator view', () => {
     expect(formula?.querySelector('mi[title*="Height of fall"]')).toBeTruthy();
     expect(formula?.textContent).not.toContain('\\(');
     expect((formula as HTMLElement | null)?.tabIndex).toBe(0);
+    expect(formula?.getAttribute('role')).toBe('group');
     expect(formula?.getAttribute('aria-label')).toBe(
       'Buttered toast probability formula',
     );
