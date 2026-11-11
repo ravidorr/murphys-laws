@@ -100,6 +100,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Submit a Law guidance no longer tells visitors to search before submitting, since the form has no search control.
+  The bullet now says to start writing right away, because the form already checks for similar laws as they type and
+  lists any possible duplicates.
 - The `triage-404s` skill now opens its pull request ready for review instead of as a draft, as the other pull
   requests in this repository are. No version bump: it is documentation only.
 - `/sitemap.gz` now redirects to `/sitemap.xml` instead of being dropped. Search Console still held a 2006 sitemap
