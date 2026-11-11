@@ -84,12 +84,23 @@ describe('SubmitLawSection component', () => {
     expect(el.querySelector('#submit-btn') as HTMLButtonElement | null).toBeTruthy();
   });
 
+  it('puts the required law text before the optional title and labels the title optional', () => {
+    const el = mountSection();
+    const fields = Array.from(el.querySelectorAll('.submit-form .form-control'));
+
+    expect(fields[0]?.id).toBe('submit-text');
+    expect(fields[1]?.id).toBe('submit-title');
+    expect(el.querySelector('label[for="submit-title"]')?.textContent).toMatch(/\(optional\)/i);
+  });
+
   it('renders pre-submit guidance about review, attribution, and duplicates', () => {
     const el = mountSection();
 
     expect(el.textContent).toMatch(/reviewed by a human/i);
     expect(el.textContent).toMatch(/attribution/i);
     expect(el.textContent).toMatch(/duplicates/i);
+    expect(el.textContent).toMatch(/start writing/i);
+    expect(el.textContent).not.toMatch(/search first/i);
   });
 
   it('shows examples of good laws before submission', () => {
@@ -99,13 +110,16 @@ describe('SubmitLawSection component', () => {
     expect(el.textContent).toMatch(/Specific beats vague/i);
   });
 
-  it('keeps the guidance collapsed below the law text box so the box comes first', () => {
+  it('keeps the guidance collapsed after the law text box and labels its summary', () => {
     const el = mountSection();
     const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement;
     const guidance = el.querySelector('details.submit-guidance') as HTMLDetailsElement;
 
     expect(guidance).toBeTruthy();
     expect(guidance.open).toBe(false);
+    expect(guidance.querySelector(':scope > summary')?.textContent).toMatch(/tips for a good law/i);
+    expect(guidance.textContent).toMatch(/reviewed by a human/i);
+    expect(guidance.querySelector('[data-good-law-examples]')).toBeTruthy();
     expect(guidance.closest('form')).toBe(el.querySelector('.submit-form'));
     expect(textarea.compareDocumentPosition(guidance) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });

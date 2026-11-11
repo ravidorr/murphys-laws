@@ -787,6 +787,35 @@ textarea.form-control,
   line-height: 1.4;
 }
 
+/* Collapsed writing tips under the law text box on the submit form */
+.submit-guidance {
+  margin-block-start: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--muted-fg);
+}
+
+.submit-guidance > summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--component-control-min-size);
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.submit-guidance > summary:hover {
+  color: var(--btn-primary-bg);
+}
+
+.submit-guidance > summary:focus-visible {
+  outline: 3px solid var(--btn-primary-bg);
+  outline-offset: 2px;
+}
+
+.submit-guidance[open] > summary {
+  margin-block-end: var(--space-2);
+}
+
 /* Search info text */
 .search-info {
   font-size: var(--text-sm);

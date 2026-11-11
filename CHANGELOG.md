@@ -39,6 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The Submit a Law form now starts with the required Law Text box; the Law Title field follows it and its label reads
+  "Law Title (optional)".
+
 ### Added
 
 - Submitters can add corollaries when they submit a law, and the moderation queue treats a law and its corollaries as
@@ -100,9 +105,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Submit a Law guidance now opens with "Start writing right away" instead of telling visitors to search first, since
+  the form has no search control and already lists possible duplicates as they type. Web bumped to `3.4.75`; root to
+  `2.6.179`.
 - The Submit a Law form now comes straight after the section header. The review notice, writing tips and good-law
   examples moved from above the form into a collapsed "Tips for a good law" disclosure under the Law Text box, so the
-  box is no longer pushed below the fold on small screens.
+  box is no longer pushed below the fold on small screens. The disclosure's summary is a 44 px tap target with hover and
+  focus styles. Web bumped to `3.4.76`; root to `2.6.180`.
 - The `triage-404s` skill now opens its pull request ready for review instead of as a draft, as the other pull
   requests in this repository are. No version bump: it is documentation only.
 - `/sitemap.gz` now redirects to `/sitemap.xml` instead of being dropped. Search Console still held a 2006 sitemap
