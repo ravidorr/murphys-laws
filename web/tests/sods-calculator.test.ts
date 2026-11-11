@@ -253,6 +253,37 @@ describe("Calculator view", () => {
     expect(el.querySelector<HTMLElement>('#score-sample-hint')!.hidden).toBe(true);
   });
 
+  it('keeps the sample-score hint when a shared link has only invalid parameters', () => {
+    el?.cleanup?.();
+    if (el?.parentNode) el.parentNode.removeChild(el);
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: '?u=0',
+      href: 'http://localhost:3000/calculator/sods-law?u=0'
+    });
+    el = Calculator();
+    document.body.appendChild(el);
+    vi.unstubAllGlobals();
+
+    // The link names no usable setting, so the score is still the default sample
+    const hint = el.querySelector<HTMLElement>('#score-sample-hint')!;
+    expect(hint.hidden).toBe(false);
+    expect(hint.textContent).toContain('sample score');
+  });
+
+  it('keeps the sample-score hint hidden through later slider input', () => {
+    const hint = el!.querySelector<HTMLElement>('#score-sample-hint')!;
+    const skill = el!.querySelector('#skill') as HTMLInputElement;
+
+    skill.value = '7';
+    skill.dispatchEvent(new Event('input'));
+    skill.value = '3';
+    skill.dispatchEvent(new Event('input'));
+    (el!.querySelector('#urgency') as HTMLInputElement).dispatchEvent(new Event('input'));
+
+    expect(hint.hidden).toBe(true);
+  });
+
   it('resets formula values after timeout', () => {
     (el!.querySelector('#urgency') as HTMLInputElement)!.value = '7';
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));

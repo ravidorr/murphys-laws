@@ -43,7 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The Sod's Law Calculator now labels the score shown on first load as a sample from the default settings and asks
   visitors to move the sliders to score their own task. The note hides after the first slider move and does not show
-  when the page opens from a shared link. Web bumped to `3.4.91`; root to `2.6.195`.
+  when the page opens from a shared link that carries at least one valid setting (a link with only invalid values keeps
+  it). The note is styled as small semibold text under the score. Web bumped to `3.4.91`; root to `2.6.195`.
 - The Buttered Toast calculator now keeps a prompt to move a slider beside the default result until the visitor
   adjusts one, instead of losing its only invitation when the default result is calculated on load.
   Visitors who arrive from a shared link see "Move any slider above to see how the odds change." instead, since the

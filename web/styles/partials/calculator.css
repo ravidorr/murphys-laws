@@ -160,6 +160,14 @@
   display: block;
 }
 
+/* Note under the score that marks the first-load result as a sample from the default settings;
+   it inherits the result's text color so it keeps its contrast on every score background */
+.calc-sample-hint {
+  margin-block-start: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+}
+
 /* Info section at bottom of calculator */
 .calc-info {
   font-size: var(--text-sm);
