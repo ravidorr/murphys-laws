@@ -242,6 +242,14 @@ describe('CategoryDetail view', () => {
     expect(el.querySelector('[data-category-hub-links]')?.innerHTML).toContain('/category/murphys-bus-laws');
   });
 
+  it('places the category hub links after the law list', () => {
+    const el = CategoryDetail({ categoryId, onNavigate });
+    const lawsList = el.querySelector('#category-laws-list')!;
+    const hubLinks = el.querySelector('.category-hub-links')!;
+
+    expect(lawsList.compareDocumentPosition(hubLinks) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('L347 B1: setCategoryItemListSchema called when laws exist', async () => {
     const el = CategoryDetail({ categoryId, onNavigate });
     await new Promise(resolve => setTimeout(resolve, 10));

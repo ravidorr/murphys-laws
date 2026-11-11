@@ -49,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The "Submit your own" button after an article (including the Real-Life Examples hub) now sits on its own below the
   featured-laws card instead of in that card's footer, so it still shows when the featured laws fail to load or the
   category has none. The static build renders it the same way. Web bumped to `3.4.79`; root to `2.6.183`.
+- On a category page, the "Explore nearby" links now follow the law list and its pagination instead of sitting above
+  the sort control, so the laws are the first next step. Web bumped to `3.4.80`; root to `2.6.184`.
 
 ### Added
 
