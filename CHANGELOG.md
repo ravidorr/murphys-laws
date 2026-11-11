@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Buttered Toast calculator now keeps a prompt to move a slider beside the default result until the visitor
+  adjusts one, instead of losing its only invitation when the default result is calculated on load.
+  Visitors who arrive from a shared link see "Move any slider above to see how the odds change." instead, since the
+  shared result is not a starting point. Web bumped to `3.4.89`; root to `2.6.193`.
 - "Submit a Law" in the Browse empty state now carries the words of the search that found nothing to the submit page
   (`/submit?text=...`), which prefills the Law Text box and runs the duplicate check on them. The text is removed from the address once the
   form has read it, so a reload or a return to the page starts from an empty form, and the check on text the visitor did
@@ -58,6 +62,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   form. The text fills the Law Text box (trimmed, at most 1000 characters) without showing the short-text error, and
   the category is preselected; a category the visitor has already chosen is kept when fresh categories load. Web bumped
   to `3.4.80`; root to `2.6.184`.
+- Category pages now send the Pendo `search_result_opened` event when a visitor opens a law from the category list,
+  as Browse does: card clicks, law-text link clicks and keyboard opens each report `open_method`, the law's rank,
+  page, result count and category, with `search_surface` set to `category_detail`.
+  A card click also sends the `archive.result_open` product event (`surface: category_detail`), as Browse does; the
+  other open methods stay Pendo-only. Web bumped to `3.4.88`; root to `2.6.192`.
+- The Buttered Toast formula no longer shrinks to unreadably small text on phones. On screens wider than 768px it still
+  scales down to fit its box but never below the phone formula size (`--text-2xl`); at 768px and below it uses the shared
+  responsive formula sizes (36px, then 24px at 480px and below) and scrolls sideways inside its own box instead. The
+  formula box is now announced as a labelled group. Web bumped to `3.4.87`; root to `2.6.191`.
+- The Buttered Toast calculator no longer opens with its formula: the sliders come first, and the formula now sits
+  directly below the probability result, ahead of the Share Your Results card. Web bumped to `3.4.85`; root to `2.6.189`.
 - When a Browse search finds nothing, the empty state now has a "Clear filters" button beside "Submit a Law". It does
   the same thing as the search panel's Clear button, so visitors can widen the search right where the message is. The
   button only appears when a filter is active. Pressing it moves keyboard focus to the Search box so it is not lost
@@ -65,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `2.6.188`.
 - On a category page, the "Explore nearby" links now follow the law list and its pagination instead of sitting above
   the sort control, so the laws are the first next step. The static build now renders the links after the pre-rendered law cards too, so
-  first paint matches, and the links have top spacing under the pagination. Web bumped to `3.4.85`; root to `2.6.189`.
+  first paint matches, and the links have top spacing under the pagination. Web bumped to `3.4.90`; root to `2.6.194`.
 
 ### Added
 
@@ -234,6 +249,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Opening a shared Sod's Law Calculator link now shows the score and message for the shared slider values right away,
+  instead of the default result until a slider moves. The sliders also announce the shared values to screen readers
+  (`aria-valuenow` and `aria-valuetext` were left at the template default), and the share text and link match the
+  score on screen. Web bumped to `3.4.86`; root to `2.6.190`.
 - The law page shows "Law Not Found" only when the law is missing (the API answers 404, or the ID can't name a law).
   A forbidden answer, a server error, a network error or a timeout now shows "We couldn't load this law" with Try Again
   as the main action, instead of saying the law doesn't exist or may have been removed. The load-failure card is an

@@ -14,6 +14,9 @@ vi.mock('@sentry/browser', () => ({
 }));
 
 import * as Sentry from '@sentry/browser';
+import { trackProductEvent } from '../src/utils/metrics.ts';
+
+vi.mock('../src/utils/metrics.ts', () => ({ trackProductEvent: vi.fn() }));
 
 // Mock dependencies
 vi.mock('../src/utils/api.js', () => ({
@@ -1280,6 +1283,7 @@ describe('CategoryDetail view', () => {
 
     beforeEach(() => {
       track = vi.fn<PendoTrack>();
+      vi.mocked(trackProductEvent).mockClear();
       window.pendo = { track };
       // Earlier tests leave sort/page parameters in the URL
       window.history.replaceState(null, '', '/category/1');
@@ -1505,6 +1509,85 @@ describe('CategoryDetail view', () => {
       expect(el.textContent).toContain('New Law');
       expect(el.querySelector('.empty-state')).toBeNull();
       expect(track.mock.calls.filter(([name]) => name === 'search_performed')).toHaveLength(1);
+    });
+
+    function addListCard(el: HTMLElement, lawId: string): HTMLElement {
+      const lawCard = document.createElement('div');
+      lawCard.className = 'law-card-mini';
+      lawCard.dataset.lawId = lawId;
+      lawCard.innerHTML = `<a href="/law/${lawId}" data-nav="law" data-param="${lawId}">Law ${lawId}</a>`;
+      el.querySelector('#category-laws-list')!.appendChild(lawCard);
+      return lawCard;
+    }
+
+    it('reports laws opened from the list by card click, text link and keyboard with their rank', async () => {
+      window.history.replaceState(null, '', '/category/1?page=2');
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await vi.waitFor(() => expect(el.querySelector('#category-result-count')!.textContent).not.toBe(''));
+      el.querySelector('#category-laws-list')!.innerHTML = '';
+      const firstCard = addListCard(el, '101');
+      const secondCard = addListCard(el, '102');
+
+      secondCard.click();
+      (firstCard.querySelector('a[data-nav="law"]') as HTMLElement).click();
+      firstCard.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(track).toHaveBeenCalledWith('search_result_opened', {
+        query_length: 0,
+        query_token_count: 0,
+        category_id: '1',
+        sort: 'score',
+        search_surface: 'category_detail',
+        law_id: '102',
+        result_position: 12,
+        page: 2,
+        results_count: 2,
+        has_filters: false,
+        open_method: 'card_click',
+      });
+      expect(track).toHaveBeenCalledWith('search_result_opened', expect.objectContaining({
+        law_id: '101', result_position: 11, open_method: 'title_link'
+      }));
+      expect(track).toHaveBeenCalledWith('search_result_opened', expect.objectContaining({
+        law_id: '101', result_position: 11, open_method: 'keyboard'
+      }));
+      expect(onNavigate).toHaveBeenCalledTimes(3);
+      // Only the card click sends the product event, as in Browse
+      expect(trackProductEvent).toHaveBeenCalledTimes(1);
+      expect(trackProductEvent).toHaveBeenCalledWith('archive.result_open', { surface: 'category_detail' });
+    });
+
+    it('marks laws opened from in-category search results as filtered', async () => {
+      const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await vi.waitFor(() => expect(api.fetchLaws).toHaveBeenCalledTimes(1));
+      mod.getLocalThis().onSearch!({ attribution: 'Arthur Bloch', category_id: 1 });
+      await vi.waitFor(() => expect(track).toHaveBeenCalledWith('search_performed', expect.anything()));
+
+      addListCard(el, '101').click();
+
+      expect(track).toHaveBeenCalledWith('search_result_opened', expect.objectContaining({
+        attribution: 'Arthur Bloch',
+        search_surface: 'category_detail',
+        law_id: '101',
+        result_position: 1,
+        has_filters: true,
+        open_method: 'card_click',
+      }));
+    });
+
+    it('does not report law cards outside the category list', async () => {
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+      const lawCard = document.createElement('div');
+      lawCard.className = 'law-card-mini';
+      lawCard.dataset.lawId = '123';
+      el.appendChild(lawCard);
+
+      lawCard.click();
+
+      expect(onNavigate).toHaveBeenCalledWith('law', '123');
+      expect(track).not.toHaveBeenCalledWith('search_result_opened', expect.anything());
     });
   });
 });
