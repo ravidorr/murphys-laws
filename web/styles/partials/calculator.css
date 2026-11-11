@@ -172,8 +172,10 @@
     gap: var(--space-3);
     padding: var(--space-2) var(--space-4);
 
-    /* Keep the text clear of the floating back-to-top button in the same corner */
-    padding-inline-end: calc(var(--component-control-min-size) + var(--space-4));
+    /* Keep the text clear of the floating back-to-top button in the same corner. The bar is inset from the
+       screen edge by the card's own padding, so only part of the button overlaps it. */
+    padding-inline-end: var(--component-control-min-size);
+    border-top: 1px solid var(--border);
     box-shadow: 0 -4px 12px var(--shadow-light);
   }
 
@@ -184,6 +186,26 @@
 
   .calc-result-sticky .calc-interpretation {
     margin: 0;
+  }
+
+  /* WCAG 2.2 2.4.11: keep a focused slider clear of the pinned bar when the browser scrolls it into view */
+  .calc-slider-group input[type="range"] {
+    scroll-margin-block-end: calc(var(--space-16) + var(--space-4));
+  }
+
+  /* High contrast: a solid edge instead of the shadow, like the back-to-top button */
+  @media (prefers-contrast: more) {
+    .calc-result-sticky {
+      border-top: 2px solid var(--fg);
+      box-shadow: none;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .calc-result-sticky {
+      border-top: 2px solid CanvasText;
+      box-shadow: none;
+    }
   }
 }
 
