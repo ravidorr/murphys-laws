@@ -1329,14 +1329,19 @@
   line-height: 1.4;
 }
 
+/* Persistent underline so touch visitors, who never see hover, can tell the law opens. --muted-fg is a solid token
+   that clears the 3:1 non-text contrast minimum in both themes (7.6:1 on white, 7.7:1 on the dark page). */
 .law-card-link {
   color: inherit;
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-color: var(--muted-fg);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
 }
 
 .law-card-link:hover,
 .law-card-link:focus-visible {
-  text-decoration: underline;
+  text-decoration-color: currentcolor;
 }
 
 .law-card-attrib {

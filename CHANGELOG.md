@@ -78,6 +78,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   button only appears when a filter is active. Pressing it moves keyboard focus to the Search box so it is not lost
   when the list redraws, and clearing no longer records an `archive.search` event. Web bumped to `3.4.84`; root to
   `2.6.188`.
+- Law text on law cards (category lists, browse, home and related laws) now carries a thin, always-visible underline
+  in a solid colour that meets 3:1 contrast in both themes, so visitors on touch screens, who never see the hover
+  state, can tell a law opens. The static build's law cards carry the same underline from first paint. Hover and
+  keyboard focus darken the underline as before. Web bumped to `3.4.93`; root to `2.6.197`.
 - On phones (narrower than 600px), the Buttered Toast calculator's probability now stays pinned to the bottom of the
   screen as a compact bar while the sliders are in view, so each slider move shows its effect without scrolling down
   to the result. The bar is named by its heading for screen readers, has a top edge (a solid one in high-contrast and
