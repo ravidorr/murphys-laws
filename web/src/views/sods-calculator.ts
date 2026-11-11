@@ -262,6 +262,9 @@ export function Calculator(): HTMLDivElement {
     const slider = paramKeys[param]!;
     sliders[slider].value = String(value);
     sliderValues[slider].textContent = String(value);
+    // The template hard-codes the default value; keep assistive technology in step with the shared one
+    sliders[slider].setAttribute('aria-valuenow', String(value));
+    sliders[slider].setAttribute('aria-valuetext', String(value));
   });
 
   // Recalculate so the score and message match the shared inputs

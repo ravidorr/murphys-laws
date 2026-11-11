@@ -223,7 +223,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Opening a shared Sod's Law Calculator link now shows the score and message for the shared slider values right away,
-  instead of the default result until a slider moves. Web bumped to `3.4.80`; root to `2.6.184`.
+  instead of the default result until a slider moves. The sliders also announce the shared values to screen readers
+  (`aria-valuenow` and `aria-valuetext` were left at the template default), and the share text and link match the
+  score on screen. Web bumped to `3.4.81`; root to `2.6.185`.
 - Daily 404 report of 11 November 2026 (47 requests that day): the production bundles no longer link to source maps that do not
   exist, more scanner probes are dropped, and the sized Apple icons are redirected. Every JS file the build emitted ended in
   `//# sourceMappingURL=...`, but the Sentry upload deletes the maps from `dist`, so crawlers and scrapers that follow the

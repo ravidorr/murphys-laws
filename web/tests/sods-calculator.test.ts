@@ -420,7 +420,7 @@ describe("Calculator view", () => {
     vi.unstubAllGlobals();
   });
 
-  it('shows the score for shared URL parameters on load', () => {
+  it('shows the score for shared URL parameters on load', async () => {
     const defaultScore = el!.querySelector('#score-value')!.textContent;
 
     vi.stubGlobal('location', {
@@ -437,6 +437,30 @@ describe("Calculator view", () => {
       "You're probably safe. What could possibly go wrong?",
     );
     expect(el!.querySelector('#result-display')!.classList.contains('calc-ok')).toBe(true);
+
+    // Assistive technology reads the shared values, not the template defaults
+    const shared = { urgency: '1', complexity: '1', importance: '1', skill: '9', frequency: '1' };
+    Object.entries(shared).forEach(([id, value]) => {
+      const slider = el!.querySelector(`#${id}`) as HTMLInputElement;
+      expect(slider.value).toBe(value);
+      expect(slider.getAttribute('aria-valuenow')).toBe(value);
+      expect(slider.getAttribute('aria-valuetext')).toBe(value);
+    });
+
+    // The share text and link describe the same inputs as the score on screen
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText: writeTextMock } });
+    el!.querySelector('[data-action="copy-text"]')!.dispatchEvent(new Event('click', { bubbles: true }));
+    await Promise.resolve();
+    expect(writeTextMock.mock.calls[0]![0]).toBe(
+      "My Sod's Law score is 1%! You're probably safe. What could possibly go wrong?",
+    );
+    el!.querySelector('[data-action="copy-link"]')!.dispatchEvent(new Event('click', { bubbles: true }));
+    await Promise.resolve();
+    const copiedUrl = new URL(writeTextMock.mock.calls[1]![0]);
+    expect(copiedUrl.searchParams.get('u')).toBe('1');
+    expect(copiedUrl.searchParams.get('s')).toBe('9');
+    expect(copiedUrl.searchParams.get('f')).toBe('1');
 
     vi.unstubAllGlobals();
   });
