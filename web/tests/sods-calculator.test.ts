@@ -220,6 +220,17 @@ describe("Calculator view", () => {
     expect(el!.querySelector('#result-display')!.classList.contains('calc-dark')).toBe(true);
   });
 
+  it('keeps the result pinned near the sliders after the risk band changes', () => {
+    const resultDisplay = el!.querySelector('#result-display')!;
+    expect(resultDisplay.classList.contains('calc-result-display--sticky')).toBe(true);
+
+    (el!.querySelector('#skill') as HTMLInputElement)!.value = '1';
+    (el!.querySelector('#skill') as HTMLInputElement)!.dispatchEvent(new Event('input'));
+
+    expect(resultDisplay.classList.contains('calc-result-display--sticky')).toBe(true);
+    expect(resultDisplay.classList.contains('calc-orange')).toBe(false);
+  });
+
   it('updates slider value displays on input', () => {
     (el!.querySelector('#urgency') as HTMLInputElement)!.value = '7';
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));

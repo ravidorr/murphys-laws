@@ -160,6 +160,28 @@
   display: block;
 }
 
+/* On narrow screens the sliders stack in one column above the result, so keep a compact
+   score pinned to the bottom of the viewport while they are on screen. It returns to its
+   normal place once the visitor scrolls down to it. The end padding keeps the text clear
+   of the floating Back to top button. */
+@media (width < 600px) {
+  .calc-result-display--sticky {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    padding: var(--space-2) calc(var(--component-control-min-size) + var(--space-4)) var(--space-2) var(--space-4);
+    box-shadow: 0 -4px 12px var(--shadow-light);
+  }
+
+  .calc-result-display--sticky .calc-score {
+    font-size: var(--text-3xl);
+  }
+
+  .calc-result-display--sticky .calc-interpretation {
+    margin: var(--space-1) 0 0;
+  }
+}
+
 /* Info section at bottom of calculator */
 .calc-info {
   font-size: var(--text-sm);
