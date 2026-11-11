@@ -43,7 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A search from the home or header search box now lands on its results on the Browse page: the page scrolls past the
   intro and Advanced Search form to the results card (or its empty state) and moves focus to the card title. The card
-  is titled "Search Results" while a search or filter is active, and "All Laws" otherwise. Web bumped to `3.4.82`; root to `2.6.186`.
+  is titled "Search Results" while a search or filter is active, and "All Laws" otherwise. The scroll also happens
+  when the search fails to load (it lands on the Try Again message), leaves room for the header only while the header is
+  pinned (it scrolls away with the page on the legacy display), and is skipped when the Browse page was replaced while
+  the search loaded or the visitor has already scrolled. Web bumped to `3.4.82`; root to `2.6.186`.
 - "Submit a Law" in the Browse empty state now carries the words of the search that found nothing to the submit page
   (`/submit?text=...`), which prefills the Law Text box and runs the duplicate check on them. The text is removed from the address once the
   form has read it, so a reload or a return to the page starts from an empty form, and the check on text the visitor did

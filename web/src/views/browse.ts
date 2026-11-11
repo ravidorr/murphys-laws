@@ -148,10 +148,17 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
       : '<span class="accent-text">All</span> Laws';
   }
 
-  // Scroll past the intro and Advanced Search form to the results (below the sticky header) and move focus there
-  function revealResults() {
+  // Scroll past the intro and Advanced Search form to the results (below the header when it is pinned) and move
+  // focus there. A load that was replaced, a page that is no longer mounted, or a visitor who has already scrolled
+  // away from the top where the router left the page all keep their own position.
+  function revealResults(generation: number) {
+    if (generation !== loadGeneration || !el.isConnected || window.scrollY > 0) return;
     const resultsCard = el.querySelector('#browse-all-laws-card')!;
-    const headerHeight = document.querySelector('header.sticky')?.getBoundingClientRect().height ?? 0;
+    const header = document.querySelector('header.sticky');
+    // Only a pinned header covers the results; where it scrolls away (the legacy display) there is nothing to clear
+    const headerHeight = header && getComputedStyle(header).position === 'sticky'
+      ? header.getBoundingClientRect().height
+      : 0;
     window.scrollTo({ top: resultsCard.getBoundingClientRect().top + window.scrollY - headerHeight });
     el.querySelector<HTMLElement>('#browse-results-title')!.focus({ preventScroll: true });
   }
@@ -211,6 +218,7 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
     const requestSort = currentSort;
     const requestOrder = currentOrder;
     const requestSearchSurface = pendingSearchSurface;
+    const revealAfterLoad = requestSearchSurface === 'header' || requestSearchSurface === 'home';
 
     const cardText = el.querySelector('#browse-laws-list')!;
     cardText.setAttribute('aria-busy', 'true');
@@ -243,7 +251,7 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
       }
       await updateDisplay();
       // A search from the header or home box lands on its matches (or the empty state), not on the page intro
-      if (requestSearchSurface === 'header' || requestSearchSurface === 'home') revealResults();
+      if (revealAfterLoad) revealResults(generation);
 
       // Register export content
       if (laws.length > 0) {
@@ -285,6 +293,8 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
       } catch (iconErr) {
         console.error('Failed to hydrate error state icons:', iconErr);
       }
+      // The visitor searched from the header or home box: show them the failure and its Try Again button
+      if (revealAfterLoad) revealResults(generation);
     }
   }
 

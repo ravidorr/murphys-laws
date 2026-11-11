@@ -1772,6 +1772,8 @@ describe('Browse view', () => {
     beforeEach(() => {
       track = vi.fn<PendoTrack>();
       window.pendo = { track };
+      // Header and home searches reveal their results; jsdom does not implement scrolling
+      vi.spyOn(window, 'scrollTo').mockImplementation(() => { });
     });
 
     afterEach(() => {
@@ -2148,6 +2150,7 @@ describe('Browse view', () => {
       window.history.replaceState({ name: 'browse', searchSurface: 'home' }, '', '/browse?q=Murphy');
       const header = document.createElement('header');
       header.className = 'sticky';
+      header.style.position = 'sticky';
       vi.spyOn(header, 'getBoundingClientRect').mockReturnValue({ height: 64 } as DOMRect);
       document.body.appendChild(header);
 
@@ -2169,6 +2172,103 @@ describe('Browse view', () => {
       await vi.waitFor(() => expect(scrollToSpy).toHaveBeenCalledTimes(1), { timeout: 1000 });
       expect(el.querySelector('#browse-laws-list .empty-state')).toBeTruthy();
       expect(document.activeElement).toBe(resultsTitle(el));
+    });
+
+    it('does not subtract the header height when the header scrolls away with the page', async () => {
+      window.history.replaceState({ name: 'browse', searchSurface: 'home' }, '', '/browse?q=Murphy');
+      const header = document.createElement('header');
+      header.className = 'sticky';
+      header.style.position = 'static';
+      vi.spyOn(header, 'getBoundingClientRect').mockReturnValue({ height: 64 } as DOMRect);
+      document.body.appendChild(header);
+
+      const el = Browse({ onNavigate: () => { } });
+      document.body.appendChild(el);
+      vi.spyOn(el.querySelector('#browse-all-laws-card')!, 'getBoundingClientRect').mockReturnValue({ top: 900 } as DOMRect);
+
+      await vi.waitFor(() => expect(scrollToSpy).toHaveBeenCalledWith({ top: 900 }), { timeout: 1000 });
+    });
+
+    it('reveals the Try Again message when a header search fails to load', async () => {
+      fetchLawsSpy.mockRejectedValue(new Error('offline'));
+      window.history.replaceState({ name: 'browse', searchSurface: 'header' }, '', '/browse?q=Murphy');
+
+      const el = Browse({ onNavigate: () => { } });
+      document.body.appendChild(el);
+
+      await vi.waitFor(() => expect(scrollToSpy).toHaveBeenCalledTimes(1), { timeout: 1000 });
+      expect(el.querySelector('[data-action="retry"]')).toBeTruthy();
+      expect(document.activeElement).toBe(resultsTitle(el));
+    });
+
+    it('does not reveal results for a failed load that is not a header or home search', async () => {
+      fetchLawsSpy.mockRejectedValue(new Error('offline'));
+
+      const el = Browse({ onNavigate: () => { } });
+      document.body.appendChild(el);
+
+      await vi.waitFor(() => expect(el.querySelector('[data-action="retry"]')).toBeTruthy(), { timeout: 1000 });
+      expect(scrollToSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not scroll when the page was replaced while the search was loading', async () => {
+      let resolveFirst!: (value: unknown) => void;
+      fetchLawsSpy.mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve; }));
+      window.history.replaceState({ name: 'browse', searchSurface: 'home' }, '', '/browse?q=Murphy');
+
+      const first = Browse({ onNavigate: () => { } });
+      document.body.appendChild(first);
+      await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalledTimes(1), { timeout: 1000 });
+
+      // The router replaces the page while the first search is still in flight
+      first.remove();
+      window.history.replaceState({ name: 'browse', searchSurface: 'home', searchTracked: true }, '', '/browse?q=Murphy');
+      const second = Browse({ onNavigate: () => { } });
+      document.body.appendChild(second);
+      await vi.waitFor(() => expect(second.querySelector('#browse-laws-list .law-card-mini')).toBeTruthy(), { timeout: 1000 });
+
+      resolveFirst({ data: [], total: 0, limit: 25, offset: 0 });
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(first.querySelector('#browse-laws-list .law-card-mini')).toBeNull();
+      expect(scrollToSpy).not.toHaveBeenCalled();
+      expect(document.activeElement).not.toBe(resultsTitle(second));
+    });
+
+    it('does not scroll when a newer load starts before the reveal', async () => {
+      const releaseCategory: Array<() => void> = [];
+      vi.spyOn(api, 'fetchAPI').mockImplementation(() => new Promise((resolve) => {
+        releaseCategory.push(() => resolve({ title: 'Technology' }));
+      }));
+      window.history.replaceState({ name: 'browse', searchSurface: 'home' }, '', '/browse?category_id=5');
+
+      const el = Browse({ onNavigate: () => { } });
+      document.body.appendChild(el);
+      await vi.waitFor(() => expect(el.querySelector('#browse-laws-list .law-card-mini')).toBeTruthy(), { timeout: 1000 });
+
+      // Results are showing while the search summary still waits for its category name; sorting starts a newer load
+      const sortSelect = el.querySelector('#sort-select') as HTMLSelectElement;
+      sortSelect.value = 'created_at-asc';
+      sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalledTimes(2), { timeout: 1000 });
+
+      releaseCategory.forEach(release => release());
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(scrollToSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not scroll when the visitor has already scrolled while the search loaded', async () => {
+      const scrollY = vi.spyOn(window, 'scrollY', 'get').mockReturnValue(320);
+      window.history.replaceState({ name: 'browse', searchSurface: 'header' }, '', '/browse?q=Murphy');
+
+      const el = Browse({ onNavigate: () => { } });
+      document.body.appendChild(el);
+      await vi.waitFor(() => expect(el.querySelector('#browse-laws-list .law-card-mini')).toBeTruthy(), { timeout: 1000 });
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(scrollToSpy).not.toHaveBeenCalled();
+      scrollY.mockRestore();
     });
 
     it('does not scroll for direct links, repeat renders, or Advanced Search submissions', async () => {
