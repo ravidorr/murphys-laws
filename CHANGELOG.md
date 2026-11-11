@@ -263,6 +263,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A law page opened from a link no longer swaps the law it arrived with for an error screen when the law request fails
+  for a reason other than the law being missing (a refused request, a server error, a timeout or a network failure).
+  The router now hands the prerendered page to the first view, which shows the prerendered law at once instead of a
+  spinner while the request runs. If the request fails, the law stays on screen under an alert saying some features
+  couldn't load, with a Try Again button. Try Again is disabled while the retry runs, the law stays visible, and focus
+  returns to the button when the retry fails again. A missing law (the API answers 404, or the ID can't name a law)
+  still shows "Law Not Found", and only a 404 marks the page `noindex`; a failure that keeps the prerendered law leaves
+  robots at `index, follow`. The Try Again button carries no `aria-label` that differs from its visible text. The
+  `law_not_found` event gains `showed_prerendered_law: true`, set only when the fallback keeps the prerendered law on
+  screen. Web bumped to `3.4.94`; root to `2.6.198`.
 - Opening a shared Sod's Law Calculator link now shows the score and message for the shared slider values right away,
   instead of the default result until a slider moves. The sliders also announce the shared values to screen readers
   (`aria-valuenow` and `aria-valuetext` were left at the template default), and the share text and link match the

@@ -158,5 +158,8 @@ export interface FavoriteLaw {
   savedAt: number;
 }
 
-/** Route render function signature */
-export type RouteRenderFn = (context: { param?: string | null }) => HTMLElement;
+/**
+ * Route render function signature. On the first render, `prerendered` is the static page's main
+ * element, detached from the page, so a view can fall back to it when its data fails to load.
+ */
+export type RouteRenderFn = (context: { param?: string | null; prerendered?: HTMLElement | null }) => HTMLElement;
