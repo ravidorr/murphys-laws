@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Buttered Toast calculator now keeps a prompt to move a slider beside the default result until the visitor
+  adjusts one, instead of losing its only invitation when the default result is calculated on load.
+  Visitors who arrive from a shared link see "Move any slider above to see how the odds change." instead, since the
+  shared result is not a starting point. Web bumped to `3.4.89`; root to `2.6.193`.
 - "Submit a Law" in the Browse empty state now carries the words of the search that found nothing to the submit page
   (`/submit?text=...`), which prefills the Law Text box and runs the duplicate check on them. The text is removed from the address once the
   form has read it, so a reload or a return to the page starts from an empty form, and the check on text the visitor did
@@ -74,6 +78,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   button only appears when a filter is active. Pressing it moves keyboard focus to the Search box so it is not lost
   when the list redraws, and clearing no longer records an `archive.search` event. Web bumped to `3.4.84`; root to
   `2.6.188`.
+- Law text on law cards (category lists, browse, home and related laws) now carries a thin, always-visible underline
+  in a solid colour that meets 3:1 contrast in both themes, so visitors on touch screens, who never see the hover
+  state, can tell a law opens. The static build's law cards carry the same underline from first paint. Hover and
+  keyboard focus darken the underline as before. Web bumped to `3.4.93`; root to `2.6.197`.
+- On phones (narrower than 600px), the Buttered Toast calculator's probability now stays pinned to the bottom of the
+  screen as a compact bar while the sliders are in view, so each slider move shows its effect without scrolling down
+  to the result. The bar is named by its heading for screen readers, has a top edge (a solid one in high-contrast and
+  forced-colors modes), reserves less room for the back-to-top button, and a focused slider is scrolled clear of it.
+  Until the first slider move, the starting-point hint takes its own full-width row inside the bar. Web bumped to
+  `3.4.92`; root to `2.6.196`.
+- Law cards on a category page now end with a small link that says what opening the law adds beyond the card: "Read
+  the full law", or "See the law this corollary belongs to" for a corollary. The link is a 44 px tall target, uses the
+  link colors and is hidden when printing. Opens from it are reported to Pendo with `open_method: 'law_page_cue'`, apart
+  from title links. Other law lists are unchanged. Web bumped to `3.4.91`; root to `2.6.195`.
+- On a category page, the "Explore nearby" links now follow the law list and its pagination instead of sitting above
+  the sort control, so the laws are the first next step. The static build now renders the links after the pre-rendered law cards too, so
+  first paint matches, and the links have top spacing under the pagination. Web bumped to `3.4.90`; root to `2.6.194`.
 
 ### Added
 
@@ -251,7 +272,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   still shows "Law Not Found", and only a 404 marks the page `noindex`; a failure that keeps the prerendered law leaves
   robots at `index, follow`. The Try Again button carries no `aria-label` that differs from its visible text. The
   `law_not_found` event gains `showed_prerendered_law: true`, set only when the fallback keeps the prerendered law on
-  screen. Web bumped to `3.4.89`; root to `2.6.193`.
+  screen. Web bumped to `3.4.94`; root to `2.6.198`.
 - Opening a shared Sod's Law Calculator link now shows the score and message for the shared slider values right away,
   instead of the default result until a slider moves. The sliders also announce the shared values to screen readers
   (`aria-valuenow` and `aria-valuetext` were left at the template default), and the share text and link match the

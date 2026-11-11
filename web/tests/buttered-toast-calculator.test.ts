@@ -266,6 +266,29 @@ describe('ButteredToastCalculator view', () => {
     document.body.removeChild(el);
   });
 
+  it('keeps the result pinned in view on phones when the result band changes', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const resultDisplay = el.querySelector('#toast-result-display')!;
+    expect(resultDisplay.classList.contains('calc-result-sticky')).toBe(true);
+
+    // The pinned bar is named by the heading above it
+    expect(resultDisplay.getAttribute('role')).toBe('group');
+    const labelId = resultDisplay.getAttribute('aria-labelledby')!;
+    expect(el.querySelector(`#${labelId}`)!.textContent).toBe('Probability of Butter-Side Down Landing:');
+
+    input(el, 'toast-overhang').value = '11';
+    input(el, 'toast-inertia').value = '250';
+    input(el, 'toast-height').value = '100';
+    input(el, 'toast-height').dispatchEvent(new Event('input'));
+
+    expect(resultDisplay.classList.contains('calc-dark')).toBe(true);
+    expect(resultDisplay.classList.contains('calc-result-sticky')).toBe(true);
+
+    document.body.removeChild(el);
+  });
+
   it('updates slider value displays on input', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
@@ -431,6 +454,61 @@ describe('ButteredToastCalculator view', () => {
     expect(probability).toMatch(/\d+%/);
 
     document.body.removeChild(el);
+  });
+
+  it('keeps a prompt to move a slider beside the default result until the first adjustment', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const hint = el.querySelector<HTMLElement>('#toast-adjust-hint')!;
+    expect(el.querySelector('#toast-result-display')!.contains(hint)).toBe(true);
+    expect(hint.hidden).toBe(false);
+    expect(hint.textContent).toMatch(/Move any slider/);
+
+    const height = input(el, 'toast-height');
+    height.value = '100';
+    height.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(hint.hidden).toBe(true);
+
+    height.value = '120';
+    height.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(hint.hidden).toBe(true);
+
+    document.body.removeChild(el);
+  });
+
+  it('keeps the starting-point wording and styling hook on the prompt for a fresh visit', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const hint = el.querySelector<HTMLElement>('#toast-adjust-hint')!;
+    expect(hint.classList.contains('calc-adjust-hint')).toBe(true);
+    expect(hint.textContent).toMatch(/This is a starting point/);
+
+    document.body.removeChild(el);
+  });
+
+  it('drops the starting-point wording from the prompt when the page loads from a shared link', () => {
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: '?h=80&g=1000&o=6&b=1.5&f=25&t=400',
+      href: 'http://localhost:3000/calculator/buttered-toast?h=80&g=1000&o=6&b=1.5&f=25&t=400'
+    });
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const hint = el.querySelector<HTMLElement>('#toast-adjust-hint')!;
+    expect(hint.hidden).toBe(false);
+    expect(hint.textContent).toBe('Move any slider above to see how the odds change.');
+    expect(hint.textContent).not.toMatch(/starting point/);
+
+    const height = input(el, 'toast-height');
+    height.value = '100';
+    height.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(hint.hidden).toBe(true);
+
+    document.body.removeChild(el);
+    vi.unstubAllGlobals();
   });
 
   it('displays formula element on load', () => {

@@ -504,6 +504,37 @@ function renderLawLinkList(laws: Law[], seoById: Map<string, LawSeo>): string {
 }
 
 /**
+ * Static category page body. The "Explore nearby" links follow the pre-rendered law cards, as they follow the law list
+ * and its pagination in the client view, so first paint matches the hydrated page.
+ */
+function buildStaticCategoryContent({ slug, title, descriptionText, lawCardsSection, lawIndex }: {
+  slug: string;
+  title: string;
+  descriptionText: string;
+  lawCardsSection: string;
+  lawIndex: string;
+}): string {
+  return `
+      <div class="container page pt-0">
+        <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-primary">
+          ${wrapFirstWordWithAccent(escapeHtml(title))}
+        </h1>
+        <p class="lead text-center mb-8 text-muted-fg max-w-2xl mx-auto">${descriptionText}</p>
+        ${lawCardsSection}
+        <section class="section card card--section section-card mt-8 mb-8" aria-labelledby="category-internal-links-${slug}">
+          <div class="section-header">
+            <h2 id="category-internal-links-${slug}" class="section-title"><span class="accent-text">Explore</span> nearby</h2>
+          </div>
+          <div class="section-body">
+            ${renderInternalLinkList(getCategoryHubLinks(slug))}
+          </div>
+        </section>
+        ${lawIndex}
+      </div>
+`;
+}
+
+/**
  * Render static law cards HTML for SSG (no client JS; same structure as client cards for SEO and no-JS users)
  */
 function renderStaticLawCards(laws: Law[], baseUrl: string = SITE_URL): string {
@@ -523,7 +554,7 @@ function renderStaticLawCards(laws: Law[], baseUrl: string = SITE_URL): string {
     return `
     <article class="law-card-mini" data-law-id="${safeId}" tabindex="0" role="article" aria-label="${ariaLabel}">
       <p class="law-card-text">
-        <a href="${lawUrl}">${titleText}</a>
+        <a class="law-card-link" href="${lawUrl}">${titleText}</a>
       </p>
       ${attribution ? `<p class="law-card-attrib">${attribution}</p>` : ''}
       <div class="law-card-footer">
@@ -1449,24 +1480,7 @@ async function main(): Promise<void> {
       ? `<section class="section mt-8" aria-labelledby="category-all-laws-${slug}"><h2 id="category-all-laws-${slug}" class="text-xl font-semibold mb-4">More laws in this category</h2>${renderLawLinkList(moreCategoryLaws, lawSeoById)}</section>`
       : '';
 
-    const staticContent = `
-      <div class="container page pt-0">
-        <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-primary">
-          ${wrapFirstWordWithAccent(escapeHtml(title))}
-        </h1>
-        <p class="lead text-center mb-8 text-muted-fg max-w-2xl mx-auto">${descriptionText}</p>
-        <section class="section card card--section section-card mb-8" aria-labelledby="category-internal-links-${slug}">
-          <div class="section-header">
-            <h2 id="category-internal-links-${slug}" class="section-title"><span class="accent-text">Explore</span> nearby</h2>
-          </div>
-          <div class="section-body">
-            ${renderInternalLinkList(getCategoryHubLinks(slug))}
-          </div>
-        </section>
-        ${ssgLawCardsSection}
-        ${categoryLawIndex}
-      </div>
-`;
+    const staticContent = buildStaticCategoryContent({ slug, title, descriptionText, lawCardsSection: ssgLawCardsSection, lawIndex: categoryLawIndex });
     
     // Regex to replace inside <main>...<p>Loading...</p>...</main>
     // The template has: <main ...> ... <p ...>Loading...</p> </main>
@@ -1978,6 +1992,7 @@ export {
   buildStaticFavoritesContent,
   buildStaticSubmitContent,
   buildStaticHomeContent,
+  buildStaticCategoryContent,
   buildStaticCalculatorContent,
   buildStaticLawDetailContent,
   buildStaticArticleArchive,
