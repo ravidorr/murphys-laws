@@ -22,6 +22,22 @@ test('search in header routes to browse and shows query', async ({ page }) => {
   await expect(page.locator('.search-info').getByText('gravity')).toBeVisible();
 });
 
+test('header search scrolls to the results with the title focused below the header', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('combobox', { name: 'Search' }).fill('gravity');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/browse\?q=gravity/);
+
+  const title = page.locator('#browse-results-title');
+  await expect(title).toHaveText('Search Results');
+  await expect(title).toBeFocused();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+
+  const headerBottom = await page.locator('header.sticky').evaluate((header) => header.getBoundingClientRect().bottom);
+  const cardTop = await page.locator('#browse-all-laws-card').evaluate((card) => card.getBoundingClientRect().top);
+  expect(cardTop).toBeGreaterThanOrEqual(headerBottom - 1);
+});
+
 test('home law click -> law detail and back via button', async ({ page }) => {
   await page.goto('/');
   const firstLaw = page.locator('[data-law-id]').first();

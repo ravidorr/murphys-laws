@@ -41,6 +41,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- A search from the home or header search box now lands on its results on the Browse page: the page scrolls past the
+  intro and Advanced Search form to the results card (or its empty state) and moves focus to the card title. The card
+  is titled "Search Results" while a search or filter is active, and "All Laws" otherwise. The scroll also happens
+  when the search fails to load (it lands on the Try Again message), leaves room for the header only while the header is
+  pinned (it scrolls away with the page on the legacy display), and is skipped when the Browse page was replaced while
+  the search loaded or the visitor has already scrolled. Web bumped to `3.4.95`; root to `2.6.199`.
 - The Buttered Toast calculator now keeps a prompt to move a slider beside the default result until the visitor
   adjusts one, instead of losing its only invitation when the default result is calculated on load.
   Visitors who arrive from a shared link see "Move any slider above to see how the odds change." instead, since the
@@ -78,6 +84,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   button only appears when a filter is active. Pressing it moves keyboard focus to the Search box so it is not lost
   when the list redraws, and clearing no longer records an `archive.search` event. Web bumped to `3.4.84`; root to
   `2.6.188`.
+- Law text on law cards (category lists, browse, home and related laws) now carries a thin, always-visible underline
+  in a solid colour that meets 3:1 contrast in both themes, so visitors on touch screens, who never see the hover
+  state, can tell a law opens. The static build's law cards carry the same underline from first paint. Hover and
+  keyboard focus darken the underline as before. Web bumped to `3.4.93`; root to `2.6.197`.
+- On phones (narrower than 600px), the Buttered Toast calculator's probability now stays pinned to the bottom of the
+  screen as a compact bar while the sliders are in view, so each slider move shows its effect without scrolling down
+  to the result. The bar is named by its heading for screen readers, has a top edge (a solid one in high-contrast and
+  forced-colors modes), reserves less room for the back-to-top button, and a focused slider is scrolled clear of it.
+  Until the first slider move, the starting-point hint takes its own full-width row inside the bar. Web bumped to
+  `3.4.92`; root to `2.6.196`.
+- Law cards on a category page now end with a small link that says what opening the law adds beyond the card: "Read
+  the full law", or "See the law this corollary belongs to" for a corollary. The link is a 44 px tall target, uses the
+  link colors and is hidden when printing. Opens from it are reported to Pendo with `open_method: 'law_page_cue'`, apart
+  from title links. Other law lists are unchanged. Web bumped to `3.4.91`; root to `2.6.195`.
+- On a category page, the "Explore nearby" links now follow the law list and its pagination instead of sitting above
+  the sort control, so the laws are the first next step. The static build now renders the links after the pre-rendered law cards too, so
+  first paint matches, and the links have top spacing under the pagination. Web bumped to `3.4.90`; root to `2.6.194`.
 
 ### Added
 
@@ -248,7 +271,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Submitting the home page "Search the Archive" box with nothing typed now opens Browse All Laws instead of quietly
   re-rendering the home page. The `archive.search` event for a blank submit reports `result: 'blank'`, so it can be told
-  apart from the Browse All Laws link (`result: 'browse'`). Web bumped to `3.4.90`; root to `2.6.194`.
+  apart from the Browse All Laws link (`result: 'browse'`). Web bumped to `3.4.96`; root to `2.6.200`.
+- A law page opened from a link no longer swaps the law it arrived with for an error screen when the law request fails
+  for a reason other than the law being missing (a refused request, a server error, a timeout or a network failure).
+  The router now hands the prerendered page to the first view, which shows the prerendered law at once instead of a
+  spinner while the request runs. If the request fails, the law stays on screen under an alert saying some features
+  couldn't load, with a Try Again button. Try Again is disabled while the retry runs, the law stays visible, and focus
+  returns to the button when the retry fails again. A missing law (the API answers 404, or the ID can't name a law)
+  still shows "Law Not Found", and only a 404 marks the page `noindex`; a failure that keeps the prerendered law leaves
+  robots at `index, follow`. The Try Again button carries no `aria-label` that differs from its visible text. The
+  `law_not_found` event gains `showed_prerendered_law: true`, set only when the fallback keeps the prerendered law on
+  screen. Web bumped to `3.4.94`; root to `2.6.198`.
 - Opening a shared Sod's Law Calculator link now shows the score and message for the shared slider values right away,
   instead of the default result until a slider moves. The sliders also announce the shared values to screen readers
   (`aria-valuenow` and `aria-valuetext` were left at the template default), and the share text and link match the
