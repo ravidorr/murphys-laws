@@ -41,6 +41,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- A search from the home or header search box now lands on its results on the Browse page: the page scrolls past the
+  intro and Advanced Search form to the results card (or its empty state) and moves focus to the card title. The card
+  is titled "Search Results" while a search or filter is active, and "All Laws" otherwise. The scroll also happens
+  when the search fails to load (it lands on the Try Again message), leaves room for the header only while the header is
+  pinned (it scrolls away with the page on the legacy display), and is skipped when the Browse page was replaced while
+  the search loaded or the visitor has already scrolled. Web bumped to `3.4.95`; root to `2.6.199`.
 - The Buttered Toast calculator now keeps a prompt to move a slider beside the default result until the visitor
   adjusts one, instead of losing its only invitation when the default result is calculated on load.
   Visitors who arrive from a shared link see "Move any slider above to see how the odds change." instead, since the
