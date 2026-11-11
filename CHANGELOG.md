@@ -42,8 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The Sod's Law calculator's share buttons now sit directly under the score, headed "Share This Score", instead of in a
-  separate "Share Your Results" card below it, so sharing stays next to each new result. Web bumped to `3.4.92`; root
-  to `2.6.196`.
+  separate "Share Your Results" card below it, so sharing stays next to each new result. The heading uses the shared `section-title` style, and the gap below the
+  share buttons is wider so the "Copied!" message no longer touches the Related Scenarios card. Web bumped to `3.4.92`;
+  root to `2.6.196`.
 - The Buttered Toast calculator now keeps a prompt to move a slider beside the default result until the visitor
   adjusts one, instead of losing its only invitation when the default result is calculated on load.
   Visitors who arrive from a shared link see "Move any slider above to see how the odds change." instead, since the
