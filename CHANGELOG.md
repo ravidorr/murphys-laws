@@ -46,6 +46,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The article button row's accessible name is now "Explore and contribute". Web bumped to `3.4.78`; root to `2.6.182`.
 - The Submit a Law form now starts with the required Law Text box; the Law Title field follows it and its label reads
   "Law Title (optional)".
+- The Submit a Law form (`SubmitLawSection`) accepts an optional starting text and category slug, so a page that sends
+  a visitor to it, such as a search that found nothing, can hand off what they were looking for instead of an empty
+  form. The text fills the Law Text box (trimmed, at most 1000 characters) without showing the short-text error, and
+  the category is preselected; a category the visitor has already chosen is kept when fresh categories load.
 
 ### Added
 
