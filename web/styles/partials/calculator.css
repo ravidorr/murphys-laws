@@ -160,6 +160,33 @@
   display: block;
 }
 
+/* Single-column sliders push the result below the fold on phones: pin it to the
+   bottom of the viewport as a compact bar so each slider move shows its effect. */
+@media (width < 600px) {
+  .calc-result-sticky {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+
+    /* Keep the text clear of the floating back-to-top button in the same corner */
+    padding-inline-end: calc(var(--component-control-min-size) + var(--space-4));
+    box-shadow: 0 -4px 12px var(--shadow-light);
+  }
+
+  .calc-result-sticky .calc-score {
+    flex-shrink: 0;
+    font-size: var(--text-3xl);
+  }
+
+  .calc-result-sticky .calc-interpretation {
+    margin: 0;
+  }
+}
+
 /* Info section at bottom of calculator */
 .calc-info {
   font-size: var(--text-sm);
