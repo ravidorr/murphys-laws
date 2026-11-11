@@ -58,6 +58,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   form. The text fills the Law Text box (trimmed, at most 1000 characters) without showing the short-text error, and
   the category is preselected; a category the visitor has already chosen is kept when fresh categories load. Web bumped
   to `3.4.80`; root to `2.6.184`.
+- When a Browse search finds nothing, the empty state now has a "Clear filters" button beside "Submit a Law". It does
+  the same thing as the search panel's Clear button, so visitors can widen the search right where the message is. The
+  button only appears when a filter is active. Pressing it moves keyboard focus to the Search box so it is not lost
+  when the list redraws, and clearing no longer records an `archive.search` event. Web bumped to `3.4.84`; root to
+  `2.6.188`.
 
 ### Added
 
