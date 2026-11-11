@@ -444,7 +444,8 @@ export function SubmitLawSection({ initialText, initialCategorySlug }: SubmitLaw
     }, 500);
   });
 
-  async function checkForDuplicates() {
+  /** `reportMatch` is false for the check on prefilled text, which the visitor did not type, so analytics skip it. */
+  async function checkForDuplicates(reportMatch = true) {
     const text = textArea!.value.trim();
     const candidateContainer = duplicateCandidates!;
     if (text.length < 10) {
@@ -466,7 +467,7 @@ export function SubmitLawSection({ initialText, initialCategorySlug }: SubmitLaw
         duplicateWarningShown = true;
         // The check reruns as the visitor types, so report each distinct top match once
         const topMatchId = String(topMatch.id);
-        if (!reportedDuplicateMatchIds.has(topMatchId)) {
+        if (reportMatch && !reportedDuplicateMatchIds.has(topMatchId)) {
           reportedDuplicateMatchIds.add(topMatchId);
           trackPendoEvent('law_duplicate_detected', {
             exact_match_count: exact.length,
@@ -508,6 +509,8 @@ export function SubmitLawSection({ initialText, initialCategorySlug }: SubmitLaw
     textArea!.value = startingText;
     checkSubmitValidity();
     clearMessage();
+    // Check the words against the archive straight away, so a duplicate shows before they write more
+    void checkForDuplicates(false);
   }
 
   // Put the cursor in the law text box when the page opens, so visitors can start writing straight away.
