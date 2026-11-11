@@ -357,6 +357,43 @@ describe('Browse view', () => {
     expect(onNavigate).toHaveBeenCalledWith('submit');
   });
 
+  it('offers Browse All Laws in the empty state of a search and clears the search when clicked', async () => {
+    fetchLawsSpy.mockResolvedValueOnce({ data: [], total: 0, limit: 25, offset: 0 });
+
+    const el = Browse({ searchQuery: 'nonexistent', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/Murphy spared these results/);
+    }, { timeout: 1000 });
+    expect((el.querySelector('#search-keyword') as HTMLInputElement).value).toBe('nonexistent');
+
+    const clearSearchBtn = el.querySelector('[data-action="clear-search"]') as HTMLButtonElement | null;
+    expect(clearSearchBtn?.textContent).toMatch(/Browse All Laws/);
+    expect(el.querySelector('[data-nav="submit"]')?.classList.contains('outline')).toBe(true);
+
+    clearSearchBtn!.querySelector('.icon')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    await vi.waitFor(() => {
+      expect(el.querySelectorAll('#browse-laws-list .law-card-mini').length).toBe(2);
+    }, { timeout: 1000 });
+    expect(fetchLawsSpy).toHaveBeenLastCalledWith(expect.not.objectContaining({ q: expect.anything() }));
+    expect((el.querySelector('#search-keyword') as HTMLInputElement).value).toBe('');
+    expect(location.search).toBe('');
+  });
+
+  it('omits Browse All Laws from the empty state when no search is active', async () => {
+    fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
+
+    const el = Browse({ onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/Murphy spared these results/);
+    }, { timeout: 1000 });
+
+    expect(el.querySelector('[data-action="clear-search"]')).toBeNull();
+    expect(el.querySelector('[data-nav="submit"]')?.classList.contains('outline')).toBe(false);
+  });
+
   it('handles clicking on submit button icon or text in empty state', async () => {
     fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
     const onNavigate = vi.fn();

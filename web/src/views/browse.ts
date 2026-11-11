@@ -122,15 +122,27 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
   // Render law cards
   function renderLaws(laws: Law[], query?: string) {
     if (!laws || laws.length === 0) {
+      // A search with no matches gets a one-click way back to the full archive
+      const clearSearchButton = hasActiveFilters(currentFilters)
+        ? `
+            <button type="button" class="btn" data-action="clear-search">
+              <span class="icon" data-icon="list" aria-hidden="true"></span>
+              <span class="btn-text">Browse All Laws</span>
+            </button>
+          `
+        : '';
       return `
         <div class="empty-state">
           <span class="icon empty-state-icon" data-icon="searchOff" aria-hidden="true"></span>
           <p class="empty-state-title">Murphy spared these results</p>
           <p class="empty-state-text">Try adjusting your search filters or clearing them to see more results.</p>
-          <button class="btn mt-4" data-nav="submit">
-            <span class="btn-text">Submit a Law</span>
-            <span class="icon" data-icon="send" aria-hidden="true"></span>
-          </button>
+          <div class="not-found-actions">
+            ${clearSearchButton}
+            <button class="btn${clearSearchButton ? ' outline' : ''}" data-nav="submit">
+              <span class="btn-text">Submit a Law</span>
+              <span class="icon" data-icon="send" aria-hidden="true"></span>
+            </button>
+          </div>
         </div>
       `;
     }
@@ -275,6 +287,12 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
 
     if (t.closest('[data-action="retry"]')) {
       loadPage(currentPage, true);
+      return;
+    }
+
+    // Empty-results "Browse All Laws": reset the Advanced Search form and reload the full archive
+    if (t.closest('[data-action="clear-search"]')) {
+      el.querySelector<HTMLButtonElement>('#clear-btn')!.click();
       return;
     }
 
