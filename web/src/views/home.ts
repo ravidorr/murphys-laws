@@ -139,9 +139,15 @@ export function renderHome(
   const searchForm = browseCta.querySelector<HTMLFormElement>('form[role="search"]')!;
   searchForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    trackProductEvent('archive.search', { surface: 'home', result: 'submitted' });
     const input = searchForm.querySelector<HTMLInputElement>('input[type="search"]')!;
     const query = input.value.trim();
+    // A blank search opens the full archive instead of re-rendering the home page
+    if (!query) {
+      trackProductEvent('archive.search', { surface: 'home', result: 'browse' });
+      onNavigate('browse');
+      return;
+    }
+    trackProductEvent('archive.search', { surface: 'home', result: 'submitted' });
     if (onSearch) onSearch({ q: query }, 'home');
     else onNavigate('browse');
   });

@@ -209,6 +209,21 @@ describe('Home view', () => {
     expect(onSearch).toHaveBeenCalledWith({ q: 'technology failure' }, 'home');
   });
 
+  it('opens browse when the homepage search is submitted blank', () => {
+    const el = document.createElement('div');
+    const onNavigate = vi.fn<OnNavigate>() as Mock<OnNavigate>;
+    const onSearch = vi.fn();
+    renderHome(el, null, [], onNavigate, onSearch);
+    const form = el.querySelector('form[role="search"]') as HTMLFormElement;
+    const input = form.querySelector('input[type="search"]') as HTMLInputElement;
+    input.value = '   ';
+
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    expect(onSearch).not.toHaveBeenCalled();
+    expect(onNavigate).toHaveBeenCalledWith('browse');
+  });
+
   it('navigates to the category index from the homepage CTA', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
