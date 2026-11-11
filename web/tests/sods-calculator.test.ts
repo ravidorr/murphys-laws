@@ -227,6 +227,32 @@ describe("Calculator view", () => {
     expect(el!.querySelector('#urgency-value')!.textContent).toBe('7');
   });
 
+  it('labels the default score as a sample until the visitor moves a slider', () => {
+    const hint = el!.querySelector<HTMLElement>('#score-sample-hint')!;
+    expect(hint.hidden).toBe(false);
+    expect(hint.textContent).toContain('sample score');
+
+    (el!.querySelector('#skill') as HTMLInputElement)!.value = '7';
+    (el!.querySelector('#skill') as HTMLInputElement)!.dispatchEvent(new Event('input'));
+
+    expect(hint.hidden).toBe(true);
+  });
+
+  it('hides the sample-score hint when loaded from a shared link', () => {
+    el?.cleanup?.();
+    if (el?.parentNode) el.parentNode.removeChild(el);
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: '?u=7&c=8&i=3&s=6&f=4',
+      href: 'http://localhost:3000/calculator/sods-law?u=7&c=8&i=3&s=6&f=4'
+    });
+    el = Calculator();
+    document.body.appendChild(el);
+    vi.unstubAllGlobals();
+
+    expect(el.querySelector<HTMLElement>('#score-sample-hint')!.hidden).toBe(true);
+  });
+
   it('resets formula values after timeout', () => {
     (el!.querySelector('#urgency') as HTMLInputElement)!.value = '7';
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));

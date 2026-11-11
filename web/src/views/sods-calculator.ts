@@ -62,6 +62,7 @@ export function Calculator(): HTMLDivElement {
   const scoreValueDisplay = el.querySelector('#score-value')!;
   const scoreInterpretationDisplay = el.querySelector('#score-interpretation')!;
   const resultDisplay = el.querySelector('#result-display')!;
+  const sampleHint = el.querySelector<HTMLElement>('#score-sample-hint')!;
   const formulaDisplay = el.querySelector('#formula-display')!;
 
   // Track which variables should show values (temporarily after slider change)
@@ -163,6 +164,8 @@ export function Calculator(): HTMLDivElement {
     sliders[k].addEventListener('input', () => {
       if (!hasTrackedStart) {
         hasTrackedStart = true;
+        // The score now reflects the visitor's own input, not the default sample
+        sampleHint.hidden = true;
         trackProductEvent('calculator.start', { surface: 'calculator_page', calculator: 'sods-law' });
       }
       const val = sliders[k].value;
@@ -257,6 +260,8 @@ export function Calculator(): HTMLDivElement {
   });
   const paramKeys: Record<string, SliderKey> = { u: 'urgency', c: 'complexity', i: 'importance', s: 'skill', f: 'frequency' };
   fromSharedLink = Object.keys(parsedState).length > 0;
+  // A shared link carries someone's own settings, so the score is not a default sample
+  sampleHint.hidden = fromSharedLink;
 
   Object.entries(parsedState).forEach(([param, value]) => {
     const slider = paramKeys[param]!;
