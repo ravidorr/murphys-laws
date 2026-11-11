@@ -82,6 +82,34 @@
   </div>
 </template>
 
+<template data-load-error-template>
+  <div class="card card--section">
+    <div class="card-body">
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <span class="icon" data-icon="error" aria-hidden="true"></span>
+        </div>
+        <h2 class="empty-state-title">We couldn't <span class="accent-text">load</span> this law</h2>
+        <p class="empty-state-text">Something went wrong while loading this law. It may still be in the archive, so please try again.</p>
+        <div class="not-found-actions">
+          <button type="button" class="btn" data-action="retry-law" aria-label="Try loading this law again">
+            <span class="icon" data-icon="refresh" aria-hidden="true"></span>
+            <span class="btn-text">Try Again</span>
+          </button>
+          <a href="/" class="btn outline" data-nav="home">
+            <span class="icon" data-icon="home" aria-hidden="true"></span>
+            <span class="btn-text">Go Home</span>
+          </a>
+          <button type="button" class="btn outline" data-nav="browse">
+            <span class="btn-text">Browse All Laws</span>
+            <span class="icon" data-icon="list" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
 <template data-law-card-template>
   <article class="card card--section law-detail-card section-card mb-12" data-law-card-root>
     <header class="card-header section-header">
