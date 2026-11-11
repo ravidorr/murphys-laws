@@ -5,6 +5,7 @@ import * as api from '../src/utils/api.js';
 import * as voting from '../src/utils/voting.js';
 import * as cacheUtils from '../src/utils/category-cache.js';
 import * as exportContext from '../src/utils/export-context.js';
+import * as metrics from '../src/utils/metrics.js';
 
 // Mock voting module
 vi.mock('../src/utils/voting.js', async (importOriginal) => {
@@ -378,6 +379,156 @@ describe('Browse view', () => {
     await vi.waitFor(() => {
       expect(onNavigate).toHaveBeenCalledWith('submit');
     });
+  });
+
+  it('shows a Clear filters button in the empty state that clears the search and reloads', async () => {
+    fetchLawsSpy.mockResolvedValueOnce({ data: [], total: 0, limit: 25, offset: 0 });
+
+    const el = Browse({ searchQuery: 'nonexistent', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/Murphy spared these results/);
+    }, { timeout: 1000 });
+
+    const clearFiltersBtn = el.querySelector('[data-action="clear-filters"]') as HTMLButtonElement | null;
+    expect(clearFiltersBtn).toBeTruthy();
+    expect(clearFiltersBtn?.textContent).toMatch(/Clear filters/);
+
+    clearFiltersBtn!.querySelector('.btn-text')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalledTimes(2);
+      expect(el.textContent).toMatch(/Parkinson's Law/);
+    }, { timeout: 1000 });
+    expect(fetchLawsSpy).toHaveBeenLastCalledWith(expect.not.objectContaining({ q: expect.anything() }));
+    expect((el.querySelector('#search-keyword') as HTMLInputElement).value).toBe('');
+    expect(el.querySelector('[data-action="clear-filters"]')).toBeNull();
+  });
+
+  it.each([
+    ['category', '?category_id=3', { category_id: 3 }],
+    ['attribution', '?attribution=Alice', { attribution: 'Alice' }]
+  ])('shows the Clear filters button in the empty state for a %s-only search and clears it', async (_label, search, cleared) => {
+    const url = new URL(location.href);
+    url.search = search;
+    window.history.replaceState({}, '', url.toString());
+    fetchLawsSpy.mockResolvedValueOnce({ data: [], total: 0, limit: 25, offset: 0 });
+
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('[data-action="clear-filters"]')).toBeTruthy();
+    }, { timeout: 1000 });
+    expect(fetchLawsSpy).toHaveBeenLastCalledWith(expect.objectContaining(cleared));
+
+    (el.querySelector('[data-action="clear-filters"]') as HTMLButtonElement).click();
+
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalledTimes(2);
+      expect(el.textContent).toMatch(/Parkinson's Law/);
+    }, { timeout: 1000 });
+    expect(fetchLawsSpy).toHaveBeenLastCalledWith(expect.not.objectContaining(cleared));
+    expect(el.querySelector('[data-action="clear-filters"]')).toBeNull();
+  });
+
+  it('moves focus to the Search box when the empty state Clear filters button is used', async () => {
+    fetchLawsSpy.mockResolvedValueOnce({ data: [], total: 0, limit: 25, offset: 0 });
+
+    const el = Browse({ searchQuery: 'nonexistent', onNavigate: () => { } });
+    document.body.appendChild(el);
+
+    try {
+      await vi.waitFor(() => {
+        expect(el.querySelector('[data-action="clear-filters"]')).toBeTruthy();
+      }, { timeout: 1000 });
+      const clearFiltersBtn = el.querySelector('[data-action="clear-filters"]') as HTMLButtonElement;
+      clearFiltersBtn.focus();
+      expect(document.activeElement).toBe(clearFiltersBtn);
+
+      clearFiltersBtn.click();
+
+      expect(document.activeElement).toBe(el.querySelector('#search-keyword'));
+      await vi.waitFor(() => {
+        expect(el.textContent).toMatch(/Parkinson's Law/);
+      }, { timeout: 1000 });
+      expect(document.activeElement).toBe(el.querySelector('#search-keyword'));
+    } finally {
+      el.remove();
+    }
+  });
+
+  it('does not record an archive.search event when clearing, but still does for a submitted search', async () => {
+    const trackSpy = vi.spyOn(metrics, 'trackProductEvent');
+    fetchLawsSpy.mockResolvedValueOnce({ data: [], total: 0, limit: 25, offset: 0 });
+
+    const el = Browse({ searchQuery: 'nonexistent', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.querySelector('[data-action="clear-filters"]')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    (el.querySelector('[data-action="clear-filters"]') as HTMLButtonElement).click();
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/Parkinson's Law/);
+    }, { timeout: 1000 });
+    expect(trackSpy).not.toHaveBeenCalledWith('archive.search', expect.anything());
+
+    (el.querySelector('#search-keyword') as HTMLInputElement).value = 'gravity';
+    (el.querySelector('#search-btn') as HTMLButtonElement).click();
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalledTimes(3);
+    }, { timeout: 1000 });
+    expect(trackSpy).toHaveBeenCalledWith('archive.search', { surface: 'browse', result: 'submitted' });
+    expect(trackSpy.mock.calls.filter(([name]) => name === 'archive.search')).toHaveLength(1);
+  });
+
+  it('omits the Clear filters button from the empty state when no filters are active', async () => {
+    fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
+
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/Murphy spared these results/);
+    }, { timeout: 1000 });
+
+    expect(el.querySelector('[data-action="clear-filters"]')).toBeNull();
+    expect(el.querySelector('[data-nav="submit"]')).toBeTruthy();
+  });
+
+  it('carries the search words to the submit page from the empty state', async () => {
+    fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
+    const onNavigate = vi.fn();
+
+    const el = Browse({ searchQuery: 'toast & jam', onNavigate });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/Murphy spared these results/);
+    }, { timeout: 1000 });
+
+    (el.querySelector('[data-nav="submit"]') as HTMLElement).click();
+
+    expect(location.pathname).toBe('/submit');
+    expect(new URLSearchParams(location.search).get('text')).toBe('toast & jam');
+    expect(onNavigate).toHaveBeenCalledWith('submit');
+  });
+
+  it('opens a blank submit page from the empty state when no words were searched', async () => {
+    const url = new URL(location.href);
+    url.search = '?attribution=Nobody';
+    window.history.replaceState({}, '', url.toString());
+    fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
+    const onNavigate = vi.fn();
+
+    const el = Browse({ searchQuery: '', onNavigate });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/Murphy spared these results/);
+    }, { timeout: 1000 });
+
+    (el.querySelector('[data-nav="submit"]') as HTMLElement).click();
+
+    expect(location.pathname).toBe('/browse');
+    expect(onNavigate).toHaveBeenCalledWith('submit');
   });
 
   it('displays error state on fetch failure', async () => {
