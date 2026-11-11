@@ -207,6 +207,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   redirect to `/apple-touch-icon.png`, like the 240x240 sizes. Left alone: the `.well-known` discovery probes,
   `/app-ads.txt` (the apps show no ads), `/sellers.json`, `/dsrdelete.json`, and the bare `/blog`, `/cms`, `/news`,
   `/press`, `/site` and `/feedback` guesses. Web bumped to `3.4.74`; root to `2.6.176`.
+- Migration 024 deletes `law_relations` rows whose child or parent law no longer exists. The table declares cascading
+  foreign keys, but SQLite enforces them only on connections that turn the pragma on, and the `sqlite3` CLI (which the
+  migration runner and scripts such as `review-laws.ts` use) does not, so a law deleted there leaves its relation rows
+  behind (production held 5: three `COROLLARY_OF` and two `COMMENT_ON`). Reads that join `laws` never showed them, but
+  the corollary rules read `law_relations` alone, so an orphan could still block linking a surviving law, make a law
+  count as a corollary or as having corollaries, and count toward a parent's limit of five. A corollary whose parent
+  was deleted stays as an ordinary law. The migration is safe to run twice, and relations between laws that exist
+  (any status, duplicates included) are untouched. Backend bumped to `2.3.79`; root to `2.6.177`.
 - The migration runner no longer reports a write error in place of what happened to `sqlite3`. When `sqlite3` stops
   before it has read all of its input, writing the migration to it fails with `EPIPE`, which Node reports as a spawn
   error, but only if `sqlite3` had stopped before the write finished. `failureReason` in
