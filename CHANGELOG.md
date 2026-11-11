@@ -80,7 +80,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `2.6.188`.
 - Law cards on a category page now end with a small link that says what opening the law adds beyond the card: "Read
   the full law", or "See the law this corollary belongs to" for a corollary. The link is a 44 px tall target, uses the
-  link colors and is hidden when printing. Other law lists are unchanged. Web bumped to `3.4.91`; root to `2.6.195`.
+  link colors and is hidden when printing. Opens from it are reported to Pendo with `open_method: 'law_page_cue'`, apart
+  from title links. Other law lists are unchanged. Web bumped to `3.4.91`; root to `2.6.195`.
 - On a category page, the "Explore nearby" links now follow the law list and its pagination instead of sitting above
   the sort control, so the laws are the first next step. The static build now renders the links after the pre-rendered law cards too, so
   first paint matches, and the links have top spacing under the pagination. Web bumped to `3.4.90`; root to `2.6.194`.

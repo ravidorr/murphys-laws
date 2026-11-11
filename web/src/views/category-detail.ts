@@ -169,7 +169,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   }
 
   // Report a law opened from the category's law list with its 1-based rank across pages, the same way Browse does
-  function trackLawOpened(lawCard: HTMLElement, openMethod: 'card_click' | 'title_link' | 'keyboard') {
+  function trackLawOpened(lawCard: HTMLElement, openMethod: 'card_click' | 'title_link' | 'law_page_cue' | 'keyboard') {
     const lawsList = lawCard.closest('#category-laws-list');
     if (!lawsList) return;
     const pageIndex = Array.from(lawsList.querySelectorAll('.law-card-mini')).indexOf(lawCard);
@@ -459,8 +459,10 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     }
 
     // Handle navigation buttons and links (shared utility); a law card's text link opens the law here
-    const titleLinkCard = t.closest('[data-nav="law"]')?.closest<HTMLElement>('.law-card-mini');
-    if (titleLinkCard) trackLawOpened(titleLinkCard, 'title_link');
+    const openedLink = t.closest('[data-nav="law"]');
+    const titleLinkCard = openedLink?.closest<HTMLElement>('.law-card-mini');
+    // The "Read the full law" cue is reported apart from the title link, so its effect can be judged on its own
+    if (titleLinkCard) trackLawOpened(titleLinkCard, openedLink!.classList.contains('law-card-more-link') ? 'law_page_cue' : 'title_link');
     if (handleNavClick(t, onNavigate)) {
       e.preventDefault();
       return;
