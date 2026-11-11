@@ -41,14 +41,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- When a Browse search finds nothing, the empty state now has a "Clear filters" button beside "Submit a Law". It does
-  the same thing as the search panel's Clear button, so visitors can widen the search right where the message is. The
-  button only appears when a filter is active. Web bumped to `3.4.79`; root to `2.6.183`.
 - The Real-Life Examples hub now invites readers to submit their own law while they read, not only after the article:
   a "Submit your own" button ends the button row under the title and a prompt sits right before the example stories.
   The article button row's accessible name is now "Explore and contribute". Web bumped to `3.4.78`; root to `2.6.182`.
 - The Submit a Law form now starts with the required Law Text box; the Law Title field follows it and its label reads
   "Law Title (optional)".
+- The "Submit your own" button after an article (including the Real-Life Examples hub) now sits on its own below the
+  featured-laws card instead of in that card's footer, so it still shows when the featured laws fail to load or the
+  category has none. The static build renders it the same way. Web bumped to `3.4.79`; root to `2.6.183`.
+- The Submit a Law form (`SubmitLawSection`) accepts an optional starting text and category slug, so a page that sends
+  a visitor to it, such as a search that found nothing, can hand off what they were looking for instead of an empty
+  form. The text fills the Law Text box (trimmed, at most 1000 characters) without showing the short-text error, and
+  the category is preselected; a category the visitor has already chosen is kept when fresh categories load. Web bumped
+  to `3.4.80`; root to `2.6.184`.
+- When a Browse search finds nothing, the empty state now has a "Clear filters" button beside "Submit a Law". It does
+  the same thing as the search panel's Clear button, so visitors can widen the search right where the message is. The
+  button only appears when a filter is active. Pressing it moves keyboard focus to the Search box so it is not lost
+  when the list redraws, and clearing no longer records an `archive.search` event. Web bumped to `3.4.81`; root to
+  `2.6.185`.
 
 ### Added
 

@@ -291,6 +291,8 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
     // The empty state's Clear filters button reuses the search panel's Clear action
     if (t.closest('[data-action="clear-filters"]')) {
       el.querySelector<HTMLButtonElement>('#clear-btn')!.click();
+      // The button is about to be replaced by the redrawn list, so keep keyboard focus on a stable control (WCAG 2.4.3)
+      el.querySelector<HTMLInputElement>('#search-keyword')!.focus();
       return;
     }
 
@@ -358,12 +360,16 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
   const searchComponent = AdvancedSearch({
     initialFilters: currentFilters,
     onSearch: (filters) => {
-      trackProductEvent('archive.search', { surface: 'browse', result: 'submitted' });
       currentFilters = filters;
       currentSort = filters.q ? 'relevance' : 'score';
       currentOrder = 'desc';
-      // Clearing the form also calls onSearch({}), which isn't a search
-      pendingSearchSurface = hasActiveFilters(filters) ? 'browse_advanced' : null;
+      // Clearing the form also calls onSearch({}), which isn't a search, so it is neither tracked nor reported
+      if (hasActiveFilters(filters)) {
+        trackProductEvent('archive.search', { surface: 'browse', result: 'submitted' });
+        pendingSearchSurface = 'browse_advanced';
+      } else {
+        pendingSearchSurface = null;
+      }
       updateWidgetsVisibility();
       currentPage = 1;
       loadPage(1);
