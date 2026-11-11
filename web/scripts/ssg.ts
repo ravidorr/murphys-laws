@@ -11,6 +11,7 @@ import {
   getLawDetailInternalLinks,
   renderArticleFeaturedLawsActions,
   renderArticleNextSteps,
+  renderArticleSubmitAction,
   renderInternalLinkList
 } from '../src/utils/internal-links.ts';
 import { renderNotFoundContent, renderNotFoundLaws } from '../src/utils/not-found-content.ts';
@@ -558,9 +559,9 @@ function lawScore(law: Law): number {
  * h1 in static markup) and up to three top-scoring laws from the article's
  * featured category. Pages without an archive mapping get empty strings.
  */
-function buildStaticArticleArchive(slug: string, laws: Law[]): { nextSteps: string; featuredLaws: string } {
+function buildStaticArticleArchive(slug: string, laws: Law[]): { nextSteps: string; featuredLaws: string; submitAction: string } {
   const archive = getArticleArchiveLinks(slug as ContentPage);
-  if (!archive) return { nextSteps: '', featuredLaws: '' };
+  if (!archive) return { nextSteps: '', featuredLaws: '', submitAction: '' };
 
   // Same order as the API's score sort: score, then upvotes, then newest id
   const featured = laws
@@ -579,7 +580,8 @@ function buildStaticArticleArchive(slug: string, laws: Law[]): { nextSteps: stri
           <div class="card-footer">${renderArticleFeaturedLawsActions(archive.featuredCategory)}</div>
         </div>`;
 
-  return { nextSteps: renderArticleNextSteps(archive), featuredLaws };
+  // Submit stays outside the featured-laws card, so it renders even when the category has no laws
+  return { nextSteps: renderArticleNextSteps(archive), featuredLaws, submitAction: renderArticleSubmitAction() };
 }
 
 function getLawAttributionName(law: Law): string | null {
@@ -1687,6 +1689,7 @@ ${categoryCardsHtml.trim()}
 ${articleArchive.nextSteps}
 ${cardHtml.trim()}
 ${articleArchive.featuredLaws}
+${articleArchive.submitAction}
       </div>
 `;
       

@@ -80,7 +80,7 @@ declare module '@scripts/ssg' {
     requireContentFigure?: boolean;
   }): string[];
   export function buildStaticLawDetailContent(law: StaticLaw, related?: StaticLaw[], corollaryContext?: StaticCorollaryContext): string;
-  export function buildStaticArticleArchive(slug: string, laws: StaticLaw[]): { nextSteps: string; featuredLaws: string };
+  export function buildStaticArticleArchive(slug: string, laws: StaticLaw[]): { nextSteps: string; featuredLaws: string; submitAction: string };
   export function buildStaticHomeContent(featuredLaw?: StaticLaw): string;
   export function buildNotFoundPage(template: string, laws: StaticLaw[]): string;
   export function validateNotFoundPage(html: string): string[];
