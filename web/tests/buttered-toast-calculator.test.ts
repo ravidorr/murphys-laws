@@ -59,6 +59,19 @@ describe('ButteredToastCalculator view', () => {
     document.body.removeChild(el);
   });
 
+  it('places the formula after the sliders and the result', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const formula = el.querySelector('#toast-formula-display')!;
+    const firstSlider = input(el, 'toast-height');
+    const result = el.querySelector('#toast-result-display')!;
+    expect(firstSlider.compareDocumentPosition(formula) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(result.compareDocumentPosition(formula) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    document.body.removeChild(el);
+  });
+
   it('L33 B0: twitter:image branch not taken when absent', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
