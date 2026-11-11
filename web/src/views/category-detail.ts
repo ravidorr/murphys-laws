@@ -92,13 +92,32 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   // Render law cards
   function renderLaws(laws: Law[], query?: string) {
     if (!laws || laws.length === 0) {
+      if (currentFilters.q || currentFilters.attribution) {
+        return `
+          <div class="empty-state">
+            <span class="icon empty-state-icon" data-icon="searchOff" aria-hidden="true"></span>
+            <p class="empty-state-title">No laws match your search</p>
+            <p class="empty-state-text">Nothing in this category matches your search. Clear it to see every law in this category, or submit the law you were looking for.</p>
+            <div class="not-found-actions">
+              <button type="button" class="btn outline" data-action="clear-search">
+                <span class="btn-text">Clear search</span>
+              </button>
+              <button class="btn" data-nav="submit">
+                <span class="btn-text">Submit a Law</span>
+                <span class="icon" data-icon="send" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
       return `
         <div class="empty-state">
           <span class="icon empty-state-icon" data-icon="searchOff" aria-hidden="true"></span>
           <p class="empty-state-title">No laws found</p>
           <p class="empty-state-text">No laws have been submitted for this category yet. Try adjusting your search filters.</p>
           <button class="btn mt-4" data-nav="submit">
-            <span class="btn-text">Submit a Murphy's Law</span>
+            <span class="btn-text">Submit a Law</span>
             <span class="icon" data-icon="send" aria-hidden="true"></span>
           </button>
         </div>
@@ -396,6 +415,22 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
 
     if (t.closest('[data-action="retry"]')) {
       loadPage(currentPage, true);
+      return;
+    }
+
+    if (t.closest('[data-action="clear-search"]')) {
+      const formClearBtn = el.querySelector<HTMLButtonElement>('#advanced-search-container #clear-btn');
+      if (formClearBtn) {
+        // The search form's Clear empties its fields and reloads this category without the search
+        formClearBtn.click();
+      } else {
+        currentFilters = { category_id: currentFilters.category_id };
+        pendingSearch = false;
+        loadPage(1);
+      }
+      // The Clear search button is about to be replaced by the re-rendered list, so move focus to
+      // the search form's keyword input instead of letting it fall back to the document body
+      el.querySelector<HTMLInputElement>('#advanced-search-container #search-keyword')?.focus();
       return;
     }
 

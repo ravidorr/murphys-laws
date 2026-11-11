@@ -20,6 +20,8 @@ import {
 import { getCalculatorScenarioLinks, renderInternalLinkList } from '@utils/internal-links.ts';
 import type { CleanableElement } from '../types/app.d.ts';
 
+const SHARED_ADJUST_HINT = 'Move any slider above to see how the odds change.';
+
 type ToastSliderKey = 'height' | 'gravity' | 'overhang' | 'butter' | 'friction' | 'inertia';
 
 export function ButteredToastCalculator(): HTMLDivElement {
@@ -203,11 +205,11 @@ export function ButteredToastCalculator(): HTMLDivElement {
 
   (Object.keys(sliders) as ToastSliderKey[]).forEach((k) => {
     sliders[k].addEventListener('input', () => {
+      // The default result is a starting point; drop the prompt once the visitor has moved a slider
+      adjustHint.hidden = true;
       if (!hasTrackedStart) {
         hasTrackedStart = true;
         trackProductEvent('calculator.start', { surface: 'calculator_page', calculator: 'buttered-toast' });
-        // The default result is a starting point; drop the prompt once the visitor has moved a slider
-        adjustHint.hidden = true;
       }
       const val = sliders[k].value;
 
@@ -294,6 +296,8 @@ export function ButteredToastCalculator(): HTMLDivElement {
 
   // Recalculate if URL params were loaded
   if (fromSharedLink) {
+    // A shared result is not a starting point, so the prompt only invites the visitor to explore
+    adjustHint.textContent = SHARED_ADJUST_HINT;
     calculateLanding();
     updateFormula();
   }
