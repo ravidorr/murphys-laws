@@ -39,6 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The Submit a Law form now starts with the required Law Text box; the Law Title field follows it and its label reads
+  "Law Title (optional)".
+
 ### Added
 
 - Submitters can add corollaries when they submit a law, and the moderation queue treats a law and its corollaries as

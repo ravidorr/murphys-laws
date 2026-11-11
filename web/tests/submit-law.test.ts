@@ -84,6 +84,15 @@ describe('SubmitLawSection component', () => {
     expect(el.querySelector('#submit-btn') as HTMLButtonElement | null).toBeTruthy();
   });
 
+  it('puts the required law text before the optional title and labels the title optional', () => {
+    const el = mountSection();
+    const fields = Array.from(el.querySelectorAll('.submit-form .form-control'));
+
+    expect(fields[0]?.id).toBe('submit-text');
+    expect(fields[1]?.id).toBe('submit-title');
+    expect(el.querySelector('label[for="submit-title"]')?.textContent).toMatch(/\(optional\)/i);
+  });
+
   it('renders pre-submit guidance about review, attribution, and duplicates', () => {
     const el = mountSection();
 
