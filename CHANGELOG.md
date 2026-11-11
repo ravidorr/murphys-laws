@@ -247,7 +247,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Submitting the home page "Search the Archive" box with nothing typed now opens Browse All Laws instead of quietly
-  re-rendering the home page. Web bumped to `3.4.89`; root to `2.6.193`.
+  re-rendering the home page. The `archive.search` event for a blank submit reports `result: 'blank'`, so it can be told
+  apart from the Browse All Laws link (`result: 'browse'`). Web bumped to `3.4.90`; root to `2.6.194`.
 - Opening a shared Sod's Law Calculator link now shows the score and message for the shared slider values right away,
   instead of the default result until a slider moves. The sliders also announce the shared values to screen readers
   (`aria-valuenow` and `aria-valuetext` were left at the template default), and the share text and link match the

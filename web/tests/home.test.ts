@@ -3,6 +3,7 @@ import type { OnNavigate } from '../src/types/app.d.ts';
 import type { CleanableElement } from '../src/types/app.js';
 import { Home, renderHome } from '../src/views/home.ts';
 import * as exportContext from '../src/utils/export-context.js';
+import * as metrics from '../src/utils/metrics.js';
 
 function createDeferred<T>() {
   let resolve!: (value: T) => void;
@@ -210,6 +211,7 @@ describe('Home view', () => {
   });
 
   it('opens browse when the homepage search is submitted blank', () => {
+    const trackSpy = vi.spyOn(metrics, 'trackProductEvent');
     const el = document.createElement('div');
     const onNavigate = vi.fn<OnNavigate>() as Mock<OnNavigate>;
     const onSearch = vi.fn();
@@ -222,6 +224,11 @@ describe('Home view', () => {
 
     expect(onSearch).not.toHaveBeenCalled();
     expect(onNavigate).toHaveBeenCalledWith('browse');
+    // Reported as 'blank', not 'browse': the Browse All Laws link already reports 'browse'
+    expect(trackSpy).toHaveBeenCalledWith('archive.search', { surface: 'home', result: 'blank' });
+    expect(trackSpy).not.toHaveBeenCalledWith('archive.search', { surface: 'home', result: 'browse' });
+    expect(trackSpy).not.toHaveBeenCalledWith('archive.search', { surface: 'home', result: 'submitted' });
+    trackSpy.mockRestore();
   });
 
   it('navigates to the category index from the homepage CTA', () => {

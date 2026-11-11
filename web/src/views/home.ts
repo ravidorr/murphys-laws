@@ -141,9 +141,10 @@ export function renderHome(
     e.preventDefault();
     const input = searchForm.querySelector<HTMLInputElement>('input[type="search"]')!;
     const query = input.value.trim();
-    // A blank search opens the full archive instead of re-rendering the home page
+    // A blank search opens the full archive instead of re-rendering the home page; 'blank' keeps it apart from
+    // the Browse All Laws link, which reports result 'browse'
     if (!query) {
-      trackProductEvent('archive.search', { surface: 'home', result: 'browse' });
+      trackProductEvent('archive.search', { surface: 'home', result: 'blank' });
       onNavigate('browse');
       return;
     }
