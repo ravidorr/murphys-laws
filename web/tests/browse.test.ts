@@ -380,6 +380,43 @@ describe('Browse view', () => {
     });
   });
 
+  it('shows a Clear filters button in the empty state that clears the search and reloads', async () => {
+    fetchLawsSpy.mockResolvedValueOnce({ data: [], total: 0, limit: 25, offset: 0 });
+
+    const el = Browse({ searchQuery: 'nonexistent', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/Murphy spared these results/);
+    }, { timeout: 1000 });
+
+    const clearFiltersBtn = el.querySelector('[data-action="clear-filters"]') as HTMLButtonElement | null;
+    expect(clearFiltersBtn).toBeTruthy();
+    expect(clearFiltersBtn?.textContent).toMatch(/Clear filters/);
+
+    clearFiltersBtn!.querySelector('.btn-text')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    await vi.waitFor(() => {
+      expect(fetchLawsSpy).toHaveBeenCalledTimes(2);
+      expect(el.textContent).toMatch(/Parkinson's Law/);
+    }, { timeout: 1000 });
+    expect(fetchLawsSpy).toHaveBeenLastCalledWith(expect.not.objectContaining({ q: 'nonexistent' }));
+    expect((el.querySelector('#search-keyword') as HTMLInputElement).value).toBe('');
+    expect(el.querySelector('[data-action="clear-filters"]')).toBeNull();
+  });
+
+  it('omits the Clear filters button from the empty state when no filters are active', async () => {
+    fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
+
+    const el = Browse({ searchQuery: '', onNavigate: () => { } });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/Murphy spared these results/);
+    }, { timeout: 1000 });
+
+    expect(el.querySelector('[data-action="clear-filters"]')).toBeNull();
+    expect(el.querySelector('[data-nav="submit"]')).toBeTruthy();
+  });
+
   it('displays error state on fetch failure', async () => {
     fetchLawsSpy.mockRejectedValue(new Error('Network error'));
 
