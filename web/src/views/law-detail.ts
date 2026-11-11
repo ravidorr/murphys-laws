@@ -37,6 +37,9 @@ interface LawLoadFailure {
   http_status?: number;
 }
 
+// Failure reasons that mean the law itself is missing, as opposed to a request that failed to load it
+const MISSING_LAW_REASONS = new Set(['not_found', 'invalid_id', 'missing_id']);
+
 /** Map a fetchLaw() rejection to a reason and, when the API answered, its HTTP status. Exported for testing. */
 export function describeLawLoadFailure(error: unknown): LawLoadFailure {
   const message = error instanceof Error ? error.message : '';
@@ -82,6 +85,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
   const corollariesContainer = el.querySelector('[data-corollaries-container]');
   const notFoundState = el.querySelector('[data-not-found]');
   const notFoundTemplate = el.querySelector('[data-not-found-template]');
+  const loadFailedTemplate = el.querySelector('[data-load-failed-template]');
   const lawCardTemplate = el.querySelector('[data-law-card-template]');
 
   // Replace static loading message with random one
@@ -100,14 +104,17 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     notFoundState?.setAttribute('hidden', '');
   }
 
-  function showNotFound() {
+  // Only a law that is really missing gets the not-found wording; any other failure says the load failed
+  function showNotFound(failure: LawLoadFailure) {
     loadingState?.setAttribute('hidden', '');
     lawContent?.setAttribute('hidden', '');
-    /* v8 ignore start -- notFoundState/notFoundTemplate are always provided by the component template */
+    const lawIsMissing = MISSING_LAW_REASONS.has(failure.failure_reason);
+    const template = lawIsMissing ? notFoundTemplate : loadFailedTemplate;
+    /* v8 ignore start -- notFoundState and both templates are always provided by the component template */
     if (notFoundState) {
       notFoundState.removeAttribute('hidden');
-      if (notFoundTemplate instanceof HTMLTemplateElement) {
-        notFoundState.replaceChildren(notFoundTemplate.content.cloneNode(true));
+      if (template instanceof HTMLTemplateElement) {
+        notFoundState.replaceChildren(template.content.cloneNode(true));
         hydrateIcons(notFoundState);
       }
     }
@@ -501,9 +508,10 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
   el.setAttribute('aria-busy', 'true');
 
   if (!lawId) {
-    showNotFound();
+    const failure = { failure_reason: 'missing_id' };
+    showNotFound(failure);
     clearExportContent();
-    trackLawNotFound({ failure_reason: 'missing_id' }, false);
+    trackLawNotFound(failure, false);
   } else {
     fetchLaw(lawId)
       .then(data => {
@@ -512,9 +520,9 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       })
       .catch((error: unknown) => {
         el.setAttribute('aria-busy', 'false');
-        showNotFound();
-        clearExportContent();
         const failure = describeLawLoadFailure(error);
+        showNotFound(failure);
+        clearExportContent();
         markMissingLaw(failure);
         trackLawNotFound(failure, false);
       });
@@ -537,9 +545,9 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
         })
         .catch((error: unknown) => {
           el.setAttribute('aria-busy', 'false');
-          showNotFound();
-          clearExportContent();
           const failure = describeLawLoadFailure(error);
+          showNotFound(failure);
+          clearExportContent();
           markMissingLaw(failure);
           trackLawNotFound(failure, true);
         });

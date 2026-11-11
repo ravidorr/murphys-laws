@@ -82,6 +82,35 @@
   </div>
 </template>
 
+<template data-load-failed-template>
+  <div class="card card--section">
+    <div class="card-body">
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <span class="icon" data-icon="warning" aria-hidden="true"></span>
+        </div>
+        <h2 class="empty-state-title"><span class="accent-text">Law</span> Couldn't Load</h2>
+        <p class="empty-state-text">Something went wrong while loading this law. Your link is probably fine; this is usually temporary, so try again in a moment.</p>
+        <p class="not-found-quote">"If anything can go wrong, it will... including loading this page."</p>
+        <div class="not-found-actions">
+          <button type="button" class="btn" data-action="retry-law" aria-label="Try loading this law again">
+            <span class="icon" data-icon="refresh" aria-hidden="true"></span>
+            <span class="btn-text">Try Again</span>
+          </button>
+          <a href="/" class="btn outline" data-nav="home">
+            <span class="icon" data-icon="home" aria-hidden="true"></span>
+            <span class="btn-text">Go Home</span>
+          </a>
+          <button type="button" class="btn" data-nav="browse">
+            <span class="btn-text">Browse All Laws</span>
+            <span class="icon" data-icon="list" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
 <template data-law-card-template>
   <article class="card card--section law-detail-card section-card mb-12" data-law-card-root>
     <header class="card-header section-header">

@@ -217,6 +217,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A law page whose request fails for a reason other than a missing law (a server error, a refused request, a timeout
+  or a network problem) now says the law couldn't load and offers Try Again, instead of claiming the law doesn't exist
+  and blaming the link. The "Law Not Found" message is kept for laws the API reports missing and for invalid IDs.
+  Web bumped to `3.4.80`; root to `2.6.184`.
 - Daily 404 report of 11 November 2026 (47 requests that day): the production bundles no longer link to source maps that do not
   exist, more scanner probes are dropped, and the sized Apple icons are redirected. Every JS file the build emitted ended in
   `//# sourceMappingURL=...`, but the Sentry upload deletes the maps from `dist`, so crawlers and scrapers that follow the
