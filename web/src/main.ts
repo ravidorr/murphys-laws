@@ -306,7 +306,8 @@ const routesMap = {
     h1.innerHTML = '<span class="accent-text">Submit</span> a Law';
     container.appendChild(h1);
 
-    const submitSection = SubmitLawSection();
+    // A search that found nothing on Browse carries its words here, so the visitor doesn't retype them
+    const submitSection = SubmitLawSection({ initialText: new URLSearchParams(location.search).get('text') ?? '' });
     container.appendChild(submitSection);
     clearPageStructuredData();
     return layout(container);

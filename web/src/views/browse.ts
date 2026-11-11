@@ -287,6 +287,10 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
     // Handle navigation buttons and links (shared utility); a result's title link opens the law here
     const titleLinkCard = t.closest('[data-nav="law"]')?.closest<HTMLElement>('.law-card-mini');
     if (titleLinkCard) trackResultOpened(titleLinkCard, 'title_link');
+    // Submitting from an empty search carries the search words to the form; navigate() keeps this URL
+    if (t.closest('.empty-state [data-nav="submit"]') && currentFilters.q) {
+      history.pushState({ name: 'submit' }, '', `/submit?${new URLSearchParams({ text: currentFilters.q })}`);
+    }
     if (handleNavClick(t, onNavigate)) {
       e.preventDefault();
       return;

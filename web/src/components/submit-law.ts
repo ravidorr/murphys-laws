@@ -50,7 +50,7 @@ function submitLabel(corollaryCount: number): string {
   return `Submit law with ${corollaryCount} ${corollaryCount === 1 ? 'corollary' : 'corollaries'}`;
 }
 
-export function SubmitLawSection() {
+export function SubmitLawSection({ initialText = '' }: { initialText?: string } = {}) {
   const el = document.createElement('section');
   el.className = 'section card card--section section-card mb-12';
   el.innerHTML = templateHtml;
@@ -473,6 +473,14 @@ export function SubmitLawSection() {
     nextActions?.setAttribute('hidden', '');
     textArea?.focus();
   });
+
+  // Start from the words of a search that found nothing, and check them against the archive straight away
+  const prefillText = initialText.trim().slice(0, 1000);
+  if (prefillText) {
+    textArea!.value = prefillText;
+    checkSubmitValidity();
+    void checkForDuplicates();
+  }
 
   // Put the cursor in the law text box when the page opens, so visitors can start writing straight away.
   // Waits a frame so it runs after the router moves focus to the page. Only when the box is already fully
