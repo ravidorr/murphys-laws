@@ -99,6 +99,7 @@ describe('SubmitLawSection component', () => {
     expect(el.textContent).toMatch(/reviewed by a human/i);
     expect(el.textContent).toMatch(/attribution/i);
     expect(el.textContent).toMatch(/duplicates/i);
+    expect(el.textContent).toMatch(/start writing/i);
     expect(el.textContent).not.toMatch(/search first/i);
   });
 
