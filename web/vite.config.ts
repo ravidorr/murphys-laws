@@ -8,7 +8,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   build: {
-    sourcemap: true, // Required for Sentry source maps
+    // Required for Sentry source maps. 'hidden' still emits the .map files for the upload but leaves out the
+    // //# sourceMappingURL comment: the upload deletes the maps from dist, so the comment pointed at a 404.
+    sourcemap: 'hidden',
     // Emit CSS as a file in every pass; the legacy (SystemJS) pass otherwise injects it at runtime
     cssCodeSplit: false,
   },

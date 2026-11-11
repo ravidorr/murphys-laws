@@ -191,6 +191,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Daily 404 report of 11 November 2026 (47 requests that day): the production bundles no longer link to source maps that do not
+  exist, more scanner probes are dropped, and the sized Apple icons are redirected. Every JS file the build emitted ended in
+  `//# sourceMappingURL=...`, but the Sentry upload deletes the maps from `dist`, so crawlers and scrapers that follow the
+  comment got a 404 (about 260 requests from 67 addresses in the previous two weeks, the largest group in the log); the build now
+  uses `sourcemap: 'hidden'`, which still emits the maps for the upload and leaves the comment out. Dropped (`444`,
+  logged to `scanner.log`): the Drupal paths `/node/<id>`, `/node/<id>.json`, `/core/modules/...` and `/user/login`,
+  Magento `/pub/static`, Craft `/actions/users` and below and Joomla `/language/<locale>/*.xml`, all from one CMS sweep; each
+  pattern is anchored to the path, so a search such as `/browse?q=user/login` still passes. `/apple-touch-icon-120x120.png`
+  (11 requests from iPhones in the previous two weeks) and the 152x152 and 167x167 iPad sizes, each with its `-precomposed` name, now
+  redirect to `/apple-touch-icon.png`, like the 240x240 sizes. Left alone: the `.well-known` discovery probes,
+  `/app-ads.txt` (the apps show no ads), `/sellers.json`, `/dsrdelete.json`, and the bare `/blog`, `/cms`, `/news`,
+  `/press`, `/site` and `/feedback` guesses. Web bumped to `3.4.74`; root to `2.6.176`.
 - The migration runner no longer reports a write error in place of what happened to `sqlite3`. When `sqlite3` stops
   before it has read all of its input, writing the migration to it fails with `EPIPE`, which Node reports as a spawn
   error, but only if `sqlite3` had stopped before the write finished. `failureReason` in
