@@ -19,16 +19,16 @@
 </div>
 <form class="section-body submit-form form">
   <div class="form-group">
-    <label for="submit-title" class="form-label">Law Title</label>
-    <input id="submit-title" type="text" placeholder="Give your law a name (optional)" class="form-control">
-  </div>
-  <div class="form-group">
     <label for="submit-text" class="form-label">Law Text <span class="required" data-tooltip="required" aria-hidden="true">*</span><span class="sr-only">(required)</span></label>
     <textarea id="submit-text" placeholder="What's your Murphy's Law observation?" class="form-control" rows="3" maxlength="1000"></textarea>
     <div class="form-helper">
       <span class="submit-helper-message">10-1000 characters</span>
       <span class="submit-char-counter" aria-live="polite">0 / 1000</span>
     </div>
+  </div>
+  <div class="form-group">
+    <label for="submit-title" class="form-label">Law Title (optional)</label>
+    <input id="submit-title" type="text" placeholder="Give your law a name" class="form-control">
   </div>
   <div class="form-group">
     <label for="submit-category" class="form-label">Category</label>
