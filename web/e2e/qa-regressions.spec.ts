@@ -55,7 +55,7 @@ test.describe('QA regressions', () => {
     { name: 'mobile', width: 320, height: 640 },
     { name: 'desktop', width: 1440, height: 900 },
   ]) {
-    test(`buttered toast formula fits at ${viewport.name} width`, async ({ page }) => {
+    test(`buttered toast formula stays readable at ${viewport.name} width`, async ({ page }) => {
       await page.setViewportSize(viewport);
       await page.goto('/calculator/buttered-toast');
 
@@ -63,7 +63,13 @@ test.describe('QA regressions', () => {
       await expect(formula.locator('math')).toBeVisible();
       await expect(formula).toHaveAttribute('aria-label', 'Buttered toast probability formula');
 
-      expect(await formula.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+      const fontSize = await formula.locator('math').evaluate(element => getComputedStyle(element).fontSize);
+      expect(Number.parseFloat(fontSize)).toBeGreaterThanOrEqual(24);
+      if (viewport.width > 640) {
+        expect(await formula.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+      } else {
+        expect(await formula.evaluate(element => getComputedStyle(element).overflowX)).toBe('auto');
+      }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     });
   }

@@ -182,14 +182,16 @@
   padding: 0 var(--space-4);
 }
 
-/* The toast expression is longer than the shared calculator formulas. */
+/* The toast expression is longer than the shared calculator formulas.
+   It shrinks to fit wide containers but never below the phone formula size;
+   narrower containers scroll it horizontally instead. */
 #toast-formula-display {
   container-type: inline-size;
-  overflow-x: hidden;
+  overflow-x: auto;
 }
 
 #toast-formula-display math {
-  font-size: min(var(--text-5xl), 2.7cqw) !important;
+  font-size: max(var(--text-2xl), min(var(--text-5xl), 2.7cqw)) !important;
 }
 
 /* Responsive formula sizing */

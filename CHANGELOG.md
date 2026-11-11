@@ -49,6 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The "Submit your own" button after an article (including the Real-Life Examples hub) now sits on its own below the
   featured-laws card instead of in that card's footer, so it still shows when the featured laws fail to load or the
   category has none. The static build renders it the same way. Web bumped to `3.4.79`; root to `2.6.183`.
+- The Buttered Toast formula no longer shrinks to unreadably small text on phones. It still scales down to fit wide
+  screens, but never below the phone formula size (`--text-2xl`); on narrower screens it scrolls sideways inside its
+  own box instead. Web bumped to `3.4.80`; root to `2.6.184`.
 
 ### Added
 
