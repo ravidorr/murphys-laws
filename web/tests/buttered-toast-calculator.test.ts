@@ -266,6 +266,29 @@ describe('ButteredToastCalculator view', () => {
     document.body.removeChild(el);
   });
 
+  it('keeps the result pinned in view on phones when the result band changes', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const resultDisplay = el.querySelector('#toast-result-display')!;
+    expect(resultDisplay.classList.contains('calc-result-sticky')).toBe(true);
+
+    // The pinned bar is named by the heading above it
+    expect(resultDisplay.getAttribute('role')).toBe('group');
+    const labelId = resultDisplay.getAttribute('aria-labelledby')!;
+    expect(el.querySelector(`#${labelId}`)!.textContent).toBe('Probability of Butter-Side Down Landing:');
+
+    input(el, 'toast-overhang').value = '11';
+    input(el, 'toast-inertia').value = '250';
+    input(el, 'toast-height').value = '100';
+    input(el, 'toast-height').dispatchEvent(new Event('input'));
+
+    expect(resultDisplay.classList.contains('calc-dark')).toBe(true);
+    expect(resultDisplay.classList.contains('calc-result-sticky')).toBe(true);
+
+    document.body.removeChild(el);
+  });
+
   it('updates slider value displays on input', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);

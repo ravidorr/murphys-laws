@@ -78,6 +78,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   button only appears when a filter is active. Pressing it moves keyboard focus to the Search box so it is not lost
   when the list redraws, and clearing no longer records an `archive.search` event. Web bumped to `3.4.84`; root to
   `2.6.188`.
+- On phones (narrower than 600px), the Buttered Toast calculator's probability now stays pinned to the bottom of the
+  screen as a compact bar while the sliders are in view, so each slider move shows its effect without scrolling down
+  to the result. The bar is named by its heading for screen readers, has a top edge (a solid one in high-contrast and
+  forced-colors modes), reserves less room for the back-to-top button, and a focused slider is scrolled clear of it.
+  Until the first slider move, the starting-point hint takes its own full-width row inside the bar. Web bumped to
+  `3.4.92`; root to `2.6.196`.
 - Law cards on a category page now end with a small link that says what opening the law adds beyond the card: "Read
   the full law", or "See the law this corollary belongs to" for a corollary. The link is a 44 px tall target, uses the
   link colors and is hidden when printing. Opens from it are reported to Pendo with `open_method: 'law_page_cue'`, apart
