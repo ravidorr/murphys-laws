@@ -160,6 +160,71 @@
   display: block;
 }
 
+/* Note under the score that marks the first-load result as a sample from the default settings;
+   it inherits the result's text color so it keeps its contrast on every score background */
+.calc-sample-hint {
+  margin-block-start: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+}
+
+/* Single-column sliders push the result below the fold on phones: pin it to the
+   bottom of the viewport as a compact bar so each slider move shows its effect. */
+@media (width < 600px) {
+  .calc-result-sticky {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+
+    /* Keep the text clear of the floating back-to-top button in the same corner. The bar is inset from the
+       screen edge by the card's own padding, so only part of the button overlaps it. */
+    padding-inline-end: var(--component-control-min-size);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 12px var(--shadow-light);
+  }
+
+  .calc-result-sticky .calc-score {
+    flex-shrink: 0;
+    font-size: var(--text-3xl);
+  }
+
+  .calc-result-sticky .calc-interpretation {
+    margin: 0;
+  }
+
+  /* Until the first slider move the hint takes its own full-width row, so it does not squeeze the score line */
+  .calc-result-sticky .calc-adjust-hint {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+
+  /* WCAG 2.2 2.4.11: keep a focused slider clear of the pinned bar when the browser scrolls it into view */
+  .calc-slider-group input[type="range"] {
+    scroll-margin-block-end: calc(var(--space-16) + var(--space-4));
+  }
+
+  /* High contrast: a solid edge instead of the shadow, like the back-to-top button */
+  @media (prefers-contrast: more) {
+    .calc-result-sticky {
+      border-top: 2px solid var(--fg);
+      box-shadow: none;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .calc-result-sticky {
+      border-top: 2px solid CanvasText;
+      box-shadow: none;
+    }
+  }
+}
+
 /* Info section at bottom of calculator */
 .calc-info {
   font-size: var(--text-sm);
