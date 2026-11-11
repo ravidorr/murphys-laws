@@ -261,6 +261,10 @@
     display: none !important;
   }
 
+  .law-card-more {
+    display: none !important;
+  }
+
   /* =========================
      Browse page specific
      ========================= */

@@ -24,6 +24,7 @@ import { AdvancedSearch } from '../components/advanced-search.ts';
 import { updateSearchInfo } from '../utils/search-info.ts';
 import { getCategoryHubLinks, renderInternalLinkList } from '@utils/internal-links.ts';
 import { trackPendoEvent, getSearchProperties } from '@utils/pendo.ts';
+import { trackProductEvent } from '@utils/metrics.ts';
 import { forceRender } from '../router.ts';
 import type { CleanableElement, OnNavigate, SearchFilters, Law } from '../types/app.ts';
 
@@ -92,13 +93,32 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   // Render law cards
   function renderLaws(laws: Law[], query?: string) {
     if (!laws || laws.length === 0) {
+      if (currentFilters.q || currentFilters.attribution) {
+        return `
+          <div class="empty-state">
+            <span class="icon empty-state-icon" data-icon="searchOff" aria-hidden="true"></span>
+            <p class="empty-state-title">No laws match your search</p>
+            <p class="empty-state-text">Nothing in this category matches your search. Clear it to see every law in this category, or submit the law you were looking for.</p>
+            <div class="not-found-actions">
+              <button type="button" class="btn outline" data-action="clear-search">
+                <span class="btn-text">Clear search</span>
+              </button>
+              <button class="btn" data-nav="submit">
+                <span class="btn-text">Submit a Law</span>
+                <span class="icon" data-icon="send" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
       return `
         <div class="empty-state">
           <span class="icon empty-state-icon" data-icon="searchOff" aria-hidden="true"></span>
           <p class="empty-state-title">No laws found</p>
           <p class="empty-state-text">No laws have been submitted for this category yet. Try adjusting your search filters.</p>
           <button class="btn mt-4" data-nav="submit">
-            <span class="btn-text">Submit a Murphy's Law</span>
+            <span class="btn-text">Submit a Law</span>
             <span class="icon" data-icon="send" aria-hidden="true"></span>
           </button>
         </div>
@@ -106,7 +126,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     }
 
     // Use shared law card renderer with search highlighting
-    return renderLawCards(laws, { searchQuery: query });
+    return renderLawCards(laws, { searchQuery: query, showLawPageCue: true });
   }
 
   // Render the page structure
@@ -146,6 +166,23 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     await updateSearchInfo(el.querySelector('#category-search-info'), currentFilters);
     // Update breadcrumbs and structured data after category title is loaded
     updateStructuredData();
+  }
+
+  // Report a law opened from the category's law list with its 1-based rank across pages, the same way Browse does
+  function trackLawOpened(lawCard: HTMLElement, openMethod: 'card_click' | 'title_link' | 'law_page_cue' | 'keyboard') {
+    const lawsList = lawCard.closest('#category-laws-list');
+    if (!lawsList) return;
+    const pageIndex = Array.from(lawsList.querySelectorAll('.law-card-mini')).indexOf(lawCard);
+    trackPendoEvent('search_result_opened', {
+      ...getSearchProperties(currentFilters, currentSort),
+      search_surface: 'category_detail',
+      law_id: lawCard.dataset.lawId,
+      result_position: (currentPage - 1) * LAWS_PER_PAGE + pageIndex + 1,
+      page: currentPage,
+      results_count: totalLaws,
+      has_filters: Boolean(currentFilters.q || currentFilters.attribution),
+      open_method: openMethod,
+    });
   }
 
   function invalidatePendingLoad() {
@@ -399,13 +436,33 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
       return;
     }
 
+    if (t.closest('[data-action="clear-search"]')) {
+      const formClearBtn = el.querySelector<HTMLButtonElement>('#advanced-search-container #clear-btn');
+      if (formClearBtn) {
+        // The search form's Clear empties its fields and reloads this category without the search
+        formClearBtn.click();
+      } else {
+        currentFilters = { category_id: currentFilters.category_id };
+        pendingSearch = false;
+        loadPage(1);
+      }
+      // The Clear search button is about to be replaced by the re-rendered list, so move focus to
+      // the search form's keyword input instead of letting it fall back to the document body
+      el.querySelector<HTMLInputElement>('#advanced-search-container #search-keyword')?.focus();
+      return;
+    }
+
     // Handle copy text/link actions (shared utility) - sync guard, async clipboard
     if (t.closest('[data-action="copy-text"]') || t.closest('[data-action="copy-link"]')) {
       void handleCopyAction(e, t);
       return;
     }
 
-    // Handle navigation buttons and links (shared utility)
+    // Handle navigation buttons and links (shared utility); a law card's text link opens the law here
+    const openedLink = t.closest('[data-nav="law"]');
+    const titleLinkCard = openedLink?.closest<HTMLElement>('.law-card-mini');
+    // The "Read the full law" cue is reported apart from the title link, so its effect can be judged on its own
+    if (titleLinkCard) trackLawOpened(titleLinkCard, openedLink!.classList.contains('law-card-more-link') ? 'law_page_cue' : 'title_link');
     if (handleNavClick(t, onNavigate)) {
       e.preventDefault();
       return;
@@ -429,13 +486,15 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     if (lawCard && lawCard.dataset.lawId) {
       // Don't navigate if clicking on interactive elements (buttons for voting, favorites, share)
       if (t.closest('button, a')) return;
+      trackProductEvent('archive.result_open', { surface: 'category_detail' });
+      trackLawOpened(lawCard, 'card_click');
       onNavigate('law', lawCard.dataset.lawId);
       return;
     }
   });
 
   // Keyboard navigation for law cards (WCAG 2.1.1) - shared utility
-  addNavigationListener(el, onNavigate);
+  addNavigationListener(el, onNavigate, (lawCard) => trackLawOpened(lawCard, 'keyboard'));
 
   // Initial render and load
   render();
