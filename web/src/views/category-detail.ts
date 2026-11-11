@@ -428,6 +428,9 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
         pendingSearch = false;
         loadPage(1);
       }
+      // The Clear search button is about to be replaced by the re-rendered list, so move focus to
+      // the search form's keyword input instead of letting it fall back to the document body
+      el.querySelector<HTMLInputElement>('#advanced-search-container #search-keyword')?.focus();
       return;
     }
 

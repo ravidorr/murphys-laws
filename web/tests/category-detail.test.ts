@@ -403,6 +403,25 @@ describe('CategoryDetail view', () => {
       expect(vi.mocked(api.fetchLaws).mock.calls[0]![0]).toEqual(expect.objectContaining({ category_id: 1, offset: 0 }));
     });
 
+    it('moves focus to the search keyword input after clearing the search', async () => {
+      const { el } = await searchWithoutResults({ q: 'zzz', category_id: 1 });
+      document.body.appendChild(el);
+      try {
+        const keywordInput = document.createElement('input');
+        keywordInput.id = 'search-keyword';
+        el.querySelector('#advanced-search-container')!.appendChild(keywordInput);
+        const clearSearchBtn = el.querySelector('[data-action="clear-search"]') as HTMLElement;
+        clearSearchBtn.focus();
+        expect(document.activeElement).toBe(clearSearchBtn);
+
+        clearSearchBtn.click();
+
+        expect(document.activeElement).toBe(keywordInput);
+      } finally {
+        el.remove();
+      }
+    });
+
     it('clears the search directly when the search form has no Clear button', async () => {
       const { el } = await searchWithoutResults({ q: 'zzz', attribution: 'Arthur Bloch', category_id: 1 });
       vi.mocked(api.fetchLaws).mockClear();
@@ -414,6 +433,22 @@ describe('CategoryDetail view', () => {
       expect(params).not.toHaveProperty('q');
       expect(params).not.toHaveProperty('attribution');
       expect(params).toEqual(expect.objectContaining({ category_id: 1, offset: 0 }));
+    });
+
+    it('moves focus to the search keyword input when the fallback clears the search', async () => {
+      const { el } = await searchWithoutResults({ q: 'zzz', category_id: 1 });
+      document.body.appendChild(el);
+      try {
+        const keywordInput = document.createElement('input');
+        keywordInput.id = 'search-keyword';
+        el.querySelector('#advanced-search-container')!.appendChild(keywordInput);
+
+        (el.querySelector('[data-action="clear-search"]') as HTMLElement).click();
+
+        expect(document.activeElement).toBe(keywordInput);
+      } finally {
+        el.remove();
+      }
     });
   });
 

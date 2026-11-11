@@ -46,6 +46,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The article button row's accessible name is now "Explore and contribute". Web bumped to `3.4.78`; root to `2.6.182`.
 - The Submit a Law form now starts with the required Law Text box; the Law Title field follows it and its label reads
   "Law Title (optional)".
+- The "Submit your own" button after an article (including the Real-Life Examples hub) now sits on its own below the
+  featured-laws card instead of in that card's footer, so it still shows when the featured laws fail to load or the
+  category has none. The static build renders it the same way. Web bumped to `3.4.79`; root to `2.6.183`.
+- The Submit a Law form (`SubmitLawSection`) accepts an optional starting text and category slug, so a page that sends
+  a visitor to it, such as a search that found nothing, can hand off what they were looking for instead of an empty
+  form. The text fills the Law Text box (trimmed, at most 1000 characters) without showing the short-text error, and
+  the category is preselected; a category the visitor has already chosen is kept when fresh categories load. Web bumped
+  to `3.4.80`; root to `2.6.184`.
 
 ### Added
 
@@ -216,8 +224,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A category search that finds nothing no longer says no laws have been submitted for the category yet. It now says
   nothing in the category matches the search, offers a "Clear search" button that resets the search form and shows the
-  category's laws again, and its submit button reads "Submit a Law", the same as Browse. Web bumped to `3.4.79`; root
-  to `2.6.183`.
+  category's laws again, and its submit button reads "Submit a Law", the same as Browse. Clearing the search moves
+  keyboard focus to the search form's keyword input so focus is not lost when the list re-renders. Web bumped to
+  `3.4.81`; root to `2.6.185`.
 - Daily 404 report of 11 November 2026 (47 requests that day): the production bundles no longer link to source maps that do not
   exist, more scanner probes are dropped, and the sized Apple icons are redirected. Every JS file the build emitted ended in
   `//# sourceMappingURL=...`, but the Sentry upload deletes the maps from `dist`, so crawlers and scrapers that follow the
