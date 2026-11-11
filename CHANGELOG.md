@@ -188,6 +188,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Backend bumped to `2.3.68`; root to `2.6.163`.
 - `TODO.md` now lists open work only. The finished and cancelled entries, and the "Implemented from Reviews" and
   "Completed" sections, are gone, along with the sections they left empty. What shipped is recorded here.
+- `AGENTS.md` now tells agents to open pull requests ready for review instead of as drafts, which is how this
+  repository's pull requests have been opened. No version bump: it is documentation only.
 
 ### Fixed
 

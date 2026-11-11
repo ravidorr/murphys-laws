@@ -20,7 +20,7 @@ Murphy's Laws is a monorepo for a web PWA, Node.js API, iOS and Android apps, a 
 
 - Never commit with `--no-verify`, push with `--no-verify`, force-push, or use an environment variable that bypasses a hook. Fix the cause when a safeguard fails.
 - This repository uses GitHub issues for ticketing. Do not require an issue for every change.
-- Keep changes focused, use descriptive semantic commit messages, and open pull requests as drafts.
+- Keep changes focused, use descriptive semantic commit messages, and open pull requests ready for review, not as drafts.
 - Review your own change before opening a pull request (for example `/pr-review-toolkit:review-pr`) and fix what it finds. A bot reviewer such as Codex comes after your review, never instead of it, and asking for one means doing your own as well.
 - Linters are strict. Do not weaken ESLint, Stylelint, html-validate, markdownlint, TypeScript, tests, or coverage thresholds to pass.
 - Add or update tests for code changes. Use `/* v8 ignore */` only for genuinely untestable code paths.
