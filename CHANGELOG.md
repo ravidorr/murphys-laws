@@ -100,6 +100,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The `triage-404s` skill now opens its pull request ready for review instead of as a draft, as the other pull
+  requests in this repository are. No version bump: it is documentation only.
 - `/sitemap.gz` now redirects to `/sitemap.xml` instead of being dropped. Search Console still held a 2006 sitemap
   submission at that path, and the scanner map matched `.gz` and answered `444` with no response, so Search Console
   reported "Couldn't fetch" and every retry counted as a fail2ban strike. Only `/sitemap.gz` (with or without a query
