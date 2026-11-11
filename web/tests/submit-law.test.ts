@@ -781,6 +781,108 @@ describe('SubmitLawSection component', () => {
     expect(document.activeElement).toBe(textarea);
   });
 
+  describe('focus on open', () => {
+    let frameCallbacks: FrameRequestCallback[];
+    let pointerFine: boolean;
+
+    beforeEach(() => {
+      frameCallbacks = [];
+      pointerFine = true;
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+        frameCallbacks.push(callback);
+        return frameCallbacks.length;
+      });
+      Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        writable: true,
+        value: (query: string) => ({ matches: query === '(pointer: fine)' && pointerFine })
+      });
+    });
+
+    afterEach(() => {
+      delete (window as { matchMedia?: unknown }).matchMedia;
+    });
+
+    function runFrames() {
+      frameCallbacks.forEach((callback) => callback(0));
+    }
+
+    function placeTextArea(el: HTMLElement, top: number, bottom: number) {
+      const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement;
+      vi.spyOn(textarea, 'getBoundingClientRect').mockReturnValue({ top, bottom } as DOMRect);
+      return textarea;
+    }
+
+    it('puts the cursor in the law text box when it is on screen', () => {
+      const el = mountSection({ append: true });
+      const textarea = placeTextArea(el, 300, 380);
+      const focusSpy = vi.spyOn(textarea, 'focus');
+
+      runFrames();
+
+      expect(document.activeElement).toBe(textarea);
+      expect(focusSpy).toHaveBeenCalledWith({ preventScroll: true });
+    });
+
+    it('does not focus when the section is not on the page', () => {
+      const el = mountSection();
+      const textarea = placeTextArea(el, 300, 380);
+
+      runFrames();
+
+      expect(document.activeElement).not.toBe(textarea);
+    });
+
+    it('keeps focus where the visitor already put it in the form', () => {
+      const el = mountSection({ append: true });
+      placeTextArea(el, 300, 380);
+      const title = el.querySelector('#submit-title') as HTMLInputElement;
+      title.focus();
+
+      runFrames();
+
+      expect(document.activeElement).toBe(title);
+    });
+
+    it('does not focus when matchMedia is unavailable', () => {
+      delete (window as { matchMedia?: unknown }).matchMedia;
+      const el = mountSection({ append: true });
+      const textarea = placeTextArea(el, 300, 380);
+
+      runFrames();
+
+      expect(document.activeElement).not.toBe(textarea);
+    });
+
+    it('does not focus on touch screens, where it would open the keyboard', () => {
+      pointerFine = false;
+      const el = mountSection({ append: true });
+      const textarea = placeTextArea(el, 300, 380);
+
+      runFrames();
+
+      expect(document.activeElement).not.toBe(textarea);
+    });
+
+    it('does not focus when the box starts above the screen', () => {
+      const el = mountSection({ append: true });
+      const textarea = placeTextArea(el, -10, 70);
+
+      runFrames();
+
+      expect(document.activeElement).not.toBe(textarea);
+    });
+
+    it('does not focus when the box is below the fold', () => {
+      const el = mountSection({ append: true });
+      const textarea = placeTextArea(el, window.innerHeight - 20, window.innerHeight + 60);
+
+      runFrames();
+
+      expect(document.activeElement).not.toBe(textarea);
+    });
+  });
+
   it('shows error message on submit failure', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,

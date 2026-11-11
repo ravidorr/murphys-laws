@@ -107,6 +107,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Submit a Law page puts the cursor in the Law Text box when it opens, so visitors can start writing without
+  hunting for it. It does this only with a mouse or trackpad (no on-screen keyboard pops up over the guidance) and only
+  when the box is already fully on screen, so the page does not scroll and the guidance above stays in view. Web bumped
+  to `3.4.77`; root to `2.6.181`.
 - The Submit a Law guidance now opens with "Start writing right away" instead of telling visitors to search first, since
   the form has no search control and already lists possible duplicates as they type. Web bumped to `3.4.75`; root to
   `2.6.179`.
