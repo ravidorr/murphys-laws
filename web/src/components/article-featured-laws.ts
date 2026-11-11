@@ -1,5 +1,6 @@
 // Article archive block: a button row into the archive under an article's title,
-// plus three vote-able laws from the article's featured category after the article.
+// plus three vote-able laws from the article's featured category and a Submit
+// button after the article.
 
 import { fetchLaws } from '../utils/api.ts';
 import { createLawListSection } from './law-list-section.ts';
@@ -9,6 +10,7 @@ import {
   getArticleArchiveLinks,
   renderArticleFeaturedLawsActions,
   renderArticleNextSteps,
+  renderArticleSubmitAction,
   type ArticleArchiveLinks
 } from '@utils/internal-links.ts';
 import { trackPendoEvent } from '@utils/pendo.ts';
@@ -57,23 +59,26 @@ function trackArticleCtaClick(page: ContentPage, target: string, position: 'next
 
 /**
  * Adds the archive block to a rendered article view: the button row right after
- * `h1.page-title` (outside the article card, so in-prose link counts are unchanged)
- * and the featured-laws card after `article.content-card`. Pages without an
- * archive mapping are left unchanged. Navigation for `[data-nav]` links stays
- * with the view's own click handler.
+ * `h1.page-title` (outside the article card, so in-prose link counts are unchanged),
+ * then the featured-laws card and the Submit button after `article.content-card`.
+ * Submit sits outside the featured-laws card so it stays visible when that card
+ * hides itself. Pages without an archive mapping are left unchanged. Navigation
+ * for `[data-nav]` links stays with the view's own click handler.
  */
 export function addArticleArchiveBlock(el: HTMLElement, page: ContentPage, onNavigate?: OnNavigate): void {
   const archive = getArticleArchiveLinks(page);
   if (!archive) return;
 
   el.querySelector('h1.page-title')?.insertAdjacentHTML('afterend', renderArticleNextSteps(archive));
-  el.querySelector('article.content-card')?.after(ArticleFeaturedLaws(archive));
+  const article = el.querySelector('article.content-card');
+  article?.insertAdjacentHTML('afterend', renderArticleSubmitAction());
+  article?.after(ArticleFeaturedLaws(archive));
 
   el.addEventListener('click', (e) => {
     const t = e.target;
     if (!(t instanceof Element)) return;
 
-    const link = t.closest('.article-next-steps a[href][data-nav], .article-featured-laws a[href][data-nav]');
+    const link = t.closest('.article-next-steps a[href][data-nav], .article-featured-laws a[href][data-nav], .article-submit-action a[href][data-nav]');
     if (link) {
       // The selector only matches links that carry an href
       trackArticleCtaClick(page, link.getAttribute('href')!, link.closest('.article-next-steps') ? 'next_steps' : 'featured_laws');

@@ -7,6 +7,7 @@ import {
   getLawDetailInternalLinks,
   renderArticleFeaturedLawsActions,
   renderArticleNextSteps,
+  renderArticleSubmitAction,
   renderInternalLinkList
 } from '../src/utils/internal-links.ts';
 import type { ContentPage } from '../src/utils/markdown-content.ts';
@@ -149,16 +150,27 @@ describe('internal links', () => {
     expect(buttons[2]!.getAttribute('data-nav')).toBe('browse');
   });
 
-  it('renders featured-law actions for the whole category and submissions', () => {
+  it('renders the featured-law action for the whole category', () => {
     const container = document.createElement('div');
     container.innerHTML = renderArticleFeaturedLawsActions({ slug: 'murphys-office-laws', name: "Murphy's Office Laws" });
-    const [category, submit] = Array.from(container.querySelectorAll('a'));
+    const links = container.querySelectorAll('a');
 
-    expect(category!.textContent).toBe("See all Murphy's Office Laws");
-    expect(category!.getAttribute('href')).toBe('/category/murphys-office-laws');
-    expect(category!.className).toBe('btn primary article-cta article-cta--category');
-    expect(submit!.textContent).toBe('Submit your own');
-    expect(submit!.getAttribute('data-nav')).toBe('submit');
-    expect(submit!.className).toBe('btn outline article-cta article-cta--submit');
+    expect(links).toHaveLength(1);
+    expect(links[0]!.textContent).toBe("See all Murphy's Office Laws");
+    expect(links[0]!.getAttribute('href')).toBe('/category/murphys-office-laws');
+    expect(links[0]!.className).toBe('btn primary article-cta article-cta--category');
+  });
+
+  it('renders the article submit action on its own, outside any card', () => {
+    const container = document.createElement('div');
+    container.innerHTML = renderArticleSubmitAction();
+    const wrapper = container.querySelector('.article-submit-action')!;
+    const submit = wrapper.querySelector('.not-found-actions a')!;
+
+    expect(wrapper.classList.contains('card')).toBe(false);
+    expect(submit.getAttribute('href')).toBe('/submit');
+    expect(submit.textContent).toBe('Submit your own');
+    expect(submit.getAttribute('data-nav')).toBe('submit');
+    expect(submit.className).toBe('btn outline article-cta article-cta--submit');
   });
 });

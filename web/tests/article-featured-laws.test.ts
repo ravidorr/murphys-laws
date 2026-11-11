@@ -43,7 +43,7 @@ describe('ArticleFeaturedLaws component', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders three top-scoring laws from the featured category with archive buttons', async () => {
+  it('renders three top-scoring laws from the featured category with a category button', async () => {
     const el = ArticleFeaturedLaws(getArticleArchiveLinks('origin-story')!);
 
     expect(localThis.fetchLaws).toHaveBeenCalledWith({ category_slug: 'murphys-laws', limit: 3, sort: 'score', order: 'desc' });
@@ -59,9 +59,10 @@ describe('ArticleFeaturedLaws component', () => {
     expect(el.querySelector('button[data-vote="up"]')).not.toBeNull();
 
     const actions = el.querySelectorAll<HTMLAnchorElement>('.card-footer a.article-cta');
-    expect(Array.from(actions, (action) => action.getAttribute('href'))).toEqual(['/category/murphys-laws', '/submit']);
+    expect(Array.from(actions, (action) => action.getAttribute('href'))).toEqual(['/category/murphys-laws']);
     expect(actions[0]!.textContent).toBe("See all Murphy's Laws");
-    expect(actions[1]!.getAttribute('data-nav')).toBe('submit');
+    // Submit lives outside the card so it survives the card hiding itself
+    expect(el.querySelector('a[href="/submit"]')).toBeNull();
   });
 
   it('hides itself when the category has no laws', async () => {
@@ -122,9 +123,32 @@ describe('addArticleArchiveBlock', () => {
     expect(row.matches('nav.article-next-steps')).toBe(true);
     expect(row.getAttribute('aria-label')).toBe('Explore the archive');
     expect(row.querySelector('a.btn.primary')?.getAttribute('href')).toBe('/category/murphys-laws');
-    expect(localThis.el.querySelector('article.content-card')!.nextElementSibling!.classList.contains('article-featured-laws')).toBe(true);
+    const featured = localThis.el.querySelector('article.content-card')!.nextElementSibling!;
+    expect(featured.classList.contains('article-featured-laws')).toBe(true);
+    const submit = featured.nextElementSibling!;
+    expect(submit.classList.contains('article-submit-action')).toBe(true);
+    expect(submit.querySelector('a.article-cta--submit')?.getAttribute('href')).toBe('/submit');
     // The row sits outside the article card, so in-prose category link counts are unchanged
     expect(localThis.el.querySelectorAll('.content-card a[href*="/category/"]')).toHaveLength(1);
+  });
+
+  it('keeps the Submit button visible when the featured laws fail to load or come back empty', async () => {
+    vi.mocked(api.fetchLaws).mockRejectedValueOnce(new Error('network down'));
+    localThis.el = renderArticle('examples');
+    const empty = document.createElement('div');
+    empty.innerHTML = ARTICLE_HTML;
+    vi.mocked(api.fetchLaws).mockResolvedValueOnce({ data: [], total: 0, limit: 3, offset: 0 });
+    addArticleArchiveBlock(empty, 'examples/travel');
+
+    await vi.waitFor(() => {
+      expect(localThis.el!.querySelector<HTMLElement>('.article-featured-laws')!.hidden).toBe(true);
+      expect(empty.querySelector<HTMLElement>('.article-featured-laws')!.hidden).toBe(true);
+    });
+    for (const root of [localThis.el, empty]) {
+      const submit = root.querySelector<HTMLAnchorElement>('.article-submit-action a.article-cta--submit')!;
+      expect(submit.getAttribute('href')).toBe('/submit');
+      expect(submit.closest('[hidden]')).toBeNull();
+    }
   });
 
   it('leaves pages without an archive mapping unchanged', () => {
@@ -132,6 +156,7 @@ describe('addArticleArchiveBlock', () => {
 
     expect(localThis.el.querySelector('.article-next-steps')).toBeNull();
     expect(localThis.el.querySelector('.article-featured-laws')).toBeNull();
+    expect(localThis.el.querySelector('.article-submit-action')).toBeNull();
     expect(api.fetchLaws).not.toHaveBeenCalled();
   });
 
@@ -168,7 +193,7 @@ describe('addArticleArchiveBlock', () => {
     expect(trackProductEvent).toHaveBeenCalledWith('category.click', { surface: 'article', category: 'murphys-laws' });
   });
 
-  it('reports featured law and footer clicks as featured_laws', async () => {
+  it('reports featured law and Submit clicks as featured_laws', async () => {
     localThis.el = renderArticle('examples');
     await vi.waitFor(() => {
       expect(localThis.el!.querySelector('.article-featured-laws a.law-card-link')).not.toBeNull();
@@ -177,7 +202,7 @@ describe('addArticleArchiveBlock', () => {
     const lawLink = localThis.el.querySelector<HTMLAnchorElement>('.article-featured-laws a.law-card-link')!;
     lawLink.addEventListener('click', (e) => e.preventDefault());
     lawLink.click();
-    const submit = localThis.el.querySelector<HTMLAnchorElement>('.article-featured-laws a.article-cta--submit')!;
+    const submit = localThis.el.querySelector<HTMLAnchorElement>('.article-submit-action a.article-cta--submit')!;
     submit.addEventListener('click', (e) => e.preventDefault());
     submit.click();
 
