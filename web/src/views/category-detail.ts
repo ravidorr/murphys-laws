@@ -106,7 +106,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     }
 
     // Use shared law card renderer with search highlighting
-    return renderLawCards(laws, { searchQuery: query });
+    return renderLawCards(laws, { searchQuery: query, showLawPageCue: true });
   }
 
   // Render the page structure

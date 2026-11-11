@@ -22,19 +22,22 @@ import type { Law } from '../types/app.d.ts';
  * @param {number} options.index - Index in list (for ranking)
  * @param {number} options.rankOffset - Offset for rank number (e.g., 1 for #1, #2, #3)
  * @param {string} options.searchQuery - Search query to highlight
+ * @param {boolean} options.showLawPageCue - Show a link naming what the law page adds beyond the card
  * @returns {string} HTML string for law card
  */
 interface LawCardOptions {
   index?: number;
   rankOffset?: number | null;
   searchQuery?: string;
+  showLawPageCue?: boolean;
 }
 
 export function renderLawCard(law: Law, options: LawCardOptions = {}) {
   const {
     index = 0,
     rankOffset = null,
-    searchQuery = ''
+    searchQuery = '',
+    showLawPageCue = false
   } = options;
 
   // Safely get vote counts
@@ -99,6 +102,13 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
     ? `<a href="/category/${escapeHtml(law.category_slug)}" class="law-card-category" data-nav="category" data-param="${escapeHtml(law.category_slug)}">${escapeHtml(law.category_name)}</a>`
     : '';
 
+  // The card already shows the whole law, so name what opening it adds: a corollary's page leads to the law it
+  // belongs to, and every law page lists related laws
+  const lawPageCueText = law.corollary_of_id ? 'See the law this corollary belongs to' : 'See related laws';
+  const lawPageCue = showLawPageCue
+    ? `<p class="law-card-more"><a href="${lawHref}" class="law-card-more-link" data-nav="law" data-param="${safeId}">${lawPageCueText}</a></p>`
+    : '';
+
   // Return HTML string with keyboard accessibility (WCAG 2.1.1)
   return `
     <article class="law-card-mini" data-law-id="${safeId}" tabindex="0" role="article" aria-label="${ariaLabel}">
@@ -108,6 +118,7 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
       </p>
       ${attribution ? `<p class="law-card-attrib">${attribution}</p>` : ''}
       ${categoryChip ? `<div class="law-card-categories">${categoryChip}</div>` : ''}
+      ${lawPageCue}
       <div class="law-card-footer">
         <div class="law-card-footer-left">
           <div class="vote-group" role="group" aria-label="Vote. Votes are anonymous; no login required." data-tooltip="Upvote or downvote. Votes are anonymous; no login required.">

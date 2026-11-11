@@ -938,7 +938,7 @@ describe('CategoryDetail view', () => {
 
       expect(renderLawCards).toHaveBeenCalledWith(
         expect.any(Array),
-        expect.objectContaining({ searchQuery: 'test keyword' })
+        expect.objectContaining({ searchQuery: 'test keyword', showLawPageCue: true })
       );
     });
   });
