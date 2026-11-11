@@ -49,6 +49,8 @@ export function getEnvVar(
 }
 
 export const SITE_URL = getEnvVar('VITE_SITE_URL', 'SITE_URL', 'https://murphys-laws.com');
+/** Id of the script element in which a prerendered law page carries its law for the client view to fall back on. */
+export const PRERENDERED_LAW_DATA_ID = 'law-prerender-data';
 export const SITE_DEFAULT_DESCRIPTION = "Explore Murphy's Law history, browse corollaries, and experiment with interactive probability calculators for everyday mishaps.";
 /**
  * Meta descriptions for the calculator pages. Single source for the prerendered

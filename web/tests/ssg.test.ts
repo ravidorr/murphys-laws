@@ -620,6 +620,45 @@ describe('SSG SEO output', () => {
     expect(html).toContain('<link rel="alternate" type="application/json+oembed" href="https://murphys-laws.com/api/v1/oembed?url=https%3A%2F%2Fmurphys-laws.com%2Flaw%2F31"');
   });
 
+  it('carries the law for the client view to fall back on, without contact details or a closing tag', () => {
+    const law = {
+      id: 32,
+      title: 'Sneaky',
+      text: 'It ends </script><script>alert(1)</script> here.',
+      attributions: [{ name: 'Ada', contact_type: 'email', contact_value: 'ada@example.com', note: 'Private' }],
+      category_slug: 'tech',
+      category_name: 'Tech',
+      upvotes: 3,
+      downvotes: 1
+    };
+    const html = generateLawPage(law, lawTemplate);
+    const match = html.match(/<script type="application\/json" id="law-prerender-data">([\s\S]*?)<\/script>/);
+    expect(match).not.toBeNull();
+    expect(match![1]).not.toContain('<');
+    expect(html).not.toContain('ada@example.com');
+    expect(JSON.parse(match![1]!)).toEqual({
+      id: 32,
+      title: 'Sneaky',
+      text: law.text,
+      attributions: [{ name: 'Ada' }],
+      category_slug: 'tech',
+      category_name: 'Tech',
+      upvotes: 3,
+      downvotes: 1,
+      corollaries: [],
+      corollary_of: null
+    });
+  });
+
+  it('carries the corollary relations and an empty text when the law has none', () => {
+    const html = generateLawPage({ id: 33 }, lawTemplate, [], undefined, {
+      corollaries: [],
+      parent: { id: 10, title: 'Parent', text: 'Parent text.' }
+    });
+    const data = JSON.parse(html.match(/<script type="application\/json" id="law-prerender-data">([\s\S]*?)<\/script>/)![1]!);
+    expect(data).toMatchObject({ id: 33, text: '', corollary_of: { id: 10, title: 'Parent', text: 'Parent text.' } });
+  });
+
   describe('corollaries', () => {
     const parent = { id: 10, title: 'The Start-Stop Synchronicity', text: 'A red light turns green one second after the engine stops.', category_slug: 'cars', category_name: 'Cars' };
     const second = { id: 12, title: 'Corollary', text: 'The light stays green just long enough to miss it.', upvotes: 2, downvotes: 1, corollary_of_id: 10 };

@@ -3,7 +3,7 @@ import { fetchLaw, fetchLaws, fetchRelatedLaws as fetchRelatedLawsAPI } from '..
 import { renderAttributionsList, submittedByLabel } from '../utils/attribution.ts';
 import { escapeHtml } from '../utils/sanitize.ts';
 import { toggleVote, getUserVote } from '../utils/voting.ts';
-import { getRandomLoadingMessage, SITE_URL } from '../utils/constants.ts';
+import { getRandomLoadingMessage, PRERENDERED_LAW_DATA_ID, SITE_URL } from '../utils/constants.ts';
 import { SocialShare, initSharePopovers } from '../components/social-share.ts';
 import { setRobotsMeta, updatePageMetadata } from '../utils/dom.ts';
 import { buildLawSeo } from '../utils/seo.ts';
@@ -66,6 +66,23 @@ export function getReferrerDomain(): string {
     return document.referrer ? new URL(document.referrer).hostname : 'direct';
   } catch {
     return 'unknown';
+  }
+}
+
+/**
+ * The law a prerendered page carries for this id (see `buildPrerenderedLawData` in scripts/ssg.ts), or null when the
+ * page was not prerendered for it. Exported for testing.
+ */
+export function readPrerenderedLaw(lawId: string): Law | null {
+  const text = document.getElementById(PRERENDERED_LAW_DATA_ID)?.textContent;
+  if (!text) return null;
+  try {
+    const law: unknown = JSON.parse(text);
+    if (typeof law !== 'object' || law === null) return null;
+    const candidate = law as Law;
+    return Number(candidate.id) === Number(lawId) && typeof candidate.text === 'string' ? candidate : null;
+  } catch {
+    return null;
   }
 }
 
@@ -139,12 +156,13 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
   }
 
   // A page view of /law/:id can't tell a broken inbound link from a successful view
-  function trackLawNotFound(failure: LawLoadFailure, isRetry: boolean) {
+  function trackLawNotFound(failure: LawLoadFailure, isRetry: boolean, showedPrerenderedLaw = false) {
     trackPendoEvent('law_not_found', {
       law_id: lawId || undefined,
       ...failure,
       is_retry: isRetry,
       referrer_domain: getReferrerDomain(),
+      showed_prerendered_law: showedPrerenderedLaw || undefined,
     });
   }
 
@@ -512,9 +530,17 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       })
       .catch((error: unknown) => {
         el.setAttribute('aria-busy', 'false');
+        const failure = describeLawLoadFailure(error);
+        // A failed request is not a missing law: a prerendered page already holds this law, so keep showing it
+        // and save "Law Not Found" for a law the API reports missing
+        const prerenderedLaw = failure.failure_reason === 'not_found' ? null : readPrerenderedLaw(lawId);
+        if (prerenderedLaw) {
+          renderLaw(prerenderedLaw);
+          trackLawNotFound(failure, false, true);
+          return;
+        }
         showNotFound();
         clearExportContent();
-        const failure = describeLawLoadFailure(error);
         markMissingLaw(failure);
         trackLawNotFound(failure, false);
       });

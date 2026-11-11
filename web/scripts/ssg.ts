@@ -17,7 +17,7 @@ import {
 import { renderNotFoundContent, renderNotFoundLaws } from '../src/utils/not-found-content.ts';
 import { externalLinkRenderer } from '../src/utils/markdown-links.ts';
 import { insertContentFigure } from '../src/utils/content-figures.ts';
-import { CALCULATOR_META_DESCRIPTIONS, SITE_URL, WIDGET_CARD_COUNT } from '../src/utils/constants.ts';
+import { CALCULATOR_META_DESCRIPTIONS, PRERENDERED_LAW_DATA_ID, SITE_URL, WIDGET_CARD_COUNT } from '../src/utils/constants.ts';
 import { renderCorollarySection, renderParentBanner, corollaryDisplayTitle } from '../src/utils/corollaries.ts';
 import type { Corollary, CorollaryParent } from '../src/types/app.d.ts';
 import { buildBreadcrumbList, buildCanonicalUrl, buildUniqueLawSeo, buildLawSeo, truncateTitle } from '../src/utils/seo.ts';
@@ -722,6 +722,32 @@ function buildStaticLawDetailContent(law: Law, relatedLaws: Law[] = [], corollar
 }
 
 /**
+ * The law this page shows, as a script the client view falls back on when its law request fails, so a visitor who
+ * opens a shared, feed or search link still reads the law instead of a "Law Not Found" screen. It carries no more
+ * than the page already shows: attributions by name only, never contact details. `<` is escaped so the law text
+ * cannot close the script element.
+ */
+function buildPrerenderedLawData(law: Law, corollaryContext?: CorollaryContext): string {
+  const snapshot = {
+    id: law.id,
+    title: law.title,
+    text: law.text ?? '',
+    attributions: law.attributions?.map((attribution) => ({ name: attribution.name })),
+    attribution: law.attribution,
+    author: law.author,
+    category_slug: law.category_slug,
+    category_name: law.category_name,
+    category_context: law.category_context,
+    upvotes: law.upvotes,
+    downvotes: law.downvotes,
+    editorial: law.editorial,
+    corollaries: corollaryContext?.corollaries ?? [],
+    corollary_of: corollaryContext?.parent ?? null
+  };
+  return `<script type="application/json" id="${PRERENDERED_LAW_DATA_ID}">${JSON.stringify(snapshot).replace(/</g, '\\u003c')}</script>`;
+}
+
+/**
  * Update hreflang tags to point to the correct URL
  */
 function updateHreflang(html: string, url: string): string {
@@ -997,6 +1023,7 @@ function generateLawPage(law: Law, template: string, relatedLaws: Law[] = [], se
   });
 
   pageHtml = injectJsonLd(pageHtml, breadcrumbJsonLd);
+  pageHtml = injectJsonLd(pageHtml, buildPrerenderedLawData(law, corollaryContext));
   pageHtml = pageHtml.replace('</head>', `${oembedDiscoveryLink(law.id)}\n</head>`);
   
   return pageHtml;

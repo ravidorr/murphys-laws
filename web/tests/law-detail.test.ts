@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { LawDetail, describeLawLoadFailure, getReferrerDomain } from '../src/views/law-detail.js';
+import { LawDetail, describeLawLoadFailure, getReferrerDomain, readPrerenderedLaw } from '../src/views/law-detail.js';
 import * as votingModule from '../src/utils/voting.js';
 import type { CleanableElement } from '../src/types/app.js';
 
@@ -1321,6 +1321,86 @@ describe('LawDetail view', () => {
 
     // Calling cleanup should not throw
     expect(() => (el as CleanableElement).cleanup!()).not.toThrow();
+  });
+
+  describe('prerendered law fallback', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    function addPrerenderedLaw(content: string) {
+      const script = document.createElement('script');
+      script.type = 'application/json';
+      script.id = 'law-prerender-data';
+      script.textContent = content;
+      document.head.appendChild(script);
+    }
+
+    beforeEach(() => {
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+      window.history.replaceState(null, '', '/law/7');
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+      document.getElementById('law-prerender-data')?.remove();
+    });
+
+    it('keeps the prerendered law on screen when the law request fails', async () => {
+      addPrerenderedLaw(JSON.stringify({ id: 7, title: 'Prerendered Law', text: 'Prerendered text', upvotes: 2, downvotes: 1 }));
+      globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 403 });
+
+      const el = LawDetail({ lawId: '7', onNavigate: () => { } });
+
+      await vi.waitFor(() => expect(el.querySelector('[data-law-text]')?.textContent).toBe('Prerendered text'), { timeout: 500 });
+      expect(el.querySelector('[data-law-content]')?.hasAttribute('hidden')).toBe(false);
+      expect(el.querySelector('[data-not-found]')?.hasAttribute('hidden')).toBe(true);
+      expect(el.querySelector('[data-upvote-count]')?.textContent).toBe('2');
+      expect(track).toHaveBeenCalledWith('law_not_found', {
+        law_id: '7',
+        failure_reason: 'http_error',
+        http_status: 403,
+        is_retry: false,
+        referrer_domain: 'direct',
+        showed_prerendered_law: true,
+      });
+    });
+
+    it('still shows Law Not Found when the API reports the law missing', async () => {
+      addPrerenderedLaw(JSON.stringify({ id: 7, text: 'Prerendered text' }));
+      globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+
+      const el = LawDetail({ lawId: '7', onNavigate: () => { } });
+
+      await vi.waitFor(() => expect(el.querySelector('[data-not-found]')?.hasAttribute('hidden')).toBe(false), { timeout: 500 });
+      expect(el.querySelector('[data-law-content]')?.hasAttribute('hidden')).toBe(true);
+    });
+
+    it('shows Law Not Found when the prerendered law is for another id', async () => {
+      addPrerenderedLaw(JSON.stringify({ id: 8, text: 'Another law' }));
+      globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+
+      const el = LawDetail({ lawId: '7', onNavigate: () => { } });
+
+      await vi.waitFor(() => expect(el.querySelector('[data-not-found]')?.hasAttribute('hidden')).toBe(false), { timeout: 500 });
+    });
+
+    it.each([
+      ['no payload', null],
+      ['an empty payload', ''],
+      ['invalid JSON', '{'],
+      ['a non-object', '7'],
+      ['null', 'null'],
+      ['a law without text', '{"id":7}'],
+    ])('ignores %s', (_label, content) => {
+      if (content !== null) addPrerenderedLaw(content);
+      expect(readPrerenderedLaw('7')).toBeNull();
+    });
+
+    it('reads the law for a matching id', () => {
+      addPrerenderedLaw('{"id":7,"text":"Prerendered text"}');
+      expect(readPrerenderedLaw('7')).toEqual({ id: 7, text: 'Prerendered text' });
+    });
   });
 
   describe('Pendo tracking', () => {

@@ -217,6 +217,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A law page opened from a shared, feed or search link keeps showing the law when its law request fails (a network
+  error, a timeout, a 5xx or a refused request) instead of replacing the prerendered law with "Law Not Found". The
+  static build now writes the law it shows into the page head (`<script type="application/json"
+  id="law-prerender-data">`, attributions by name only), and the law view falls back on it for any failure except a
+  404, which still shows "Law Not Found" and marks the page `noindex`. The `law_not_found` Pendo event gains
+  `showed_prerendered_law: true` when the fallback was used. No version bump in this change: it leaves
+  `package.json` untouched for the maintainer to bump.
 - Daily 404 report of 11 November 2026 (47 requests that day): the production bundles no longer link to source maps that do not
   exist, more scanner probes are dropped, and the sized Apple icons are redirected. Every JS file the build emitted ended in
   `//# sourceMappingURL=...`, but the Sentry upload deletes the maps from `dist`, so crawlers and scrapers that follow the
