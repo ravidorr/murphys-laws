@@ -1364,6 +1364,25 @@
   background: color-mix(in oklab, var(--btn-primary-bg) 28%, transparent);
 }
 
+.law-card-more {
+  font-size: var(--text-xs);
+  margin: 0 0 0.5rem;
+}
+
+.law-card-more-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--component-control-min-size);
+  color: var(--link);
+  text-decoration: none;
+}
+
+.law-card-more-link:hover,
+.law-card-more-link:focus-visible {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
 .law-card-footer {
   display: flex;
   align-items: center;

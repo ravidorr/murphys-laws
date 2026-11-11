@@ -1047,7 +1047,7 @@ describe('CategoryDetail view', () => {
 
       expect(renderLawCards).toHaveBeenCalledWith(
         expect.any(Array),
-        expect.objectContaining({ searchQuery: 'test keyword' })
+        expect.objectContaining({ searchQuery: 'test keyword', showLawPageCue: true })
       );
     });
   });
@@ -1555,6 +1555,20 @@ describe('CategoryDetail view', () => {
       // Only the card click sends the product event, as in Browse
       expect(trackProductEvent).toHaveBeenCalledTimes(1);
       expect(trackProductEvent).toHaveBeenCalledWith('archive.result_open', { surface: 'category_detail' });
+    });
+
+    it('reports a click on the law page cue apart from the title link', async () => {
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await vi.waitFor(() => expect(el.querySelector('#category-result-count')!.textContent).not.toBe(''));
+      el.querySelector('#category-laws-list')!.innerHTML = '';
+      const card = addListCard(el, '101');
+      card.insertAdjacentHTML('beforeend', '<p class="law-card-more"><a href="/law/101" class="law-card-more-link" data-nav="law" data-param="101">Read the full law</a></p>');
+
+      (card.querySelector('.law-card-more-link') as HTMLElement).click();
+
+      expect(track).toHaveBeenCalledWith('search_result_opened', expect.objectContaining({ law_id: '101', open_method: 'law_page_cue' }));
+      expect(track).not.toHaveBeenCalledWith('search_result_opened', expect.objectContaining({ open_method: 'title_link' }));
+      expect(onNavigate).toHaveBeenCalledTimes(1);
     });
 
     it('marks laws opened from in-category search results as filtered', async () => {
