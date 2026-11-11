@@ -1575,4 +1575,116 @@ describe('SubmitLawSection component', () => {
       expect(eventsNamed('law_submitted')).toHaveLength(0);
     });
   });
+
+  describe('starting text and category', () => {
+    const categories = [
+      { id: 1, title: 'General', slug: 'murphys-general-laws' },
+      { id: 2, title: 'Technology', slug: 'murphys-technology-laws' }
+    ];
+
+    function mountWith(options: Parameters<typeof SubmitLawSection>[0]) {
+      const el = SubmitLawSection(options);
+      const self = local();
+      self.el = el;
+      self.appended = true;
+      document.body.appendChild(el);
+      return el;
+    }
+
+    it('starts the law text box with the given text, trimmed, and updates the counter', () => {
+      vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
+      const el = mountWith({ initialText: '  printer jams before every deadline  ' });
+
+      expect((el.querySelector('#submit-text') as HTMLTextAreaElement).value).toBe('printer jams before every deadline');
+      expect(el.querySelector('.submit-char-counter')?.textContent).toBe('34 / 1000');
+      expect(el.querySelector('[data-requirement="text"]')?.classList.contains('requirement-met')).toBe(true);
+      expect((el.querySelector('#submit-btn') as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it('does not show the short-text error for short starting text until the visitor edits it', () => {
+      vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
+      const el = mountWith({ initialText: 'toast' });
+      const message = el.querySelector('.submit-message') as HTMLElement;
+
+      expect((el.querySelector('#submit-text') as HTMLTextAreaElement).value).toBe('toast');
+      expect(message.hidden).toBe(true);
+      expect(message.textContent).toBe('');
+    });
+
+    it('caps the starting text at the 1000-character limit', () => {
+      vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
+      const el = mountWith({ initialText: 'a'.repeat(1200) });
+
+      expect((el.querySelector('#submit-text') as HTMLTextAreaElement).value).toHaveLength(1000);
+    });
+
+    it('leaves the law text box empty when the starting text is blank', () => {
+      vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: [] });
+      const el = mountWith({ initialText: '   ' });
+
+      expect((el.querySelector('#submit-text') as HTMLTextAreaElement).value).toBe('');
+      expect(el.querySelector('.submit-char-counter')?.textContent).toBe('0 / 1000');
+    });
+
+    it('preselects the starting category from the cached categories', () => {
+      deferUntilIdleSpy.mockImplementation(() => {});
+      cacheUtils.setCachedCategories(categories);
+      const el = mountWith({ initialCategorySlug: 'murphys-technology-laws' });
+
+      expect((el.querySelector('#submit-category') as HTMLSelectElement).value).toBe('2');
+    });
+
+    it('preselects the starting category once fresh categories load', async () => {
+      vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: categories });
+      const el = mountWith({ initialCategorySlug: 'murphys-technology-laws' });
+      const categorySelect = el.querySelector('#submit-category') as HTMLSelectElement;
+
+      await vi.waitFor(() => expect(categorySelect.options.length).toBe(3));
+      expect(categorySelect.value).toBe('2');
+    });
+
+    it('keeps the category already chosen when fresh categories load', async () => {
+      let loadCategories: (() => void) | null = null;
+      deferUntilIdleSpy.mockImplementation((callback: () => void) => {
+        loadCategories = callback;
+      });
+      cacheUtils.setCachedCategories(categories);
+      vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: categories });
+      const el = mountWith({ initialCategorySlug: 'murphys-technology-laws' });
+      const categorySelect = el.querySelector('#submit-category') as HTMLSelectElement;
+      categorySelect.value = '1';
+
+      loadCategories!();
+
+      await vi.waitFor(() => expect(categorySelect.options[0]?.textContent).toBe('Select a category (optional)'));
+      expect(categorySelect.value).toBe('1');
+    });
+
+    it('does not bring the starting category back when the visitor cleared it before fresh categories load', async () => {
+      let loadCategories: (() => void) | null = null;
+      deferUntilIdleSpy.mockImplementation((callback: () => void) => {
+        loadCategories = callback;
+      });
+      cacheUtils.setCachedCategories(categories);
+      vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: categories });
+      const el = mountWith({ initialCategorySlug: 'murphys-technology-laws' });
+      const categorySelect = el.querySelector('#submit-category') as HTMLSelectElement;
+      expect(categorySelect.value).toBe('2');
+      categorySelect.value = '';
+      categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+      loadCategories!();
+
+      await vi.waitFor(() => expect(categorySelect.options.length).toBe(3));
+      expect(categorySelect.value).toBe('');
+    });
+
+    it('leaves the category unselected when the starting slug matches no category', () => {
+      deferUntilIdleSpy.mockImplementation(() => {});
+      cacheUtils.setCachedCategories(categories);
+      const el = mountWith({ initialCategorySlug: 'no-such-category' });
+
+      expect((el.querySelector('#submit-category') as HTMLSelectElement).value).toBe('');
+    });
+  });
 });
