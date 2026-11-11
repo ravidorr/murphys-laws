@@ -46,6 +46,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The article button row's accessible name is now "Explore and contribute". Web bumped to `3.4.78`; root to `2.6.182`.
 - The Submit a Law form now starts with the required Law Text box; the Law Title field follows it and its label reads
   "Law Title (optional)".
+- The "Submit your own" button after an article (including the Real-Life Examples hub) now sits on its own below the
+  featured-laws card instead of in that card's footer, so it still shows when the featured laws fail to load or the
+  category has none. The static build renders it the same way. Web bumped to `3.4.79`; root to `2.6.183`.
 
 ### Added
 

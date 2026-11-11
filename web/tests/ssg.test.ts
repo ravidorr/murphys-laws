@@ -474,7 +474,7 @@ describe('SSG Static Route Content', () => {
       { id: 6, text: 'No votes yet', category_slug: 'murphys-laws' }
     ];
 
-    const { nextSteps, featuredLaws } = buildStaticArticleArchive('origin-story', laws);
+    const { nextSteps, featuredLaws, submitAction } = buildStaticArticleArchive('origin-story', laws);
 
     expect(nextSteps).toContain('class="section card card--section section-card article-next-steps" aria-label="Explore and contribute"');
     expect(nextSteps).toContain('<a href="/category/murphys-laws" class="btn primary article-cta article-cta--category" data-nav="category/murphys-laws">');
@@ -487,17 +487,20 @@ describe('SSG Static Route Content', () => {
     expect(featuredLaws.indexOf('more upvotes')).toBeLessThan(featuredLaws.indexOf('fewer upvotes'));
     expect(featuredLaws).toContain('href="/law/2"');
     expect(featuredLaws).toContain("See all Murphy's Laws");
-    expect(featuredLaws).toContain('href="/submit"');
+    expect(featuredLaws).not.toContain('href="/submit"');
+    expect(submitAction).toContain('article-submit-action');
+    expect(submitAction).toContain('href="/submit"');
   });
 
-  it('keeps the archive row when the featured category has no laws and skips unmapped pages', () => {
+  it('keeps the archive row and Submit when the featured category has no laws and skips unmapped pages', () => {
     const laws = [{ id: 9, text: 'Office law', upvotes: 1, downvotes: 0, category_slug: 'murphys-office-laws' }];
 
     expect(buildStaticArticleArchive('examples/travel', laws)).toEqual({
       nextSteps: expect.stringContaining('/category/murphys-travel-laws'),
-      featuredLaws: ''
+      featuredLaws: '',
+      submitAction: expect.stringContaining('href="/submit"')
     });
-    expect(buildStaticArticleArchive('about', laws)).toEqual({ nextSteps: '', featuredLaws: '' });
+    expect(buildStaticArticleArchive('about', laws)).toEqual({ nextSteps: '', featuredLaws: '', submitAction: '' });
   });
 
   it('opens external Markdown links in a new tab and keeps site links in place', () => {
