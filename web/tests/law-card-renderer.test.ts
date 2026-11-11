@@ -215,17 +215,17 @@ describe('law-card-renderer', () => {
       expect(html).not.toContain('law-card-more');
     });
 
-    it('renders a related laws cue linking to the law page when showLawPageCue is set', () => {
+    it('renders a full law cue linking to the law page when showLawPageCue is set', () => {
       const law = { id: 7, text: 'Text', upvotes: 0, downvotes: 0 };
       const html = renderLawCard(law, { showLawPageCue: true });
-      expect(html).toContain('<p class="law-card-more"><a href="/law/7" class="law-card-more-link" data-nav="law" data-param="7">See related laws</a></p>');
+      expect(html).toContain('<p class="law-card-more"><a href="/law/7" class="law-card-more-link" data-nav="law" data-param="7">Read the full law</a></p>');
     });
 
     it('names the parent law in the cue for a corollary', () => {
       const law = { id: 8, text: 'Text', upvotes: 0, downvotes: 0, corollary_of_id: 3 };
       const html = renderLawCard(law, { showLawPageCue: true });
       expect(html).toContain('See the law this corollary belongs to');
-      expect(html).not.toContain('See related laws');
+      expect(html).not.toContain('Read the full law');
     });
   });
 

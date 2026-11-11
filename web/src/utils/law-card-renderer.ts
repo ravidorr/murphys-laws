@@ -103,8 +103,8 @@ export function renderLawCard(law: Law, options: LawCardOptions = {}) {
     : '';
 
   // The card already shows the whole law, so name what opening it adds: a corollary's page leads to the law it
-  // belongs to, and every law page lists related laws
-  const lawPageCueText = law.corollary_of_id ? 'See the law this corollary belongs to' : 'See related laws';
+  // belongs to. Related laws are not promised because a law page can have none yet.
+  const lawPageCueText = law.corollary_of_id ? 'See the law this corollary belongs to' : 'Read the full law';
   const lawPageCue = showLawPageCue
     ? `<p class="law-card-more"><a href="${lawHref}" class="law-card-more-link" data-nav="law" data-param="${safeId}">${lawPageCueText}</a></p>`
     : '';

@@ -1370,12 +1370,16 @@
 }
 
 .law-card-more-link {
-  color: var(--btn-primary-bg);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--component-control-min-size);
+  color: var(--link);
   text-decoration: none;
 }
 
 .law-card-more-link:hover,
 .law-card-more-link:focus-visible {
+  color: var(--link-hover);
   text-decoration: underline;
 }
 

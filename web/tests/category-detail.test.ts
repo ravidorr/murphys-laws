@@ -354,6 +354,104 @@ describe('CategoryDetail view', () => {
     expect(el.textContent).toContain('No laws found');
   });
 
+  it('labels the empty state submit button the same as Browse', async () => {
+    vi.mocked(api.fetchLaws).mockResolvedValue({ data: [], total: 0, limit: 10, offset: 0 });
+    const el = CategoryDetail({ categoryId, onNavigate });
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    expect(el.querySelector('[data-nav="submit"]')!.textContent).toContain('Submit a Law');
+    expect(el.querySelector('[data-action="clear-search"]')).toBeNull();
+  });
+
+  describe('empty search results', () => {
+    async function searchWithoutResults(filters: Record<string, unknown>) {
+      const mod = await import('../src/components/advanced-search.js') as unknown as { getLocalThis: () => AdvancedSearchMockState };
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+      vi.mocked(api.fetchLaws).mockResolvedValue({ data: [], total: 0, limit: 10, offset: 0 });
+      mod.getLocalThis().onSearch!(filters);
+      await vi.waitFor(() => expect(el.querySelector('[data-action="clear-search"]')).toBeTruthy());
+      return { el, search: mod.getLocalThis() };
+    }
+
+    it('shows search-specific copy instead of saying the category has no laws', async () => {
+      const { el } = await searchWithoutResults({ q: 'zzz', category_id: 1 });
+
+      expect(el.textContent).toContain('No laws match your search');
+      expect(el.textContent).not.toContain('No laws have been submitted for this category yet');
+      expect(el.querySelector('[data-nav="submit"]')!.textContent).toContain('Submit a Law');
+    });
+
+    it('shows search-specific copy for a submitter-only search', async () => {
+      const { el } = await searchWithoutResults({ attribution: 'Arthur Bloch', category_id: 1 });
+
+      expect(el.textContent).toContain('No laws match your search');
+    });
+
+    it('clears the search through the search form when it is available', async () => {
+      const { el, search } = await searchWithoutResults({ q: 'zzz', category_id: 1 });
+      const formClearBtn = document.createElement('button');
+      formClearBtn.id = 'clear-btn';
+      formClearBtn.addEventListener('click', () => search.onSearch!({ category_id: 1 }));
+      el.querySelector('#advanced-search-container')!.appendChild(formClearBtn);
+      vi.mocked(api.fetchLaws).mockClear();
+
+      (el.querySelector('[data-action="clear-search"]') as HTMLElement).click();
+
+      expect(api.fetchLaws).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(api.fetchLaws).mock.calls[0]![0]).not.toHaveProperty('q');
+      expect(vi.mocked(api.fetchLaws).mock.calls[0]![0]).toEqual(expect.objectContaining({ category_id: 1, offset: 0 }));
+    });
+
+    it('moves focus to the search keyword input after clearing the search', async () => {
+      const { el } = await searchWithoutResults({ q: 'zzz', category_id: 1 });
+      document.body.appendChild(el);
+      try {
+        const keywordInput = document.createElement('input');
+        keywordInput.id = 'search-keyword';
+        el.querySelector('#advanced-search-container')!.appendChild(keywordInput);
+        const clearSearchBtn = el.querySelector('[data-action="clear-search"]') as HTMLElement;
+        clearSearchBtn.focus();
+        expect(document.activeElement).toBe(clearSearchBtn);
+
+        clearSearchBtn.click();
+
+        expect(document.activeElement).toBe(keywordInput);
+      } finally {
+        el.remove();
+      }
+    });
+
+    it('clears the search directly when the search form has no Clear button', async () => {
+      const { el } = await searchWithoutResults({ q: 'zzz', attribution: 'Arthur Bloch', category_id: 1 });
+      vi.mocked(api.fetchLaws).mockClear();
+
+      (el.querySelector('[data-action="clear-search"]') as HTMLElement).click();
+
+      expect(api.fetchLaws).toHaveBeenCalledTimes(1);
+      const params = vi.mocked(api.fetchLaws).mock.calls[0]![0];
+      expect(params).not.toHaveProperty('q');
+      expect(params).not.toHaveProperty('attribution');
+      expect(params).toEqual(expect.objectContaining({ category_id: 1, offset: 0 }));
+    });
+
+    it('moves focus to the search keyword input when the fallback clears the search', async () => {
+      const { el } = await searchWithoutResults({ q: 'zzz', category_id: 1 });
+      document.body.appendChild(el);
+      try {
+        const keywordInput = document.createElement('input');
+        keywordInput.id = 'search-keyword';
+        el.querySelector('#advanced-search-container')!.appendChild(keywordInput);
+
+        (el.querySelector('[data-action="clear-search"]') as HTMLElement).click();
+
+        expect(document.activeElement).toBe(keywordInput);
+      } finally {
+        el.remove();
+      }
+    });
+  });
+
   it('handles API error', async () => {
     vi.mocked(api.fetchLaws).mockRejectedValue(new Error('Network error'));
     const el = CategoryDetail({ categoryId, onNavigate });
