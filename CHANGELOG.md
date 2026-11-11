@@ -62,7 +62,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as Browse does: card clicks, law-text link clicks and keyboard opens each report `open_method`, the law's rank,
   page, result count and category, with `search_surface` set to `category_detail`.
   A card click also sends the `archive.result_open` product event (`surface: category_detail`), as Browse does; the
-  other open methods stay Pendo-only. Web bumped to `3.4.82`; root to `2.6.186`.
+  other open methods stay Pendo-only. Web bumped to `3.4.88`; root to `2.6.192`.
+- The Buttered Toast formula no longer shrinks to unreadably small text on phones. On screens wider than 768px it still
+  scales down to fit its box but never below the phone formula size (`--text-2xl`); at 768px and below it uses the shared
+  responsive formula sizes (36px, then 24px at 480px and below) and scrolls sideways inside its own box instead. The
+  formula box is now announced as a labelled group. Web bumped to `3.4.87`; root to `2.6.191`.
+- The Buttered Toast calculator no longer opens with its formula: the sliders come first, and the formula now sits
+  directly below the probability result, ahead of the Share Your Results card. Web bumped to `3.4.85`; root to `2.6.189`.
+- When a Browse search finds nothing, the empty state now has a "Clear filters" button beside "Submit a Law". It does
+  the same thing as the search panel's Clear button, so visitors can widen the search right where the message is. The
+  button only appears when a filter is active. Pressing it moves keyboard focus to the Search box so it is not lost
+  when the list redraws, and clearing no longer records an `archive.search` event. Web bumped to `3.4.84`; root to
+  `2.6.188`.
 
 ### Added
 
@@ -231,6 +242,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Opening a shared Sod's Law Calculator link now shows the score and message for the shared slider values right away,
+  instead of the default result until a slider moves. The sliders also announce the shared values to screen readers
+  (`aria-valuenow` and `aria-valuetext` were left at the template default), and the share text and link match the
+  score on screen. Web bumped to `3.4.86`; root to `2.6.190`.
+- The law page shows "Law Not Found" only when the law is missing (the API answers 404, or the ID can't name a law).
+  A forbidden answer, a server error, a network error or a timeout now shows "We couldn't load this law" with Try Again
+  as the main action, instead of saying the law doesn't exist or may have been removed. The load-failure card is an
+  alert, its heading accents the first word like the other headings, and after a retry that fails again focus moves to the
+  new Try Again button instead of dropping to the page. The Try Again button no longer carries an `aria-label` that
+  differs from its visible text, in either state. Analytics are unchanged: a load failure still sends the
+  `law_not_found` event, told apart from a missing law only by its `failure_reason` (`http_error`, `server_error`,
+  `network`, `timeout`, `invalid_response` or `unknown`, against `not_found`, `missing_id` or `invalid_id`).
+  Web bumped to `3.4.83`; root to `2.6.187`.
 - A category search that finds nothing no longer says no laws have been submitted for the category yet. It now says
   nothing in the category matches the search, offers a "Clear search" button that resets the search form and shows the
   category's laws again, and its submit button reads "Submit a Law", the same as Browse. Clearing the search moves

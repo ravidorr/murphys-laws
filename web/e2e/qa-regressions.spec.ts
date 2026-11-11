@@ -52,18 +52,35 @@ test.describe('QA regressions', () => {
   }
 
   for (const viewport of [
-    { name: 'mobile', width: 320, height: 640 },
-    { name: 'desktop', width: 1440, height: 900 },
+    { name: 'mobile', width: 320, height: 640, minFontSize: 24, fits: false },
+    { name: 'tablet', width: 768, height: 1024, minFontSize: 36, fits: false },
+    { name: 'laptop', width: 1024, height: 768, minFontSize: 24, fits: true },
+    { name: 'desktop', width: 1440, height: 900, minFontSize: 24, fits: true },
   ]) {
-    test(`buttered toast formula fits at ${viewport.name} width`, async ({ page }) => {
-      await page.setViewportSize(viewport);
+    test(`buttered toast formula stays readable at ${viewport.name} width`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto('/calculator/buttered-toast');
 
       const formula = page.locator('#toast-formula-display');
       await expect(formula.locator('math')).toBeVisible();
+      await expect(formula).toHaveAttribute('role', 'group');
       await expect(formula).toHaveAttribute('aria-label', 'Buttered toast probability formula');
 
-      expect(await formula.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+      const fontSize = await formula.locator('math').evaluate(element => getComputedStyle(element).fontSize);
+      expect(Number.parseFloat(fontSize)).toBeGreaterThanOrEqual(viewport.minFontSize);
+
+      const overflows = await formula.evaluate(element => element.scrollWidth > element.clientWidth);
+      if (viewport.fits) {
+        expect(overflows).toBe(false);
+      } else {
+        // Too wide to fit at a readable size: the formula must scroll inside its own box.
+        expect(overflows).toBe(true);
+        expect(await formula.evaluate(element => getComputedStyle(element).overflowX)).toBe('auto');
+        await formula.evaluate(element => {
+          element.scrollLeft = 40;
+        });
+        expect(await formula.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+      }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     });
   }
