@@ -226,6 +226,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The law page shows "Law Not Found" only when the law is missing (the API answers 404, or the ID can't name a law).
+  A forbidden answer, a server error, a network error or a timeout now shows "We couldn't load this law" with Try Again
+  as the main action, instead of saying the law doesn't exist or may have been removed. The load-failure card is an
+  alert, its heading accents the first word like the other headings, and after a retry that fails again focus moves to the
+  new Try Again button instead of dropping to the page. The Try Again button no longer carries an `aria-label` that
+  differs from its visible text, in either state. Analytics are unchanged: a load failure still sends the
+  `law_not_found` event, told apart from a missing law only by its `failure_reason` (`http_error`, `server_error`,
+  `network`, `timeout`, `invalid_response` or `unknown`, against `not_found`, `missing_id` or `invalid_id`).
+  Web bumped to `3.4.83`; root to `2.6.187`.
 - A category search that finds nothing no longer says no laws have been submitted for the category yet. It now says
   nothing in the category matches the search, offers a "Clear search" button that resets the search form and shows the
   category's laws again, and its submit button reads "Submit a Law", the same as Browse. Clearing the search moves
