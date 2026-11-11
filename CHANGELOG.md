@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Sod's Law Calculator now labels the score shown on first load as a sample from the default settings and asks
+  visitors to move the sliders to score their own task. The note hides after the first slider move and does not show
+  when the page opens from a shared link that carries at least one valid setting (a link with only invalid values keeps
+  it). The note is styled as small semibold text under the score. Web bumped to `3.4.97`; root to `2.6.201`.
 - A search from the home or header search box now lands on its results on the Browse page: the page scrolls past the
   intro and Advanced Search form to the results card (or its empty state) and moves focus to the card title. The card
   is titled "Search Results" while a search or filter is active, and "All Laws" otherwise. The scroll also happens
