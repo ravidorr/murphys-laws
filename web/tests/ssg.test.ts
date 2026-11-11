@@ -14,6 +14,7 @@ import {
   buildStaticLawDetailContent,
   buildStaticArticleArchive,
   buildStaticHomeContent,
+  buildStaticCategoryContent,
   buildNotFoundPage,
   validateNotFoundPage,
   applyPageMetadata,
@@ -1298,5 +1299,29 @@ describe('SSG law data from the API', () => {
 
       expect(request).toHaveBeenCalledWith('https://api.test/api/v1/categories');
     });
+  });
+});
+
+describe('buildStaticCategoryContent', () => {
+  const content = buildStaticCategoryContent({
+    slug: 'murphys-office-laws',
+    title: "Murphy's Office Laws",
+    descriptionText: 'Office laws.',
+    lawCardsSection: '<div class="ssg-law-cards">CARDS</div>',
+    lawIndex: '<section class="section">LAW-INDEX</section>'
+  });
+
+  it('places the Explore nearby links after the pre-rendered law cards, as the client view does', () => {
+    const cards = content.indexOf('CARDS');
+    const nearby = content.indexOf('category-internal-links-murphys-office-laws');
+    expect(cards).toBeGreaterThan(-1);
+    expect(nearby).toBeGreaterThan(cards);
+    expect(content.indexOf('LAW-INDEX')).toBeGreaterThan(nearby);
+  });
+
+  it('keeps the heading and description first and links to the category hub pages', () => {
+    expect(content.indexOf('<h1')).toBeLessThan(content.indexOf('CARDS'));
+    expect(content).toContain('<span class="accent-text">Explore</span> nearby');
+    expect(content).toContain('href="/murphys-laws-about-work"');
   });
 });
