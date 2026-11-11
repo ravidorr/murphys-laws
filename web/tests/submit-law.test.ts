@@ -174,6 +174,29 @@ describe('SubmitLawSection component', () => {
     expect(el.querySelector('[data-duplicate-candidates]')?.textContent).toContain('% similar');
   });
 
+  it('starts from the given search text and checks it for duplicates', async () => {
+    const duplicateSpy = vi.spyOn(api, 'fetchDuplicateCandidates').mockResolvedValue({
+      data: [],
+      total: 0,
+      limit: 5,
+      offset: 0
+    });
+    const el = SubmitLawSection({ initialText: '  toast always lands butter side down  ' });
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement;
+
+    expect(textarea.value).toBe('toast always lands butter side down');
+    expect(el.querySelector('.submit-char-counter')?.textContent).toBe('35 / 1000');
+    await vi.waitFor(() => expect(duplicateSpy).toHaveBeenCalledWith('toast always lands butter side down'));
+  });
+
+  it('leaves the law text empty when the search text is blank', () => {
+    const duplicateSpy = vi.spyOn(api, 'fetchDuplicateCandidates');
+    const el = SubmitLawSection({ initialText: '   ' });
+
+    expect((el.querySelector('#submit-text') as HTMLTextAreaElement).value).toBe('');
+    expect(duplicateSpy).not.toHaveBeenCalled();
+  });
+
   it('clears duplicate results for short text and empty responses', async () => {
     const duplicateSpy = vi.spyOn(api, 'fetchDuplicateCandidates').mockResolvedValue({
       data: [],
@@ -1478,6 +1501,20 @@ describe('SubmitLawSection component', () => {
     }
 
     const eventsNamed = (name: string) => track.mock.calls.filter(([eventName]) => eventName === name);
+
+    it('does not report a duplicate match to analytics for text the visitor did not type', async () => {
+      const duplicateSpy = vi.spyOn(api, 'fetchDuplicateCandidates').mockResolvedValue({
+        data: [{ id: 7, title: 'Toast Law', text: 'toast always lands butter side down', match_type: 'exact', similarity: 1 }],
+        total: 1,
+        limit: 5,
+        offset: 0
+      } as never);
+      const el = SubmitLawSection({ initialText: 'toast always lands butter side down' });
+      await vi.waitFor(() => expect(duplicateSpy).toHaveBeenCalled());
+      await vi.waitFor(() => expect(el.querySelector('[data-duplicate-candidates]')?.textContent).toContain('Already in the archive'));
+
+      expect(eventsNamed('law_duplicate_detected')).toHaveLength(0);
+    });
 
     it('reports a successful submission without personal details', async () => {
       vi.spyOn(request, 'apiPost').mockResolvedValue({ id: 321, status: 'in_review' });

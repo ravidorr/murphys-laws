@@ -23,6 +23,7 @@ import { handleNavClick, addNavigationListener } from '../utils/navigation.ts';
 import { updatePageMetadata } from '../utils/dom.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
 import { trackPendoEvent, getSearchProperties } from '@utils/pendo.ts';
+import { submitPrefillUrl } from '../utils/submit-prefill.ts';
 import type { CleanableElement, OnNavigate, SearchFilters, SearchSurface, Law } from '../types/app.ts';
 
 const BROWSE_TITLE = "Browse All Murphy's Laws | Murphy's Law Archive";
@@ -305,6 +306,10 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
     // Handle navigation buttons and links (shared utility); a result's title link opens the law here
     const titleLinkCard = t.closest('[data-nav="law"]')?.closest<HTMLElement>('.law-card-mini');
     if (titleLinkCard) trackResultOpened(titleLinkCard, 'title_link');
+    // Submitting from an empty search carries the search words to the form; navigate() keeps this URL
+    if (t.closest('.empty-state [data-nav="submit"]') && currentFilters.q) {
+      history.pushState({ name: 'submit' }, '', submitPrefillUrl(currentFilters.q));
+    }
     if (handleNavClick(t, onNavigate)) {
       e.preventDefault();
       return;
