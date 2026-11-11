@@ -419,6 +419,27 @@ describe('ButteredToastCalculator view', () => {
     document.body.removeChild(el);
   });
 
+  it('keeps a prompt to move a slider beside the default result until the first adjustment', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const hint = el.querySelector<HTMLElement>('#toast-adjust-hint')!;
+    expect(el.querySelector('#toast-result-display')!.contains(hint)).toBe(true);
+    expect(hint.hidden).toBe(false);
+    expect(hint.textContent).toMatch(/Move any slider/);
+
+    const height = input(el, 'toast-height');
+    height.value = '100';
+    height.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(hint.hidden).toBe(true);
+
+    height.value = '120';
+    height.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(hint.hidden).toBe(true);
+
+    document.body.removeChild(el);
+  });
+
   it('displays formula element on load', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);

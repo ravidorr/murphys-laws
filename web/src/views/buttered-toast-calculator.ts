@@ -64,6 +64,7 @@ export function ButteredToastCalculator(): HTMLDivElement {
   const interpretationDisplay = el.querySelector('#toast-interpretation')!;
   const resultDisplay = el.querySelector('#toast-result-display')!;
   const formulaDisplay = el.querySelector('#toast-formula-display')!;
+  const adjustHint = el.querySelector<HTMLElement>('#toast-adjust-hint')!;
 
   // Track which variables should show values (temporarily after slider change)
   type FormulaVarKey = 'H' | 'g' | 'O' | 'B' | 'F' | 'T';
@@ -205,6 +206,8 @@ export function ButteredToastCalculator(): HTMLDivElement {
       if (!hasTrackedStart) {
         hasTrackedStart = true;
         trackProductEvent('calculator.start', { surface: 'calculator_page', calculator: 'buttered-toast' });
+        // The default result is a starting point; drop the prompt once the visitor has moved a slider
+        adjustHint.hidden = true;
       }
       const val = sliders[k].value;
 

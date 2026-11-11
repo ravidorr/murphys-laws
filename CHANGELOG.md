@@ -41,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Buttered Toast calculator now keeps a prompt to move a slider beside the default result until the visitor
+  adjusts one, instead of losing its only invitation when the default result is calculated on load.
 - The Real-Life Examples hub now invites readers to submit their own law while they read, not only after the article:
   a "Submit your own" button ends the button row under the title and a prompt sits right before the example stories.
   The article button row's accessible name is now "Explore and contribute". Web bumped to `3.4.78`; root to `2.6.182`.
