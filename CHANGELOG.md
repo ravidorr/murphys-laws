@@ -41,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Real-Life Examples hub now invites readers to submit their own law right before the example stories, not only
+  in the closing section.
 - The Submit a Law form now starts with the required Law Text box; the Law Title field follows it and its label reads
   "Law Title (optional)".
 - The "Submit your own" button after an article (including the Real-Life Examples hub) now sits on its own below the
@@ -108,6 +110,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Submit a Law page puts the cursor in the Law Text box when it opens, so visitors can start writing without
+  hunting for it. It does this only with a mouse or trackpad (no on-screen keyboard pops up over the guidance) and only
+  when the box is already fully on screen, so the page does not scroll and the guidance above stays in view. Web bumped
+  to `3.4.77`; root to `2.6.181`.
 - The Submit a Law guidance now opens with "Start writing right away" instead of telling visitors to search first, since
   the form has no search control and already lists possible duplicates as they type. Web bumped to `3.4.75`; root to
   `2.6.179`.
