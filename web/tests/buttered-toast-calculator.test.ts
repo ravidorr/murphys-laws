@@ -52,9 +52,23 @@ describe('ButteredToastCalculator view', () => {
     expect(formula?.querySelector('mi[title*="Height of fall"]')).toBeTruthy();
     expect(formula?.textContent).not.toContain('\\(');
     expect((formula as HTMLElement | null)?.tabIndex).toBe(0);
+    expect(formula?.getAttribute('role')).toBe('group');
     expect(formula?.getAttribute('aria-label')).toBe(
       'Buttered toast probability formula',
     );
+
+    document.body.removeChild(el);
+  });
+
+  it('places the formula after the result and before the share card', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const formula = el.querySelector('#toast-formula-display')!;
+    const result = el.querySelector('#toast-result-display')!;
+    const share = el.querySelector('#calculator-share-container')!;
+    expect(result.compareDocumentPosition(formula) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(formula.compareDocumentPosition(share) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     document.body.removeChild(el);
   });
