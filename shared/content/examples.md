@@ -2,6 +2,8 @@
 
 Murphy's Law states that "anything that can go wrong, will go wrong." This simple yet profound observation has been proven countless times in everyday life, from minor inconveniences to major catastrophes. Here are some classic Murphy's Law examples that everyone can relate to.
 
+Recognize your own mishap in one of these stories? [Submit your own Murphy's Law](/submit) and add it to the archive.
+
 ## Technology Murphy's Law Examples
 
 ### The Printer Paradox
