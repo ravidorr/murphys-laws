@@ -233,6 +233,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Opening a shared Sod's Law Calculator link now shows the score and message for the shared slider values right away,
+  instead of the default result until a slider moves. The sliders also announce the shared values to screen readers
+  (`aria-valuenow` and `aria-valuetext` were left at the template default), and the share text and link match the
+  score on screen. Web bumped to `3.4.86`; root to `2.6.190`.
 - The law page shows "Law Not Found" only when the law is missing (the API answers 404, or the ID can't name a law).
   A forbidden answer, a server error, a network error or a timeout now shows "We couldn't load this law" with Try Again
   as the main action, instead of saying the law doesn't exist or may have been removed. The load-failure card is an
