@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { LawDetail, describeLawLoadFailure, getReferrerDomain } from '../src/views/law-detail.js';
 import * as votingModule from '../src/utils/voting.js';
+import { setExportContent, clearExportContent, getExportContent, ContentType } from '../src/utils/export-context.js';
 import type { CleanableElement } from '../src/types/app.js';
 
 describe('LawDetail view', () => {
@@ -272,18 +273,131 @@ describe('LawDetail view', () => {
     expect(el.querySelector('[data-upvote-count]')?.textContent).toBe('2');
   });
 
-  it('renders not found for unknown id', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false });
-    const el = LawDetail({ lawId: 'nope', onNavigate: () => { } });
-    await new Promise(r => setTimeout(r, 0));
-    expect(el.textContent).toMatch(/Law Not Found/);
+  it('renders not found when the API answers 404', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+    const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.textContent).toMatch(/Law Not Found/), { timeout: 500 });
+    expect(el.textContent).not.toMatch(/We couldn't load this law/);
   });
 
-  it('shows not found and clears export when fetchLaw rejects (L323-326)', async () => {
-    globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
+  it('renders not found for an ID that cannot name a law without calling the API', async () => {
+    globalThis.fetch = vi.fn();
+    const el = LawDetail({ lawId: 'nope', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.textContent).toMatch(/Law Not Found/), { timeout: 500 });
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  describe('load failures', () => {
+    type PendoTrack = (eventName: string, properties?: Record<string, unknown>) => void;
+    let track: ReturnType<typeof vi.fn<PendoTrack>>;
+
+    beforeEach(() => {
+      track = vi.fn<PendoTrack>();
+      window.pendo = { track };
+    });
+
+    afterEach(() => {
+      delete window.pendo;
+      clearExportContent();
+    });
+
+    const timeoutError = () => Object.assign(new Error('The operation timed out.'), { name: 'TimeoutError' });
+
+    it.each([
+      ['a forbidden answer', 'http_error', () => vi.fn().mockResolvedValue({ ok: false, status: 403 })],
+      ['a server error', 'server_error', () => vi.fn().mockResolvedValue({ ok: false, status: 503 })],
+      ['a network error', 'network', () => vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))],
+      ['an unknown error', 'unknown', () => vi.fn().mockRejectedValue(new Error('Network error'))],
+      ['a non-JSON answer', 'invalid_response', () => vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'text/html' }),
+        json: async () => ({}),
+      })],
+      ['a timeout', 'timeout', () => vi.fn().mockRejectedValue(timeoutError())],
+    ])('renders a load failure, not "Law Not Found", on %s', async (_name, reason, makeFetch) => {
+      setExportContent({ type: ContentType.SINGLE_LAW, title: 'Stale', data: 'stale' });
+      globalThis.fetch = makeFetch();
+      const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+      await vi.waitFor(() => expect(el.textContent).toMatch(/We couldn't load this law/), { timeout: 500 });
+      expect(el.textContent).not.toMatch(/Law Not Found|doesn't exist/);
+      expect(el.querySelector('[data-not-found] [data-action="retry-law"]')).toBeTruthy();
+      expect(getExportContent()).toBeNull();
+      expect(track).toHaveBeenCalledWith('law_not_found', expect.objectContaining({
+        law_id: '1',
+        failure_reason: reason,
+        is_retry: false,
+      }));
+    });
+
+    it('announces the load failure as an alert and not the "Law Not Found" state', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
+      const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+      await vi.waitFor(() => expect(el.textContent).toMatch(/We couldn't load this law/), { timeout: 500 });
+      expect(el.querySelector('[data-not-found] [role="alert"]')).toBeTruthy();
+
+      globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+      const notFound = LawDetail({ lawId: '2', onNavigate: () => { } });
+      await vi.waitFor(() => expect(notFound.textContent).toMatch(/Law Not Found/), { timeout: 500 });
+      expect(notFound.querySelector('[role="alert"]')).toBeNull();
+    });
+
+    it('accents the first word of the load failure heading', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
+      const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+      await vi.waitFor(() => expect(el.textContent).toMatch(/We couldn't load this law/), { timeout: 500 });
+      expect(el.querySelector('[data-not-found] .empty-state-title .accent-text')?.textContent).toBe('We');
+    });
+
+    it('lets the visible Try Again text name the button in both error states', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
+      const failed = LawDetail({ lawId: '1', onNavigate: () => { } });
+      await vi.waitFor(() => expect(failed.textContent).toMatch(/We couldn't load this law/), { timeout: 500 });
+      const failedButton = failed.querySelector('[data-not-found] [data-action="retry-law"]');
+      expect(failedButton?.hasAttribute('aria-label')).toBe(false);
+      expect(failedButton?.textContent).toMatch(/Try Again/);
+
+      globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+      const missing = LawDetail({ lawId: '2', onNavigate: () => { } });
+      await vi.waitFor(() => expect(missing.textContent).toMatch(/Law Not Found/), { timeout: 500 });
+      expect(missing.querySelector('[data-not-found] [data-action="retry-law"]')?.hasAttribute('aria-label')).toBe(false);
+    });
+
+    it('moves focus to the new Try Again button when a retry fails again, but not on the first load', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
+      const el = LawDetail({ lawId: '1', onNavigate: () => { } });
+      document.body.appendChild(el);
+      try {
+        await vi.waitFor(() => expect(el.textContent).toMatch(/We couldn't load this law/), { timeout: 500 });
+        expect(document.activeElement).toBe(document.body);
+
+        const firstButton = el.querySelector('[data-action="retry-law"]') as HTMLElement;
+        firstButton.focus();
+        firstButton.click();
+        await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(2), { timeout: 500 });
+        await vi.waitFor(() => {
+          const button = el.querySelector('[data-not-found] [data-action="retry-law"]');
+          expect(button).toBeTruthy();
+          expect(button).not.toBe(firstButton);
+          expect(document.activeElement).toBe(button);
+        }, { timeout: 500 });
+      } finally {
+        el.remove();
+      }
+    });
+  });
+
+  it('switches to not found when a retry after a load failure gets a 404', async () => {
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+      .mockResolvedValue({ ok: false, status: 404 });
     const el = LawDetail({ lawId: '1', onNavigate: () => { } });
-    await new Promise(r => setTimeout(r, 50));
-    expect(el.textContent).toMatch(/Law Not Found/);
+    await vi.waitFor(() => expect(el.textContent).toMatch(/We couldn't load this law/), { timeout: 500 });
+
+    (el.querySelector('[data-action="retry-law"]') as HTMLElement).click();
+
+    await vi.waitFor(() => expect(el.textContent).toMatch(/Law Not Found/), { timeout: 500 });
+    expect(el.textContent).not.toMatch(/We couldn't load this law/);
   });
 
   it('renders not found when lawId is null', async () => {
