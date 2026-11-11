@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- "Submit a Law" in the Browse empty state now carries the words of the search that found nothing to the submit page
+  (`/submit?text=...`), which prefills the Law Text box and runs the duplicate check on them. The text is removed from the address once the
+  form has read it, so a reload or a return to the page starts from an empty form, and the check on text the visitor did
+  not type is not reported to analytics. Web bumped to `3.4.81`; root to `2.6.185`.
 - The Real-Life Examples hub now invites readers to submit their own law while they read, not only after the article:
   a "Submit your own" button ends the button row under the title and a prompt sits right before the example stories.
   The article button row's accessible name is now "Explore and contribute". Web bumped to `3.4.78`; root to `2.6.182`.
@@ -49,6 +53,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The "Submit your own" button after an article (including the Real-Life Examples hub) now sits on its own below the
   featured-laws card instead of in that card's footer, so it still shows when the featured laws fail to load or the
   category has none. The static build renders it the same way. Web bumped to `3.4.79`; root to `2.6.183`.
+- The Submit a Law form (`SubmitLawSection`) accepts an optional starting text and category slug, so a page that sends
+  a visitor to it, such as a search that found nothing, can hand off what they were looking for instead of an empty
+  form. The text fills the Law Text box (trimmed, at most 1000 characters) without showing the short-text error, and
+  the category is preselected; a category the visitor has already chosen is kept when fresh categories load. Web bumped
+  to `3.4.80`; root to `2.6.184`.
 
 ### Added
 
@@ -219,8 +228,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The law page shows "Law Not Found" only when the law is missing (the API answers 404, or the ID can't name a law).
   A forbidden answer, a server error, a network error or a timeout now shows "We couldn't load this law" with Try Again
-  as the main action, instead of saying the law doesn't exist or may have been removed. Web bumped to `3.4.80`; root to
-  `2.6.184`.
+  as the main action, instead of saying the law doesn't exist or may have been removed. The load-failure card is an
+  alert, its heading accents the first word like the other headings, and after a retry that fails again focus moves to the
+  new Try Again button instead of dropping to the page. The Try Again button no longer carries an `aria-label` that
+  differs from its visible text, in either state. Analytics are unchanged: a load failure still sends the
+  `law_not_found` event, told apart from a missing law only by its `failure_reason` (`http_error`, `server_error`,
+  `network`, `timeout`, `invalid_response` or `unknown`, against `not_found`, `missing_id` or `invalid_id`).
+  Web bumped to `3.4.82`; root to `2.6.186`.
 - Daily 404 report of 11 November 2026 (47 requests that day): the production bundles no longer link to source maps that do not
   exist, more scanner probes are dropped, and the sized Apple icons are redirected. Every JS file the build emitted ended in
   `//# sourceMappingURL=...`, but the Sentry upload deletes the maps from `dist`, so crawlers and scrapers that follow the

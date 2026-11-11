@@ -37,6 +37,9 @@ interface LawLoadFailure {
   http_status?: number;
 }
 
+// Failure reasons that mean the law is missing (the API answered 404, or the ID can't name a law)
+const MISSING_LAW_REASONS: ReadonlySet<string> = new Set(['not_found', 'missing_id', 'invalid_id']);
+
 /** Map a fetchLaw() rejection to a reason and, when the API answered, its HTTP status. Exported for testing. */
 export function describeLawLoadFailure(error: unknown): LawLoadFailure {
   const message = error instanceof Error ? error.message : '';
@@ -103,17 +106,19 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
 
   // Only a law the API reports missing, or an ID that can't name one, gets the "Law Not Found" copy.
   // A forbidden, server, network or timeout failure says nothing about whether the law exists.
-  function showNotFound(failure: LawLoadFailure) {
+  // After a retry the button the visitor pressed is gone, so focus goes to the new Try Again button
+  // instead of dropping to the page body. The first load never moves focus.
+  function showNotFound(failure: LawLoadFailure, isRetry = false) {
     loadingState?.setAttribute('hidden', '');
     lawContent?.setAttribute('hidden', '');
-    const isMissing = ['not_found', 'missing_id', 'invalid_id'].includes(failure.failure_reason);
-    const template = isMissing ? notFoundTemplate : loadErrorTemplate;
+    const template = MISSING_LAW_REASONS.has(failure.failure_reason) ? notFoundTemplate : loadErrorTemplate;
     /* v8 ignore start -- notFoundState and both templates are always provided by the component template */
     if (notFoundState) {
       notFoundState.removeAttribute('hidden');
       if (template instanceof HTMLTemplateElement) {
         notFoundState.replaceChildren(template.content.cloneNode(true));
         hydrateIcons(notFoundState);
+        if (isRetry) notFoundState.querySelector<HTMLElement>('[data-action="retry-law"]')?.focus();
       }
     }
     /* v8 ignore stop */
@@ -544,7 +549,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
         .catch((error: unknown) => {
           el.setAttribute('aria-busy', 'false');
           const failure = describeLawLoadFailure(error);
-          showNotFound(failure);
+          showNotFound(failure, true);
           clearExportContent();
           markMissingLaw(failure);
           trackLawNotFound(failure, true);
