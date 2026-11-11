@@ -420,6 +420,27 @@ describe("Calculator view", () => {
     vi.unstubAllGlobals();
   });
 
+  it('shows the score for shared URL parameters on load', () => {
+    const defaultScore = el!.querySelector('#score-value')!.textContent;
+
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: '?u=1&c=1&i=1&s=9&f=1',
+      href: 'http://localhost:3000/calculator?u=1&c=1&i=1&s=9&f=1'
+    });
+
+    mountCalculator();
+
+    expect(el!.querySelector('#score-value')!.textContent).toBe('1%');
+    expect(el!.querySelector('#score-value')!.textContent).not.toBe(defaultScore);
+    expect(el!.querySelector('#score-interpretation')!.textContent).toBe(
+      "You're probably safe. What could possibly go wrong?",
+    );
+    expect(el!.querySelector('#result-display')!.classList.contains('calc-ok')).toBe(true);
+
+    vi.unstubAllGlobals();
+  });
+
   it('ignores URL parameters outside valid range 1-9', () => {
     // Clean up existing element
     el?.cleanup?.();

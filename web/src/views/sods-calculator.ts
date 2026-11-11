@@ -264,6 +264,9 @@ export function Calculator(): HTMLDivElement {
     sliderValues[slider].textContent = String(value);
   });
 
+  // Recalculate so the score and message match the shared inputs
+  if (fromSharedLink) updateCalculation();
+
   const scenarioLinks = el.querySelector<HTMLElement>('[data-calculator-scenario-links]')!;
   scenarioLinks.innerHTML = renderInternalLinkList(getCalculatorScenarioLinks('sods-law'));
 
