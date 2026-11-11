@@ -1607,3 +1607,104 @@ describe('LawDetail robots meta for a missing law', () => {
     expect(robots()).toBe('custom');
   });
 });
+
+describe('LawDetail prerendered law on a failed first load', () => {
+  const shown = (el: HTMLElement, selector: string) => el.querySelector(selector)?.hasAttribute('hidden') === false;
+
+  // The static build's main element for a law page, as the router hands it to the first render
+  function prerenderedMain(): HTMLElement {
+    const main = document.createElement('main');
+    main.innerHTML = `
+      <div class="container page law-detail pt-0">
+        <article class="card card--section law-detail-card">
+          <h1 class="card-title">Prerendered Law</h1>
+          <blockquote class="law-text">Prerendered text</blockquote>
+        </article>
+      </div>`;
+    return main;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it.each([
+    ['a forbidden answer', () => vi.fn().mockResolvedValue({ ok: false, status: 403 })],
+    ['a server error', () => vi.fn().mockResolvedValue({ ok: false, status: 503 })],
+    ['a network failure', () => vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))],
+  ])('keeps the prerendered law with a load-failure notice on %s', async (_name, fetchMock) => {
+    globalThis.fetch = fetchMock();
+    const el = LawDetail({ lawId: '7', onNavigate: () => { }, prerendered: prerenderedMain() });
+
+    await vi.waitFor(() => expect(shown(el, '[data-prerendered-law]')).toBe(true), { timeout: 500 });
+    const prerenderedState = el.querySelector('[data-prerendered-law]')!;
+    expect(prerenderedState.querySelector('.law-text')?.textContent).toBe('Prerendered text');
+    expect(prerenderedState.textContent).toContain("Some features of this page couldn't load.");
+    expect(prerenderedState.querySelector('[data-action="retry-law"]')).toBeTruthy();
+    expect(shown(el, '[data-not-found]')).toBe(false);
+    expect(shown(el, '[data-loading]')).toBe(false);
+    expect(el.textContent).not.toMatch(/Law Not Found/);
+  });
+
+  it('shows not found when the API answers 404, even with a prerendered law', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+    const el = LawDetail({ lawId: '7', onNavigate: () => { }, prerendered: prerenderedMain() });
+
+    await vi.waitFor(() => expect(shown(el, '[data-not-found]')).toBe(true), { timeout: 500 });
+    expect(shown(el, '[data-prerendered-law]')).toBe(false);
+    expect(el.querySelector('[data-prerendered-law]')?.hasChildNodes()).toBe(false);
+  });
+
+  it('shows not found when the prerendered page holds no law, such as the generic loading shell', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
+    const shell = document.createElement('main');
+    shell.innerHTML = '<p class="loading-message">Loading the archive of inevitable mishaps...</p>';
+    const el = LawDetail({ lawId: '7', onNavigate: () => { }, prerendered: shell });
+
+    await vi.waitFor(() => expect(shown(el, '[data-not-found]')).toBe(true), { timeout: 500 });
+    expect(shown(el, '[data-prerendered-law]')).toBe(false);
+  });
+
+  it('replaces the prerendered law with the loaded one when a retry succeeds', async () => {
+    const law = { id: 7, title: 'Fresh Law', text: 'Fresh text', upvotes: 1, downvotes: 0 };
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+      .mockResolvedValue({ ok: true, json: async () => law });
+    const el = LawDetail({ lawId: '7', onNavigate: () => { }, prerendered: prerenderedMain() });
+    await vi.waitFor(() => expect(shown(el, '[data-prerendered-law]')).toBe(true), { timeout: 500 });
+
+    (el.querySelector('[data-action="retry-law"]') as HTMLElement).click();
+
+    await vi.waitFor(() => expect(el.querySelector('[data-law-text]')?.textContent).toBe('Fresh text'), { timeout: 500 });
+    expect(shown(el, '[data-law-content]')).toBe(true);
+    expect(shown(el, '[data-prerendered-law]')).toBe(false);
+    expect(el.querySelector('[data-prerendered-law]')?.hasChildNodes()).toBe(false);
+  });
+
+  it('keeps showing the prerendered law when a retry fails again for a reason other than 404', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
+    const el = LawDetail({ lawId: '7', onNavigate: () => { }, prerendered: prerenderedMain() });
+    await vi.waitFor(() => expect(shown(el, '[data-prerendered-law]')).toBe(true), { timeout: 500 });
+
+    (el.querySelector('[data-action="retry-law"]') as HTMLElement).click();
+
+    await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(2), { timeout: 500 });
+    await vi.waitFor(() => expect(shown(el, '[data-prerendered-law]')).toBe(true), { timeout: 500 });
+    expect(el.querySelectorAll('[data-prerendered-law] .law-detail-card')).toHaveLength(1);
+    expect(el.querySelectorAll('[data-prerendered-law] [data-action="retry-law"]')).toHaveLength(1);
+  });
+
+  it('shows not found when a retry after a kept prerendered law answers 404', async () => {
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+      .mockResolvedValue({ ok: false, status: 404 });
+    const el = LawDetail({ lawId: '7', onNavigate: () => { }, prerendered: prerenderedMain() });
+    await vi.waitFor(() => expect(shown(el, '[data-prerendered-law]')).toBe(true), { timeout: 500 });
+
+    (el.querySelector('[data-action="retry-law"]') as HTMLElement).click();
+
+    await vi.waitFor(() => expect(shown(el, '[data-not-found]')).toBe(true), { timeout: 500 });
+    expect(shown(el, '[data-prerendered-law]')).toBe(false);
+    expect(el.querySelector('[data-prerendered-law]')?.hasChildNodes()).toBe(false);
+  });
+});

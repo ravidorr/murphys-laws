@@ -204,6 +204,24 @@ describe('Router', () => {
     document.head.innerHTML = '';
   });
 
+  it('hands the prerendered main content to the first render only', () => {
+    const rootEl = document.createElement('div');
+    rootEl.innerHTML = '<div><main id="main-content"><p>Prerendered law</p></main></div>';
+    document.body.appendChild(rootEl);
+    const received: (HTMLElement | null | undefined)[] = [];
+    defineRoute('home', ({ prerendered }) => {
+      received.push(prerendered);
+      return document.createElement('div');
+    });
+
+    startRouter(rootEl);
+    forceRender();
+
+    expect(received[0]?.textContent).toBe('Prerendered law');
+    expect(received[1]).toBeNull();
+    document.body.removeChild(rootEl);
+  });
+
   it('calls cleanup functions when navigating away', async () => {
     const rootEl = document.createElement('div');
     document.body.appendChild(rootEl);

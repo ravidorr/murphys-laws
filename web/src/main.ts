@@ -285,10 +285,10 @@ const routesMap = {
     }
     return layout(Favorites({ onNavigate }));
   },
-  law: ({ param }: { param?: string | null }) => {
+  law: ({ param, prerendered }: { param?: string | null; prerendered?: HTMLElement | null }) => {
     trackPageView();
     trackLawView();
-    return layout(LawDetail({ lawId: param ?? '', onNavigate, onStructuredData: setLawStructuredData }));
+    return layout(LawDetail({ lawId: param ?? '', onNavigate, onStructuredData: setLawStructuredData, prerendered }));
   },
   submit: () => {
     trackPageView();

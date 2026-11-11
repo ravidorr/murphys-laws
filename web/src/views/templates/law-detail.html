@@ -4,6 +4,22 @@
   <p class="small">Loading...</p>
 </div>
 
+<div data-prerendered-law hidden></div>
+
+<template data-load-failed-notice-template>
+  <div class="card card--section mb-12" role="status">
+    <div class="card-body">
+      <p class="small">Some features of this page couldn't load. The law below is the copy that came with the page.</p>
+      <div class="not-found-actions">
+        <button type="button" class="btn outline" data-action="retry-law" aria-label="Try loading this law again">
+          <span class="icon" data-icon="refresh" aria-hidden="true"></span>
+          <span class="btn-text">Try Again</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
 <div data-law-content hidden>
   <div data-parent-banner></div>
   <div data-law-card-container></div>

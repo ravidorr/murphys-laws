@@ -217,6 +217,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A law page opened from a link no longer swaps the law it arrived with for "Law Not Found" when the law request fails
+  for a reason other than a 404 (a refused request, a server error, a timeout or a network failure). The router now
+  hands the prerendered page to the first view, which keeps the prerendered law on screen with a short notice that
+  some features couldn't load and a Try Again button. A 404 still shows "Law Not Found". Web bumped to `3.4.80`; root
+  to `2.6.184`.
 - Daily 404 report of 11 November 2026 (47 requests that day): the production bundles no longer link to source maps that do not
   exist, more scanner probes are dropped, and the sized Apple icons are redirected. Every JS file the build emitted ended in
   `//# sourceMappingURL=...`, but the Sentry upload deletes the maps from `dist`, so crawlers and scrapers that follow the

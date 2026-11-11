@@ -30,6 +30,8 @@ interface LawDetailProps {
   lawId: string;
   onNavigate: (page: string, param?: string) => void;
   onStructuredData?: (law: Law) => void;
+  /** The static page's main element on a direct visit, which may already hold this law. */
+  prerendered?: HTMLElement | null;
 }
 
 interface LawLoadFailure {
@@ -69,7 +71,7 @@ export function getReferrerDomain(): string {
   }
 }
 
-export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProps): HTMLDivElement {
+export function LawDetail({ lawId, onNavigate, onStructuredData, prerendered }: LawDetailProps): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page law-detail pt-0';
 
@@ -83,6 +85,12 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
   const notFoundState = el.querySelector('[data-not-found]');
   const notFoundTemplate = el.querySelector('[data-not-found-template]');
   const lawCardTemplate = el.querySelector('[data-law-card-template]');
+  const prerenderedState = el.querySelector('[data-prerendered-law]');
+  const loadFailedNoticeTemplate = el.querySelector('[data-load-failed-notice-template]');
+
+  // A direct visit arrives with the law already prerendered. Only a page that holds a law card counts,
+  // not the generic loading shell served for a law that was published after the last static build.
+  let prerenderedLaw = prerendered?.querySelector('.law-detail-card')?.closest('.law-detail') ?? null;
 
   // Replace static loading message with random one
   /* v8 ignore start -- loadingState/loadingText are always provided by the component template */
@@ -98,11 +106,13 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     loadingState?.removeAttribute('hidden');
     lawContent?.setAttribute('hidden', '');
     notFoundState?.setAttribute('hidden', '');
+    prerenderedState?.setAttribute('hidden', '');
   }
 
   function showNotFound() {
     loadingState?.setAttribute('hidden', '');
     lawContent?.setAttribute('hidden', '');
+    prerenderedState?.setAttribute('hidden', '');
     /* v8 ignore start -- notFoundState/notFoundTemplate are always provided by the component template */
     if (notFoundState) {
       notFoundState.removeAttribute('hidden');
@@ -112,6 +122,36 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       }
     }
     /* v8 ignore stop */
+  }
+
+  // Once the API has answered with the law, or said it is gone, the prerendered copy is no longer needed
+  function dropPrerenderedLaw() {
+    prerenderedLaw = null;
+    prerenderedState?.replaceChildren();
+  }
+
+  // A failed request says nothing about the law unless it was a 404, so keep the prerendered law on
+  // screen with a notice and a retry instead of telling the visitor it doesn't exist.
+  // Returns false when there is no prerendered law to show.
+  function showPrerenderedLaw(failure: LawLoadFailure): boolean {
+    if (failure.failure_reason === 'not_found') dropPrerenderedLaw();
+    /* v8 ignore start -- @preserve; prerenderedState is always provided by the component template */
+    if (!prerenderedLaw || !prerenderedState) return false;
+    /* v8 ignore stop */
+    if (!prerenderedState.hasChildNodes()) {
+      /* v8 ignore start -- @preserve; loadFailedNoticeTemplate is always provided by the component template */
+      if (loadFailedNoticeTemplate instanceof HTMLTemplateElement) {
+        prerenderedState.appendChild(loadFailedNoticeTemplate.content.cloneNode(true));
+      }
+      /* v8 ignore stop */
+      prerenderedState.append(...Array.from(prerenderedLaw.childNodes));
+      hydrateIcons(prerenderedState);
+    }
+    loadingState?.setAttribute('hidden', '');
+    lawContent?.setAttribute('hidden', '');
+    notFoundState?.setAttribute('hidden', '');
+    prerenderedState.removeAttribute('hidden');
+    return true;
   }
 
   // A prerendered page for a law the API no longer has would otherwise stay indexable and be reported
@@ -124,6 +164,8 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
   function showLaw() {
     loadingState?.setAttribute('hidden', '');
     notFoundState?.setAttribute('hidden', '');
+    dropPrerenderedLaw();
+    prerenderedState?.setAttribute('hidden', '');
     lawContent?.removeAttribute('hidden');
     // A retry that finds the law again makes the page indexable again
     if (markedNoindex && !unmounted) {
@@ -512,9 +554,9 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       })
       .catch((error: unknown) => {
         el.setAttribute('aria-busy', 'false');
-        showNotFound();
-        clearExportContent();
         const failure = describeLawLoadFailure(error);
+        if (!showPrerenderedLaw(failure)) showNotFound();
+        clearExportContent();
         markMissingLaw(failure);
         trackLawNotFound(failure, false);
       });
@@ -537,9 +579,9 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
         })
         .catch((error: unknown) => {
           el.setAttribute('aria-busy', 'false');
-          showNotFound();
-          clearExportContent();
           const failure = describeLawLoadFailure(error);
+          if (!showPrerenderedLaw(failure)) showNotFound();
+          clearExportContent();
           markMissingLaw(failure);
           trackLawNotFound(failure, true);
         });
