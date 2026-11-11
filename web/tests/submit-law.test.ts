@@ -99,6 +99,17 @@ describe('SubmitLawSection component', () => {
     expect(el.textContent).toMatch(/Specific beats vague/i);
   });
 
+  it('keeps the guidance collapsed below the law text box so the box comes first', () => {
+    const el = mountSection();
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement;
+    const guidance = el.querySelector('details.submit-guidance') as HTMLDetailsElement;
+
+    expect(guidance).toBeTruthy();
+    expect(guidance.open).toBe(false);
+    expect(guidance.closest('form')).toBe(el.querySelector('.submit-form'));
+    expect(textarea.compareDocumentPosition(guidance) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('shows duplicate candidates when the law text has similar published laws', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,

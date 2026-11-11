@@ -100,6 +100,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Submit a Law form now comes straight after the section header. The review notice, writing tips and good-law
+  examples moved from above the form into a collapsed "Tips for a good law" disclosure under the Law Text box, so the
+  box is no longer pushed below the fold on small screens.
 - The `triage-404s` skill now opens its pull request ready for review instead of as a draft, as the other pull
   requests in this repository are. No version bump: it is documentation only.
 - `/sitemap.gz` now redirects to `/sitemap.xml` instead of being dropped. Search Console still held a 2006 sitemap
