@@ -78,6 +78,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   button only appears when a filter is active. Pressing it moves keyboard focus to the Search box so it is not lost
   when the list redraws, and clearing no longer records an `archive.search` event. Web bumped to `3.4.84`; root to
   `2.6.188`.
+- On a category page, the "Explore nearby" links now follow the law list and its pagination instead of sitting above
+  the sort control, so the laws are the first next step. The static build now renders the links after the pre-rendered law cards too, so
+  first paint matches, and the links have top spacing under the pagination. Web bumped to `3.4.90`; root to `2.6.194`.
 
 ### Added
 
