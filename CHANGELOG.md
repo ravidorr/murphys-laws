@@ -269,6 +269,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Submitting the home page "Search the Archive" box with nothing typed now opens Browse All Laws instead of quietly
+  re-rendering the home page. The `archive.search` event for a blank submit reports `result: 'blank'`, so it can be told
+  apart from the Browse All Laws link (`result: 'browse'`). Web bumped to `3.4.96`; root to `2.6.200`.
 - A law page opened from a link no longer swaps the law it arrived with for an error screen when the law request fails
   for a reason other than the law being missing (a refused request, a server error, a timeout or a network failure).
   The router now hands the prerendered page to the first view, which shows the prerendered law at once instead of a
