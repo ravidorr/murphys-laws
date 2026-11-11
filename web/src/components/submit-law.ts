@@ -474,6 +474,18 @@ export function SubmitLawSection() {
     textArea?.focus();
   });
 
+  // Put the cursor in the law text box when the page opens, so visitors can start writing straight away.
+  // Waits a frame so it runs after the router moves focus to the page. Only when the box is already fully
+  // on screen (no scrolling, so the guidance above stays in view) and on a fine pointer, where focusing
+  // does not open an on-screen keyboard over the guidance.
+  requestAnimationFrame(() => {
+    if (!el.isConnected || el.contains(document.activeElement)) return;
+    if (typeof window.matchMedia !== 'function' || !window.matchMedia('(pointer: fine)').matches) return;
+    const rect = textArea!.getBoundingClientRect();
+    if (rect.top < 0 || rect.bottom > window.innerHeight) return;
+    textArea!.focus({ preventScroll: true });
+  });
+
   // Template always has .submit-form
   form!.addEventListener('submit', async (e) => {
     e.preventDefault();
