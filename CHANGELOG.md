@@ -43,6 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The Real-Life Examples hub now invites readers to submit their own law right before the example stories, not only
   in the closing section.
+- The Real-Life Examples hub's button row under the title now ends with a "Submit your own" button, so readers can
+  share their own law while they read instead of only after the article.
 - The Submit a Law form now starts with the required Law Text box; the Law Title field follows it and its label reads
   "Law Title (optional)".
 

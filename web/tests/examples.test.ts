@@ -152,7 +152,8 @@ describe('Examples view', () => {
       '/category/murphys-technology-laws',
       '/category/murphys-office-laws',
       '/category/murphys-travel-laws',
-      '/categories'
+      '/categories',
+      '/submit'
     ]);
     await vi.waitFor(() => {
       expect(localThis.el!.querySelector('.article-featured-laws a.law-card-link')).not.toBeNull();

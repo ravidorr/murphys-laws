@@ -92,7 +92,8 @@ describe('internal links', () => {
       '/category/murphys-technology-laws',
       '/category/murphys-office-laws',
       '/category/murphys-travel-laws',
-      '/categories'
+      '/categories',
+      '/submit'
     ]);
     expect(getArticleArchiveLinks('murphys-law-vs-sods-law')!.links.map((link) => link.href)).toEqual([
       '/category/murphys-laws',
@@ -126,7 +127,7 @@ describe('internal links', () => {
       const archive = getArticleArchiveLinks(page)!;
       expect(archive.links.length).toBeGreaterThan(0);
       for (const { href } of archive.links) {
-        expect(href).toMatch(/^\/(category\/murphys-[a-z-]+|browse|categories)$/);
+        expect(href).toMatch(/^\/(category\/murphys-[a-z-]+|browse|categories|submit)$/);
         expect(href).not.toBe('/category/murphys-computers-laws');
       }
     }
