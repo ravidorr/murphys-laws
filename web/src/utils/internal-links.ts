@@ -184,7 +184,7 @@ export function renderArticleNextSteps(archive: ArticleArchiveLinks | null): str
   if (!archive) return '';
 
   return `
-    <nav class="section card card--section section-card article-next-steps" aria-label="Explore the archive">
+    <nav class="section card card--section section-card article-next-steps" aria-label="Explore and contribute">
       <div class="section-body">
         <div class="not-found-actions">
           ${archive.links.map((link, index) => renderArticleCta(link, index === 0 ? 'primary' : 'outline')).join('')}

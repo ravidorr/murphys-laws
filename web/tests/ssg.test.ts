@@ -476,7 +476,7 @@ describe('SSG Static Route Content', () => {
 
     const { nextSteps, featuredLaws } = buildStaticArticleArchive('origin-story', laws);
 
-    expect(nextSteps).toContain('class="section card card--section section-card article-next-steps" aria-label="Explore the archive"');
+    expect(nextSteps).toContain('class="section card card--section section-card article-next-steps" aria-label="Explore and contribute"');
     expect(nextSteps).toContain('<a href="/category/murphys-laws" class="btn primary article-cta article-cta--category" data-nav="category/murphys-laws">');
     expect(featuredLaws).toContain('card card--law-list law-list-card law-list-card--reserved article-featured-laws');
     expect(featuredLaws).toContain('<span class="accent-text">Laws</span> behind this story');

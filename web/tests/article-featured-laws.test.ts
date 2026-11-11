@@ -120,7 +120,7 @@ describe('addArticleArchiveBlock', () => {
 
     const row = localThis.el.querySelector('h1.page-title')!.nextElementSibling!;
     expect(row.matches('nav.article-next-steps')).toBe(true);
-    expect(row.getAttribute('aria-label')).toBe('Explore the archive');
+    expect(row.getAttribute('aria-label')).toBe('Explore and contribute');
     expect(row.querySelector('a.btn.primary')?.getAttribute('href')).toBe('/category/murphys-laws');
     expect(localThis.el.querySelector('article.content-card')!.nextElementSibling!.classList.contains('article-featured-laws')).toBe(true);
     // The row sits outside the article card, so in-prose category link counts are unchanged
@@ -143,6 +143,20 @@ describe('addArticleArchiveBlock', () => {
 
     expect(el.querySelector('.article-next-steps')).toBeNull();
     expect(el.querySelector('.article-featured-laws')).toBeNull();
+  });
+
+  it('reports a click on the examples hub Submit your own button as a next_steps click', () => {
+    localThis.el = renderArticle('examples');
+    const submit = localThis.el.querySelector<HTMLAnchorElement>('.article-next-steps a[data-nav="submit"]')!;
+
+    submit.addEventListener('click', (e) => e.preventDefault());
+    submit.click();
+
+    expect(localThis.track).toHaveBeenCalledWith('article_cta_clicked', {
+      article: 'examples',
+      target: '/submit',
+      position: 'next_steps'
+    });
   });
 
   it('reports archive button clicks with their target and position', () => {

@@ -139,7 +139,7 @@ describe('internal links', () => {
     const container = document.createElement('div');
     container.innerHTML = renderArticleNextSteps(getArticleArchiveLinks('origin-story'));
     const nav = container.querySelector('nav.section.card.card--section.section-card.article-next-steps')!;
-    expect(nav.getAttribute('aria-label')).toBe('Explore the archive');
+    expect(nav.getAttribute('aria-label')).toBe('Explore and contribute');
 
     const buttons = nav.querySelectorAll('.not-found-actions a');
     expect(buttons).toHaveLength(3);
