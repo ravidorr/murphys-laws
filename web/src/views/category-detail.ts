@@ -24,6 +24,7 @@ import { AdvancedSearch } from '../components/advanced-search.ts';
 import { updateSearchInfo } from '../utils/search-info.ts';
 import { getCategoryHubLinks, renderInternalLinkList } from '@utils/internal-links.ts';
 import { trackPendoEvent, getSearchProperties } from '@utils/pendo.ts';
+import { trackProductEvent } from '@utils/metrics.ts';
 import { forceRender } from '../router.ts';
 import type { CleanableElement, OnNavigate, SearchFilters, Law } from '../types/app.ts';
 
@@ -165,6 +166,23 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     await updateSearchInfo(el.querySelector('#category-search-info'), currentFilters);
     // Update breadcrumbs and structured data after category title is loaded
     updateStructuredData();
+  }
+
+  // Report a law opened from the category's law list with its 1-based rank across pages, the same way Browse does
+  function trackLawOpened(lawCard: HTMLElement, openMethod: 'card_click' | 'title_link' | 'keyboard') {
+    const lawsList = lawCard.closest('#category-laws-list');
+    if (!lawsList) return;
+    const pageIndex = Array.from(lawsList.querySelectorAll('.law-card-mini')).indexOf(lawCard);
+    trackPendoEvent('search_result_opened', {
+      ...getSearchProperties(currentFilters, currentSort),
+      search_surface: 'category_detail',
+      law_id: lawCard.dataset.lawId,
+      result_position: (currentPage - 1) * LAWS_PER_PAGE + pageIndex + 1,
+      page: currentPage,
+      results_count: totalLaws,
+      has_filters: Boolean(currentFilters.q || currentFilters.attribution),
+      open_method: openMethod,
+    });
   }
 
   function invalidatePendingLoad() {
@@ -440,7 +458,9 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
       return;
     }
 
-    // Handle navigation buttons and links (shared utility)
+    // Handle navigation buttons and links (shared utility); a law card's text link opens the law here
+    const titleLinkCard = t.closest('[data-nav="law"]')?.closest<HTMLElement>('.law-card-mini');
+    if (titleLinkCard) trackLawOpened(titleLinkCard, 'title_link');
     if (handleNavClick(t, onNavigate)) {
       e.preventDefault();
       return;
@@ -464,13 +484,15 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
     if (lawCard && lawCard.dataset.lawId) {
       // Don't navigate if clicking on interactive elements (buttons for voting, favorites, share)
       if (t.closest('button, a')) return;
+      trackProductEvent('archive.result_open', { surface: 'category_detail' });
+      trackLawOpened(lawCard, 'card_click');
       onNavigate('law', lawCard.dataset.lawId);
       return;
     }
   });
 
   // Keyboard navigation for law cards (WCAG 2.1.1) - shared utility
-  addNavigationListener(el, onNavigate);
+  addNavigationListener(el, onNavigate, (lawCard) => trackLawOpened(lawCard, 'keyboard'));
 
   // Initial render and load
   render();

@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Buttered Toast calculator now keeps a prompt to move a slider beside the default result until the visitor
+  adjusts one, instead of losing its only invitation when the default result is calculated on load.
+  Visitors who arrive from a shared link see "Move any slider above to see how the odds change." instead, since the
+  shared result is not a starting point. Web bumped to `3.4.89`; root to `2.6.193`.
 - "Submit a Law" in the Browse empty state now carries the words of the search that found nothing to the submit page
   (`/submit?text=...`), which prefills the Law Text box and runs the duplicate check on them. The text is removed from the address once the
   form has read it, so a reload or a return to the page starts from an empty form, and the check on text the visitor did
@@ -58,6 +62,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   form. The text fills the Law Text box (trimmed, at most 1000 characters) without showing the short-text error, and
   the category is preselected; a category the visitor has already chosen is kept when fresh categories load. Web bumped
   to `3.4.80`; root to `2.6.184`.
+- Category pages now send the Pendo `search_result_opened` event when a visitor opens a law from the category list,
+  as Browse does: card clicks, law-text link clicks and keyboard opens each report `open_method`, the law's rank,
+  page, result count and category, with `search_surface` set to `category_detail`.
+  A card click also sends the `archive.result_open` product event (`surface: category_detail`), as Browse does; the
+  other open methods stay Pendo-only. Web bumped to `3.4.88`; root to `2.6.192`.
 - The Buttered Toast formula no longer shrinks to unreadably small text on phones. On screens wider than 768px it still
   scales down to fit its box but never below the phone formula size (`--text-2xl`); at 768px and below it uses the shared
   responsive formula sizes (36px, then 24px at 480px and below) and scrolls sideways inside its own box instead. The
@@ -71,7 +80,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `2.6.188`.
 - Law cards on a category page now end with a small link that says what opening the law adds beyond the card: "Read
   the full law", or "See the law this corollary belongs to" for a corollary. The link is a 44 px tall target, uses the
-  link colors and is hidden when printing. Other law lists are unchanged. Web bumped to `3.4.88`; root to `2.6.192`.
+  link colors and is hidden when printing. Other law lists are unchanged. Web bumped to `3.4.91`; root to `2.6.195`.
+- On a category page, the "Explore nearby" links now follow the law list and its pagination instead of sitting above
+  the sort control, so the laws are the first next step. The static build now renders the links after the pre-rendered law cards too, so
+  first paint matches, and the links have top spacing under the pagination. Web bumped to `3.4.90`; root to `2.6.194`.
 
 ### Added
 

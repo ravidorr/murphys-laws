@@ -1525,6 +1525,11 @@
   margin: 0;
 }
 
+/* Category page: the Explore nearby links follow the law list and its pagination */
+.category-hub-links {
+  margin-top: var(--space-8);
+}
+
 /* Dark mode: adjust favorite color */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
