@@ -50,7 +50,14 @@ function submitLabel(corollaryCount: number): string {
   return `Submit law with ${corollaryCount} ${corollaryCount === 1 ? 'corollary' : 'corollaries'}`;
 }
 
-export function SubmitLawSection({ initialText = '' }: { initialText?: string } = {}) {
+export interface SubmitLawSectionOptions {
+  /** Starting law text, such as the words of a search that found nothing, so the visitor does not start over. */
+  initialText?: string;
+  /** Slug of the category to preselect, such as the category page the visitor came from. */
+  initialCategorySlug?: string;
+}
+
+export function SubmitLawSection({ initialText, initialCategorySlug }: SubmitLawSectionOptions = {}) {
   const el = document.createElement('section');
   el.className = 'section card card--section section-card mb-12';
   el.innerHTML = templateHtml;
@@ -98,6 +105,21 @@ export function SubmitLawSection({ initialText = '' }: { initialText?: string } 
     }
   }
 
+  // The starting category is applied once, when its option first exists, and never after the visitor touches the field
+  let initialCategoryHandled = !initialCategorySlug;
+  categorySelect?.addEventListener('change', () => {
+    initialCategoryHandled = true;
+  });
+
+  /** Selects the starting category once its option is in the dropdown, unless the visitor has already chosen. */
+  function selectInitialCategory() {
+    if (initialCategoryHandled) return;
+    const option = Array.from(categorySelect!.options).find((opt) => opt.dataset.categorySlug === initialCategorySlug);
+    if (!option) return;
+    categorySelect!.value = option.value;
+    initialCategoryHandled = true;
+  }
+
   // Load categories into dropdown
   async function loadCategories() {
     if (categoriesLoaded) return;
@@ -108,6 +130,8 @@ export function SubmitLawSection({ initialText = '' }: { initialText?: string } 
       if (response && response.data && Array.isArray(response.data)) {
         const categories = response.data;
         setCachedCategories(categories);
+        // Rebuilding the options resets the choice, so keep the one already made (or preselected)
+        const selectedCategoryId = categorySelect!.value;
 
         // Clear existing options (template always has categorySelect)
         categorySelect!.innerHTML = '<option value="">Select a category (optional)</option>';
@@ -119,6 +143,8 @@ export function SubmitLawSection({ initialText = '' }: { initialText?: string } 
           option.textContent = stripMarkdownFootnotes(category.title);
           categorySelect!.appendChild(option);
         });
+        categorySelect!.value = selectedCategoryId;
+        selectInitialCategory();
       }
     } catch {
       // Don't show error to user as category is optional
@@ -135,6 +161,7 @@ export function SubmitLawSection({ initialText = '' }: { initialText?: string } 
 
   // Initialize: populate from cache immediately, then load fresh data when idle
   populateFromCache();
+  selectInitialCategory();
   
   // Defer loading categories until browser is idle (non-blocking)
   deferUntilIdle(() => {
@@ -474,11 +501,14 @@ export function SubmitLawSection({ initialText = '' }: { initialText?: string } 
     textArea?.focus();
   });
 
-  // Start from the words of a search that found nothing, and check them against the archive straight away
-  const prefillText = initialText.trim().slice(0, 1000);
-  if (prefillText) {
-    textArea!.value = prefillText;
+  // Start from the text the visitor brought with them. The counter and requirements update, but no short-text error
+  // shows until they edit it.
+  const startingText = initialText?.trim().slice(0, 1000);
+  if (startingText) {
+    textArea!.value = startingText;
     checkSubmitValidity();
+    clearMessage();
+    // Check the words against the archive straight away, so a duplicate shows before they write more
     void checkForDuplicates();
   }
 
