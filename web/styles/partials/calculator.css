@@ -168,6 +168,7 @@
     bottom: 0;
     z-index: 1;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-2) var(--space-4);
@@ -186,6 +187,13 @@
 
   .calc-result-sticky .calc-interpretation {
     margin: 0;
+  }
+
+  /* Until the first slider move the hint takes its own full-width row, so it does not squeeze the score line */
+  .calc-result-sticky .calc-adjust-hint {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: var(--text-sm);
   }
 
   /* WCAG 2.2 2.4.11: keep a focused slider clear of the pinned bar when the browser scrolls it into view */

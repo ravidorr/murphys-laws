@@ -30,6 +30,26 @@ test.describe('Buttered Toast sticky result bar', () => {
     expect(passed!.y + passed!.height).toBeLessThan(0);
   });
 
+  test('phones: the starting-point hint sits inside the pinned bar until the first slider move', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto('/calculator/buttered-toast');
+    const bar = page.locator(RESULT);
+    const hint = page.locator('#toast-adjust-hint');
+    await expect(hint).toBeVisible();
+
+    const barBox = await bar.boundingBox();
+    const hintBox = await hint.boundingBox();
+    const viewportHeight = await page.evaluate(() => window.innerHeight);
+    expect(barBox!.y + barBox!.height).toBeLessThanOrEqual(viewportHeight);
+    expect(hintBox!.y).toBeGreaterThanOrEqual(barBox!.y);
+    expect(hintBox!.y + hintBox!.height).toBeLessThanOrEqual(barBox!.y + barBox!.height);
+    // Its own full-width row, not squeezed beside the score
+    expect(hintBox!.width).toBeGreaterThan(barBox!.width / 2);
+
+    await page.locator('#toast-height').fill('120');
+    await expect(hint).toBeHidden();
+  });
+
   test('desktop: the result stays in normal flow', async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 768 });
     await page.goto('/calculator/buttered-toast');
