@@ -234,7 +234,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   differs from its visible text, in either state. Analytics are unchanged: a load failure still sends the
   `law_not_found` event, told apart from a missing law only by its `failure_reason` (`http_error`, `server_error`,
   `network`, `timeout`, `invalid_response` or `unknown`, against `not_found`, `missing_id` or `invalid_id`).
-  Web bumped to `3.4.82`; root to `2.6.186`.
+  Web bumped to `3.4.83`; root to `2.6.187`.
+- A category search that finds nothing no longer says no laws have been submitted for the category yet. It now says
+  nothing in the category matches the search, offers a "Clear search" button that resets the search form and shows the
+  category's laws again, and its submit button reads "Submit a Law", the same as Browse. Clearing the search moves
+  keyboard focus to the search form's keyword input so focus is not lost when the list re-renders. Web bumped to
+  `3.4.81`; root to `2.6.185`.
 - Daily 404 report of 11 November 2026 (47 requests that day): the production bundles no longer link to source maps that do not
   exist, more scanner probes are dropped, and the sized Apple icons are redirected. Every JS file the build emitted ended in
   `//# sourceMappingURL=...`, but the Sentry upload deletes the maps from `dist`, so crawlers and scrapers that follow the
