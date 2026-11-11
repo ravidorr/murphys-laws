@@ -1329,14 +1329,17 @@
   line-height: 1.4;
 }
 
+/* Persistent tinted underline so touch visitors, who never see hover, can tell the law opens */
 .law-card-link {
   color: inherit;
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, var(--btn-primary-bg) 45%, transparent);
+  text-underline-offset: 0.2em;
 }
 
 .law-card-link:hover,
 .law-card-link:focus-visible {
-  text-decoration: underline;
+  text-decoration-color: currentcolor;
 }
 
 .law-card-attrib {
