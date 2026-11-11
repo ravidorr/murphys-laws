@@ -3,6 +3,7 @@ import type { OnNavigate } from '../src/types/app.d.ts';
 import type { CleanableElement } from '../src/types/app.js';
 import { Home, renderHome } from '../src/views/home.ts';
 import * as exportContext from '../src/utils/export-context.js';
+import * as metrics from '../src/utils/metrics.js';
 
 function createDeferred<T>() {
   let resolve!: (value: T) => void;
@@ -207,6 +208,27 @@ describe('Home view', () => {
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
 
     expect(onSearch).toHaveBeenCalledWith({ q: 'technology failure' }, 'home');
+  });
+
+  it('opens browse when the homepage search is submitted blank', () => {
+    const trackSpy = vi.spyOn(metrics, 'trackProductEvent');
+    const el = document.createElement('div');
+    const onNavigate = vi.fn<OnNavigate>() as Mock<OnNavigate>;
+    const onSearch = vi.fn();
+    renderHome(el, null, [], onNavigate, onSearch);
+    const form = el.querySelector('form[role="search"]') as HTMLFormElement;
+    const input = form.querySelector('input[type="search"]') as HTMLInputElement;
+    input.value = '   ';
+
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    expect(onSearch).not.toHaveBeenCalled();
+    expect(onNavigate).toHaveBeenCalledWith('browse');
+    // Reported as 'blank', not 'browse': the Browse All Laws link already reports 'browse'
+    expect(trackSpy).toHaveBeenCalledWith('archive.search', { surface: 'home', result: 'blank' });
+    expect(trackSpy).not.toHaveBeenCalledWith('archive.search', { surface: 'home', result: 'browse' });
+    expect(trackSpy).not.toHaveBeenCalledWith('archive.search', { surface: 'home', result: 'submitted' });
+    trackSpy.mockRestore();
   });
 
   it('navigates to the category index from the homepage CTA', () => {

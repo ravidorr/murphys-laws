@@ -150,10 +150,34 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
     return renderLawCards(laws, { searchQuery: query });
   }
 
+  // Title the results card for what it holds: search matches or the full archive
+  function updateResultsTitle() {
+    const resultsTitle = el.querySelector('#browse-results-title')!;
+    resultsTitle.innerHTML = hasActiveFilters(currentFilters)
+      ? '<span class="accent-text">Search</span> Results'
+      : '<span class="accent-text">All</span> Laws';
+  }
+
+  // Scroll past the intro and Advanced Search form to the results (below the header when it is pinned) and move
+  // focus there. A load that was replaced, a page that is no longer mounted, or a visitor who has already scrolled
+  // away from the top where the router left the page all keep their own position.
+  function revealResults(generation: number) {
+    if (generation !== loadGeneration || !el.isConnected || window.scrollY > 0) return;
+    const resultsCard = el.querySelector('#browse-all-laws-card')!;
+    const header = document.querySelector('header.sticky');
+    // Only a pinned header covers the results; where it scrolls away (the legacy display) there is nothing to clear
+    const headerHeight = header && getComputedStyle(header).position === 'sticky'
+      ? header.getBoundingClientRect().height
+      : 0;
+    window.scrollTo({ top: resultsCard.getBoundingClientRect().top + window.scrollY - headerHeight });
+    el.querySelector<HTMLElement>('#browse-results-title')!.focus({ preventScroll: true });
+  }
+
   // Render the page
   async function render() {
     updatePageMetadata({ title: BROWSE_TITLE, description: BROWSE_DESCRIPTION, path: '/browse' });
     el.innerHTML = templateHtml;
+    updateResultsTitle();
     await updateSearchInfo(el.querySelector('#browse-search-info'), currentFilters);
 
     const breadcrumbContainer = el.querySelector('#browse-breadcrumb')!;
@@ -188,6 +212,7 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
       resultCountEl.hidden = true;
     }
 
+    updateResultsTitle();
     await updateSearchInfo(el.querySelector('#browse-search-info'), currentFilters);
   }
 
@@ -203,6 +228,7 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
     const requestSort = currentSort;
     const requestOrder = currentOrder;
     const requestSearchSurface = pendingSearchSurface;
+    const revealAfterLoad = requestSearchSurface === 'header' || requestSearchSurface === 'home';
 
     const cardText = el.querySelector('#browse-laws-list')!;
     cardText.setAttribute('aria-busy', 'true');
@@ -234,6 +260,8 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
         pendingSearchSurface = null;
       }
       await updateDisplay();
+      // A search from the header or home box lands on its matches (or the empty state), not on the page intro
+      if (revealAfterLoad) revealResults(generation);
 
       // Register export content
       if (laws.length > 0) {
@@ -275,6 +303,8 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
       } catch (iconErr) {
         console.error('Failed to hydrate error state icons:', iconErr);
       }
+      // The visitor searched from the header or home box: show them the failure and its Try Again button
+      if (revealAfterLoad) revealResults(generation);
     }
   }
 

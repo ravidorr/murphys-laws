@@ -135,6 +135,34 @@ test.describe('QA regressions', () => {
     await expect(menu).toBeFocused();
   });
 
+  test('a law page keeps its prerendered law when the law request fails with a server error', async ({ page }) => {
+    // Serve the app shell for /law/7 with the law card the static build would have put in <main>
+    await page.route(url => url.pathname === '/law/7', async route => {
+      const shell = await route.fetch({ url: new URL('/', route.request().url()).toString() });
+      // The base tag keeps the shell's relative script path working from /law/7
+      const html = (await shell.text()).replace('<head>', '<head><base href="/">').replace(
+        /<main\b[^>]*>[\s\S]*?<\/main>/,
+        `<main id="main-content" class="flex-1 container page" aria-label="Main content">
+          <div class="container page law-detail pt-0">
+            <article class="card card--section law-detail-card">
+              <header class="card-header"><h1 class="card-title">Prerendered E2E Law</h1></header>
+              <div class="card-body"><blockquote class="law-text">Prerendered e2e law text</blockquote></div>
+            </article>
+          </div>
+        </main>`,
+      );
+      await route.fulfill({ response: shell, body: html });
+    });
+    await page.route('**/api/v1/laws/7', route => route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"unavailable"}' }));
+
+    await page.goto('/law/7');
+
+    await expect(page.getByText('Prerendered e2e law text')).toBeVisible();
+    await expect(page.getByText("Some features of this page couldn't load")).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Try Again' })).toBeVisible();
+    await expect(page.getByText('Law Not Found')).toHaveCount(0);
+  });
+
   for (const route of [
     '/browse',
     '/category/murphys-computer-laws',
