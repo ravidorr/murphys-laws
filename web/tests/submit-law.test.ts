@@ -110,6 +110,20 @@ describe('SubmitLawSection component', () => {
     expect(el.textContent).toMatch(/Specific beats vague/i);
   });
 
+  it('keeps the guidance collapsed after the law text box and labels its summary', () => {
+    const el = mountSection();
+    const textarea = el.querySelector('#submit-text') as HTMLTextAreaElement;
+    const guidance = el.querySelector('details.submit-guidance') as HTMLDetailsElement;
+
+    expect(guidance).toBeTruthy();
+    expect(guidance.open).toBe(false);
+    expect(guidance.querySelector(':scope > summary')?.textContent).toMatch(/tips for a good law/i);
+    expect(guidance.textContent).toMatch(/reviewed by a human/i);
+    expect(guidance.querySelector('[data-good-law-examples]')).toBeTruthy();
+    expect(guidance.closest('form')).toBe(el.querySelector('.submit-form'));
+    expect(textarea.compareDocumentPosition(guidance) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('shows duplicate candidates when the law text has similar published laws', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
