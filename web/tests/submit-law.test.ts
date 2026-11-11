@@ -1660,6 +1660,25 @@ describe('SubmitLawSection component', () => {
       expect(categorySelect.value).toBe('1');
     });
 
+    it('does not bring the starting category back when the visitor cleared it before fresh categories load', async () => {
+      let loadCategories: (() => void) | null = null;
+      deferUntilIdleSpy.mockImplementation((callback: () => void) => {
+        loadCategories = callback;
+      });
+      cacheUtils.setCachedCategories(categories);
+      vi.spyOn(api, 'fetchAPI').mockResolvedValue({ data: categories });
+      const el = mountWith({ initialCategorySlug: 'murphys-technology-laws' });
+      const categorySelect = el.querySelector('#submit-category') as HTMLSelectElement;
+      expect(categorySelect.value).toBe('2');
+      categorySelect.value = '';
+      categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+      loadCategories!();
+
+      await vi.waitFor(() => expect(categorySelect.options.length).toBe(3));
+      expect(categorySelect.value).toBe('');
+    });
+
     it('leaves the category unselected when the starting slug matches no category', () => {
       deferUntilIdleSpy.mockImplementation(() => {});
       cacheUtils.setCachedCategories(categories);

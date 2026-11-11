@@ -105,11 +105,19 @@ export function SubmitLawSection({ initialText, initialCategorySlug }: SubmitLaw
     }
   }
 
-  /** Selects the starting category once its option is in the dropdown, unless a category is already chosen. */
+  // The starting category is applied once, when its option first exists, and never after the visitor touches the field
+  let initialCategoryHandled = !initialCategorySlug;
+  categorySelect?.addEventListener('change', () => {
+    initialCategoryHandled = true;
+  });
+
+  /** Selects the starting category once its option is in the dropdown, unless the visitor has already chosen. */
   function selectInitialCategory() {
-    if (!initialCategorySlug || categorySelect!.value) return;
+    if (initialCategoryHandled) return;
     const option = Array.from(categorySelect!.options).find((opt) => opt.dataset.categorySlug === initialCategorySlug);
-    if (option) categorySelect!.value = option.value;
+    if (!option) return;
+    categorySelect!.value = option.value;
+    initialCategoryHandled = true;
   }
 
   // Load categories into dropdown

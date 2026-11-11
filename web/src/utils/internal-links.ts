@@ -193,12 +193,24 @@ export function renderArticleNextSteps(archive: ArticleArchiveLinks | null): str
     </nav>`;
 }
 
-/** Buttons under an article's featured laws: the whole category, then Submit. */
+/** Button under an article's featured laws: the whole category. */
 export function renderArticleFeaturedLawsActions({ slug, name }: ArticleArchiveLinks['featuredCategory']): string {
   return `
     <div class="not-found-actions">
       ${renderArticleCta({ href: `/category/${slug}`, label: `See all ${name}` }, 'primary')}
-      ${renderArticleCta({ href: '/submit', label: 'Submit your own' }, 'outline')}
+    </div>`;
+}
+
+/**
+ * Submit button after an article, outside the featured-laws card so it still
+ * shows when that card hides itself (no laws, or the request fails).
+ */
+export function renderArticleSubmitAction(): string {
+  return `
+    <div class="article-submit-action mt-8">
+      <div class="not-found-actions">
+        ${renderArticleCta({ href: '/submit', label: 'Submit your own' }, 'outline')}
+      </div>
     </div>`;
 }
 
