@@ -60,6 +60,19 @@ describe('ButteredToastCalculator view', () => {
     document.body.removeChild(el);
   });
 
+  it('places the formula after the result and before the share card', () => {
+    const el = ButteredToastCalculator();
+    document.body.appendChild(el);
+
+    const formula = el.querySelector('#toast-formula-display')!;
+    const result = el.querySelector('#toast-result-display')!;
+    const share = el.querySelector('#calculator-share-container')!;
+    expect(result.compareDocumentPosition(formula) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(formula.compareDocumentPosition(share) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    document.body.removeChild(el);
+  });
+
   it('L33 B0: twitter:image branch not taken when absent', () => {
     const el = ButteredToastCalculator();
     document.body.appendChild(el);
