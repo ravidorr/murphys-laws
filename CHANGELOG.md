@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Buttered Toast calculator now keeps a prompt to move a slider beside the default result until the visitor
+  adjusts one, instead of losing its only invitation when the default result is calculated on load.
+  Visitors who arrive from a shared link see "Move any slider above to see how the odds change." instead, since the
+  shared result is not a starting point. Web bumped to `3.4.89`; root to `2.6.193`.
 - "Submit a Law" in the Browse empty state now carries the words of the search that found nothing to the submit page
   (`/submit?text=...`), which prefills the Law Text box and runs the duplicate check on them. The text is removed from the address once the
   form has read it, so a reload or a return to the page starts from an empty form, and the check on text the visitor did
