@@ -114,6 +114,7 @@ const ORIGINAL_LAWS_LINK: ArticleArchiveLink = { href: '/category/murphys-laws',
 const TECHNOLOGY_LAWS_LINK: ArticleArchiveLink = { href: '/category/murphys-technology-laws', label: 'Technology laws' };
 const OFFICE_LAWS_LINK: ArticleArchiveLink = { href: '/category/murphys-office-laws', label: 'Office laws' };
 const TRAVEL_LAWS_LINK: ArticleArchiveLink = { href: '/category/murphys-travel-laws', label: 'Travel laws' };
+const SUBMIT_LINK: ArticleArchiveLink = { href: '/submit', label: 'Submit your own' };
 
 // Article pages render Markdown prose only; these give each one a way into the archive.
 // Pages without an entry render no archive block.
@@ -128,7 +129,7 @@ const ARTICLE_ARCHIVE_LINKS: Partial<Record<ContentPage, ArticleArchiveLinks>> =
   },
   examples: {
     featuredCategory: ORIGINAL_LAWS,
-    links: [TECHNOLOGY_LAWS_LINK, OFFICE_LAWS_LINK, TRAVEL_LAWS_LINK, CATEGORIES_LINK],
+    links: [TECHNOLOGY_LAWS_LINK, OFFICE_LAWS_LINK, TRAVEL_LAWS_LINK, CATEGORIES_LINK, SUBMIT_LINK],
   },
   'murphys-law-vs-sods-law': {
     featuredCategory: ORIGINAL_LAWS,
@@ -183,7 +184,7 @@ export function renderArticleNextSteps(archive: ArticleArchiveLinks | null): str
   if (!archive) return '';
 
   return `
-    <nav class="section card card--section section-card article-next-steps" aria-label="Explore the archive">
+    <nav class="section card card--section section-card article-next-steps" aria-label="Explore and contribute">
       <div class="section-body">
         <div class="not-found-actions">
           ${archive.links.map((link, index) => renderArticleCta(link, index === 0 ? 'primary' : 'outline')).join('')}

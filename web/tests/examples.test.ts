@@ -152,7 +152,8 @@ describe('Examples view', () => {
       '/category/murphys-technology-laws',
       '/category/murphys-office-laws',
       '/category/murphys-travel-laws',
-      '/categories'
+      '/categories',
+      '/submit'
     ]);
     await vi.waitFor(() => {
       expect(localThis.el!.querySelector('.article-featured-laws a.law-card-link')).not.toBeNull();
@@ -162,6 +163,38 @@ describe('Examples view', () => {
 
     expect(api.fetchLaws).toHaveBeenCalledWith(expect.objectContaining({ category_slug: 'murphys-laws' }));
     expect(onNavigateMock).toHaveBeenCalledWith('law', '12');
+  });
+
+  it('renders the Submit your own button as an outline CTA in the top row', () => {
+    vi.mocked(markdownContent.getPageContent).mockReturnValueOnce(
+      '<h1 class="page-title mb-4">Examples</h1><article class="card card--content content-card"><p>Content</p></article>'
+    );
+    vi.spyOn(api, 'fetchLaws').mockResolvedValue({ data: [], total: 0, limit: 3, offset: 0 });
+    localThis.el = Examples();
+
+    const submit = localThis.el.querySelector<HTMLAnchorElement>('.article-next-steps a.article-cta--submit');
+
+    expect(submit).not.toBeNull();
+    expect(submit!.textContent).toBe('Submit your own');
+    expect(submit!.getAttribute('href')).toBe('/submit');
+    expect(submit!.getAttribute('data-nav')).toBe('submit');
+    expect(submit!.classList.contains('outline')).toBe(true);
+  });
+
+  it('keeps the Submit your own button when the featured laws fail to load', async () => {
+    vi.mocked(markdownContent.getPageContent).mockReturnValueOnce(
+      '<h1 class="page-title mb-4">Examples</h1><article class="card card--content content-card"><p>Content</p></article>'
+    );
+    const fetchLaws = vi.spyOn(api, 'fetchLaws').mockRejectedValue(new Error('network down'));
+    localThis.el = Examples();
+    document.body.appendChild(localThis.el);
+
+    await vi.waitFor(() => {
+      expect(fetchLaws).toHaveBeenCalled();
+      expect(localThis.el!.querySelector<HTMLElement>('.article-featured-laws')!.hidden).toBe(true);
+    });
+
+    expect(localThis.el.querySelector('.article-next-steps a[data-nav="submit"]')).not.toBeNull();
   });
 
   it('does not navigate when onNavigate is not provided', () => {
