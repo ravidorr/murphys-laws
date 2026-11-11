@@ -180,6 +180,40 @@
   .calc-result-display--sticky .calc-interpretation {
     margin: var(--space-1) 0 0;
   }
+
+  /* A slider that takes focus scrolls into view above the pinned score, never under it (WCAG 2.4.11).
+     The pinned score is about 96px tall; this leaves a 16px gap. */
+  .calc-slider-group input[type="range"] {
+    scroll-margin-block-end: calc(var(--space-16) + var(--space-12));
+  }
+}
+
+/* Keep the pinned score clear of home indicators. Gated so browsers without env() keep the plain offsets above. */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  @media (width < 600px) {
+    .calc-result-display--sticky {
+      padding-bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+    }
+
+    .calc-slider-group input[type="range"] {
+      scroll-margin-block-end: calc(var(--space-16) + var(--space-12) + env(safe-area-inset-bottom, 0px));
+    }
+  }
+}
+
+/* High contrast: a solid edge above the pinned score and no reliance on the shadow. */
+@media (width < 600px) and (prefers-contrast: more) {
+  .calc-result-display--sticky {
+    border-top: 2px solid var(--fg);
+    box-shadow: none;
+  }
+}
+
+@media (width < 600px) {
+  :root[data-contrast="more"] .calc-result-display--sticky {
+    border-top: 2px solid var(--fg);
+    box-shadow: none;
+  }
 }
 
 /* Info section at bottom of calculator */

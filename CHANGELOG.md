@@ -43,7 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - On screens narrower than 600px, the Sod's Law Calculator keeps a compact score pinned to the bottom of the screen
   while the sliders are in view, so visitors see the score change as they move a slider instead of scrolling down to
-  it. Web bumped to `3.4.92`; root to `2.6.196`.
+  it. The pinned score is a labelled group (named after the "Probability of Things Going Wrong:" heading), a slider that
+  takes focus scrolls into view above it instead of under it, it keeps clear of the home indicator on phones with
+  one, and in high-contrast mode it gets a solid top edge and no shadow. The compact 30px score now also applies while
+  the score sits in the page on a phone, not only while it is pinned. Web bumped to `3.4.92`; root to `2.6.196`.
 - The Buttered Toast calculator now keeps a prompt to move a slider beside the default result until the visitor
   adjusts one, instead of losing its only invitation when the default result is calculated on load.
   Visitors who arrive from a shared link see "Move any slider above to see how the odds change." instead, since the

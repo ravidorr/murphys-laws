@@ -231,6 +231,16 @@ describe("Calculator view", () => {
     expect(resultDisplay.classList.contains('calc-orange')).toBe(false);
   });
 
+  it('names the pinned score group after the heading above it', () => {
+    const resultDisplay = el!.querySelector('#result-display')!;
+    const heading = el!.querySelector('#score-heading')!;
+
+    expect(heading.tagName).toBe('H2');
+    expect(heading.textContent).toBe('Probability of Things Going Wrong:');
+    expect(resultDisplay.getAttribute('role')).toBe('group');
+    expect(resultDisplay.getAttribute('aria-labelledby')).toBe('score-heading');
+  });
+
   it('updates slider value displays on input', () => {
     (el!.querySelector('#urgency') as HTMLInputElement)!.value = '7';
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));
