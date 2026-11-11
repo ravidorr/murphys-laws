@@ -42,8 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - "Submit a Law" in the Browse empty state now carries the words of the search that found nothing to the submit page
-  (`/submit?text=...`), which prefills the Law Text box and runs the duplicate check on them. Web bumped to `3.4.81`;
-  root to `2.6.185`.
+  (`/submit?text=...`), which prefills the Law Text box and runs the duplicate check on them. The text is removed from the address once the
+  form has read it, so a reload or a return to the page starts from an empty form, and the check on text the visitor did
+  not type is not reported to analytics. Web bumped to `3.4.81`; root to `2.6.185`.
 - The Real-Life Examples hub now invites readers to submit their own law while they read, not only after the article:
   a "Submit your own" button ends the button row under the title and a prompt sits right before the example stories.
   The article button row's accessible name is now "Explore and contribute". Web bumped to `3.4.78`; root to `2.6.182`.

@@ -1502,6 +1502,20 @@ describe('SubmitLawSection component', () => {
 
     const eventsNamed = (name: string) => track.mock.calls.filter(([eventName]) => eventName === name);
 
+    it('does not report a duplicate match to analytics for text the visitor did not type', async () => {
+      const duplicateSpy = vi.spyOn(api, 'fetchDuplicateCandidates').mockResolvedValue({
+        data: [{ id: 7, title: 'Toast Law', text: 'toast always lands butter side down', match_type: 'exact', similarity: 1 }],
+        total: 1,
+        limit: 5,
+        offset: 0
+      } as never);
+      const el = SubmitLawSection({ initialText: 'toast always lands butter side down' });
+      await vi.waitFor(() => expect(duplicateSpy).toHaveBeenCalled());
+      await vi.waitFor(() => expect(el.querySelector('[data-duplicate-candidates]')?.textContent).toContain('Already in the archive'));
+
+      expect(eventsNamed('law_duplicate_detected')).toHaveLength(0);
+    });
+
     it('reports a successful submission without personal details', async () => {
       vi.spyOn(request, 'apiPost').mockResolvedValue({ id: 321, status: 'in_review' });
       const el = mountSection({ append: true });

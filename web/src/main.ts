@@ -307,7 +307,7 @@ const routesMap = {
     container.appendChild(h1);
 
     // A search that found nothing on Browse carries its words here, so the visitor doesn't retype them
-    const submitSection = SubmitLawSection({ initialText: new URLSearchParams(location.search).get('text') ?? '' });
+    const submitSection = SubmitLawSection({ initialText: consumeSubmitPrefillText() });
     container.appendChild(submitSection);
     clearPageStructuredData();
     return layout(container);
@@ -517,6 +517,7 @@ if (isFavoritesEnabled()) {
 
 // Defer AdSense loading to ensure content is present first
 import { setupAdSense } from './utils/ads.ts';
+import { consumeSubmitPrefillText } from './utils/submit-prefill.ts';
 
 // Initialize the listener. Ads will only load when a view triggers 'murphys-laws-content-ready'
 setupAdSense();
