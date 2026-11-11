@@ -49,6 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The "Submit your own" button after an article (including the Real-Life Examples hub) now sits on its own below the
   featured-laws card instead of in that card's footer, so it still shows when the featured laws fail to load or the
   category has none. The static build renders it the same way. Web bumped to `3.4.79`; root to `2.6.183`.
+- A search from the home or header search box now lands on its results on the Browse page: the page scrolls past the
+  intro and Advanced Search form to the results card (or its empty state) and moves focus to the card title. The card
+  is titled "Search Results" while a search or filter is active, and "All Laws" otherwise.
 
 ### Added
 

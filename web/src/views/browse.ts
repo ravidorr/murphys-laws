@@ -139,10 +139,27 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
     return renderLawCards(laws, { searchQuery: query });
   }
 
+  // Title the results card for what it holds: search matches or the full archive
+  function updateResultsTitle() {
+    const resultsTitle = el.querySelector('#browse-results-title')!;
+    resultsTitle.innerHTML = hasActiveFilters(currentFilters)
+      ? '<span class="accent-text">Search</span> Results'
+      : '<span class="accent-text">All</span> Laws';
+  }
+
+  // Scroll past the intro and Advanced Search form to the results (below the sticky header) and move focus there
+  function revealResults() {
+    const resultsCard = el.querySelector('#browse-all-laws-card')!;
+    const headerHeight = document.querySelector('header.sticky')?.getBoundingClientRect().height ?? 0;
+    window.scrollTo({ top: resultsCard.getBoundingClientRect().top + window.scrollY - headerHeight });
+    el.querySelector<HTMLElement>('#browse-results-title')!.focus({ preventScroll: true });
+  }
+
   // Render the page
   async function render() {
     updatePageMetadata({ title: BROWSE_TITLE, description: BROWSE_DESCRIPTION, path: '/browse' });
     el.innerHTML = templateHtml;
+    updateResultsTitle();
     await updateSearchInfo(el.querySelector('#browse-search-info'), currentFilters);
 
     const breadcrumbContainer = el.querySelector('#browse-breadcrumb')!;
@@ -177,6 +194,7 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
       resultCountEl.hidden = true;
     }
 
+    updateResultsTitle();
     await updateSearchInfo(el.querySelector('#browse-search-info'), currentFilters);
   }
 
@@ -223,6 +241,8 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
         pendingSearchSurface = null;
       }
       await updateDisplay();
+      // A search from the header or home box lands on its matches (or the empty state), not on the page intro
+      if (requestSearchSurface === 'header' || requestSearchSurface === 'home') revealResults();
 
       // Register export content
       if (laws.length > 0) {

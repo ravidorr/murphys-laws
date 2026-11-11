@@ -2064,4 +2064,94 @@ describe('Browse view', () => {
       expect(track).not.toHaveBeenCalledWith('search_result_opened', expect.anything());
     });
   });
+
+  describe('search results reveal', () => {
+    let scrollToSpy: ReturnType<typeof vi.fn>;
+    const originalScrollTo = window.scrollTo;
+
+    beforeEach(() => {
+      scrollToSpy = vi.fn();
+      window.scrollTo = scrollToSpy as unknown as typeof window.scrollTo;
+    });
+
+    afterEach(() => {
+      window.scrollTo = originalScrollTo;
+      document.body.replaceChildren();
+    });
+
+    const resultsTitle = (el: HTMLElement) => el.querySelector('#browse-results-title') as HTMLElement;
+
+    it('titles the results card "All Laws" without a search', async () => {
+      const el = Browse({ onNavigate: () => { } });
+      await vi.waitFor(() => {
+        expect(el.querySelector('#browse-laws-list .law-card-mini')).toBeTruthy();
+      }, { timeout: 1000 });
+
+      expect(resultsTitle(el).textContent).toBe('All Laws');
+    });
+
+    it('titles the results card "Search Results" when a search is active', () => {
+      window.history.replaceState(null, '', '/browse?q=gravity');
+
+      const el = Browse({ onNavigate: () => { } });
+
+      expect(resultsTitle(el).textContent).toBe('Search Results');
+    });
+
+    it('updates the results card title when the Advanced Search form is cleared', async () => {
+      window.history.replaceState(null, '', '/browse?q=gravity');
+      const el = Browse({ onNavigate: () => { } });
+      await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalledTimes(1), { timeout: 1000 });
+
+      (el.querySelector('#clear-btn') as HTMLButtonElement).click();
+
+      await vi.waitFor(() => expect(resultsTitle(el).textContent).toBe('All Laws'), { timeout: 1000 });
+    });
+
+    it('scrolls a home search to its results below the sticky header and focuses the results title', async () => {
+      window.history.replaceState({ name: 'browse', searchSurface: 'home' }, '', '/browse?q=Murphy');
+      const header = document.createElement('header');
+      header.className = 'sticky';
+      vi.spyOn(header, 'getBoundingClientRect').mockReturnValue({ height: 64 } as DOMRect);
+      document.body.appendChild(header);
+
+      const el = Browse({ onNavigate: () => { } });
+      document.body.appendChild(el);
+      vi.spyOn(el.querySelector('#browse-all-laws-card')!, 'getBoundingClientRect').mockReturnValue({ top: 900 } as DOMRect);
+
+      await vi.waitFor(() => expect(scrollToSpy).toHaveBeenCalledWith({ top: 836 }), { timeout: 1000 });
+      expect(document.activeElement).toBe(resultsTitle(el));
+    });
+
+    it('scrolls a header search with no matches to the empty state', async () => {
+      fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
+      window.history.replaceState({ name: 'browse', searchSurface: 'header' }, '', '/browse?q=zebra');
+
+      const el = Browse({ onNavigate: () => { } });
+      document.body.appendChild(el);
+
+      await vi.waitFor(() => expect(scrollToSpy).toHaveBeenCalledTimes(1), { timeout: 1000 });
+      expect(el.querySelector('#browse-laws-list .empty-state')).toBeTruthy();
+      expect(document.activeElement).toBe(resultsTitle(el));
+    });
+
+    it('does not scroll for direct links, repeat renders, or Advanced Search submissions', async () => {
+      window.history.replaceState(null, '', '/browse?q=Murphy');
+      const el = Browse({ onNavigate: () => { } });
+      await vi.waitFor(() => {
+        expect(el.querySelector('#browse-laws-list .law-card-mini')).toBeTruthy();
+      }, { timeout: 1000 });
+
+      window.history.replaceState({ name: 'browse', searchSurface: 'home', searchTracked: true }, '', '/browse?q=Murphy');
+      const rerendered = Browse({ onNavigate: () => { } });
+      await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalledTimes(2), { timeout: 1000 });
+
+      (rerendered.querySelector('#search-keyword') as HTMLInputElement).value = 'gravity';
+      (rerendered.querySelector('#search-btn') as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalledTimes(3), { timeout: 1000 });
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(scrollToSpy).not.toHaveBeenCalled();
+    });
+  });
 });
