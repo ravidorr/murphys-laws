@@ -5,14 +5,14 @@ description: >
   server's daily-report cron). Use this skill when the user pastes, or attaches a screenshot of, that
   report's 404 section, or says "these are the 404s I got in the daily report" or "triage the 404s". It
   analyzes every path, decides one verdict per path (already handled, image to notify about, redirect,
-  ignore, fix link or create content, block as scanner, or needs a human), opens one draft PR per run
+  ignore, fix link or create content, block as scanner, or needs a human), opens one PR per run
   for the clear-cut ones, and reports the rest. Do not use it for a 404 seen while developing locally.
 ---
 
 # Triage 404s - murphys-laws
 
 Input: the 404 rows of the daily report, as pasted text or a screenshot. Each row is a path and
-usually a count, sometimes an IP and user agent. Output: one verdict per path, one draft PR per run
+usually a count, sometimes an IP and user agent. Output: one verdict per path, one PR per run
 for the clear-cut verdicts, and a short report of everything else.
 
 Work in the order below. Do not skip the evidence step: a path alone cannot tell a scanner from a real
@@ -138,7 +138,7 @@ all of them.
 ## 5. Make the changes (clear-cut verdicts only)
 
 Only verdicts 3 and 6, the link fix of 5, and the optional `TODO.md` line produce changes. A run
-produces **one branch and one draft PR per run, covering every path that needs a change**, never one PR
+produces **one branch and one PR per run, covering every path that needs a change**, never one PR
 per path and never a second PR for a different concern. If the changes span packages (for example nginx
 rules plus a link fix in `web/src`), they still go in the same PR; bump each affected package's
 version in it. If no path needs a change, open no PR.
@@ -201,7 +201,8 @@ version in it. If no path needs a change, open no PR.
   No Claude co-author trailer and no Claude attribution line, in the commit or the PR.
 - Before opening the PR, run `/pr-review-toolkit:review-pr` on your own change and fix what it finds
   (AGENTS.md requires the review first).
-- Open the PR as a **draft**. Title in the same conventional style. This repo uses GitHub issues, so do
+- Open the PR **ready for review**, not as a draft (`gh pr create` without `--draft`); this overrides the
+  draft rule in AGENTS.md and in a personal config. Title in the same conventional style. This repo uses GitHub issues, so do
   not add a Jira ticket prefix or a `[Jira]` link, whatever a personal config says. Body: no section
   titles, a short intro, then bullets with the actual changes, one line per path and its verdict. No
   "Generated with" line.
