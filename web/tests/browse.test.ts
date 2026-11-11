@@ -380,6 +380,42 @@ describe('Browse view', () => {
     });
   });
 
+  it('carries the search words to the submit page from the empty state', async () => {
+    fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
+    const onNavigate = vi.fn();
+
+    const el = Browse({ searchQuery: 'toast & jam', onNavigate });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/Murphy spared these results/);
+    }, { timeout: 1000 });
+
+    (el.querySelector('[data-nav="submit"]') as HTMLElement).click();
+
+    expect(location.pathname).toBe('/submit');
+    expect(new URLSearchParams(location.search).get('text')).toBe('toast & jam');
+    expect(onNavigate).toHaveBeenCalledWith('submit');
+  });
+
+  it('opens a blank submit page from the empty state when no words were searched', async () => {
+    const url = new URL(location.href);
+    url.search = '?attribution=Nobody';
+    window.history.replaceState({}, '', url.toString());
+    fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
+    const onNavigate = vi.fn();
+
+    const el = Browse({ searchQuery: '', onNavigate });
+
+    await vi.waitFor(() => {
+      expect(el.textContent).toMatch(/Murphy spared these results/);
+    }, { timeout: 1000 });
+
+    (el.querySelector('[data-nav="submit"]') as HTMLElement).click();
+
+    expect(location.pathname).toBe('/browse');
+    expect(onNavigate).toHaveBeenCalledWith('submit');
+  });
+
   it('displays error state on fetch failure', async () => {
     fetchLawsSpy.mockRejectedValue(new Error('Network error'));
 
