@@ -52,18 +52,35 @@ test.describe('QA regressions', () => {
   }
 
   for (const viewport of [
-    { name: 'mobile', width: 320, height: 640 },
-    { name: 'desktop', width: 1440, height: 900 },
+    { name: 'mobile', width: 320, height: 640, minFontSize: 24, fits: false },
+    { name: 'tablet', width: 768, height: 1024, minFontSize: 36, fits: false },
+    { name: 'laptop', width: 1024, height: 768, minFontSize: 24, fits: true },
+    { name: 'desktop', width: 1440, height: 900, minFontSize: 24, fits: true },
   ]) {
-    test(`buttered toast formula fits at ${viewport.name} width`, async ({ page }) => {
-      await page.setViewportSize(viewport);
+    test(`buttered toast formula stays readable at ${viewport.name} width`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto('/calculator/buttered-toast');
 
       const formula = page.locator('#toast-formula-display');
       await expect(formula.locator('math')).toBeVisible();
+      await expect(formula).toHaveAttribute('role', 'group');
       await expect(formula).toHaveAttribute('aria-label', 'Buttered toast probability formula');
 
-      expect(await formula.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+      const fontSize = await formula.locator('math').evaluate(element => getComputedStyle(element).fontSize);
+      expect(Number.parseFloat(fontSize)).toBeGreaterThanOrEqual(viewport.minFontSize);
+
+      const overflows = await formula.evaluate(element => element.scrollWidth > element.clientWidth);
+      if (viewport.fits) {
+        expect(overflows).toBe(false);
+      } else {
+        // Too wide to fit at a readable size: the formula must scroll inside its own box.
+        expect(overflows).toBe(true);
+        expect(await formula.evaluate(element => getComputedStyle(element).overflowX)).toBe('auto');
+        await formula.evaluate(element => {
+          element.scrollLeft = 40;
+        });
+        expect(await formula.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+      }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     });
   }
@@ -116,6 +133,34 @@ test.describe('QA regressions', () => {
     await page.keyboard.press('Escape');
     await expect(menu).toHaveAttribute('aria-expanded', 'false');
     await expect(menu).toBeFocused();
+  });
+
+  test('a law page keeps its prerendered law when the law request fails with a server error', async ({ page }) => {
+    // Serve the app shell for /law/7 with the law card the static build would have put in <main>
+    await page.route(url => url.pathname === '/law/7', async route => {
+      const shell = await route.fetch({ url: new URL('/', route.request().url()).toString() });
+      // The base tag keeps the shell's relative script path working from /law/7
+      const html = (await shell.text()).replace('<head>', '<head><base href="/">').replace(
+        /<main\b[^>]*>[\s\S]*?<\/main>/,
+        `<main id="main-content" class="flex-1 container page" aria-label="Main content">
+          <div class="container page law-detail pt-0">
+            <article class="card card--section law-detail-card">
+              <header class="card-header"><h1 class="card-title">Prerendered E2E Law</h1></header>
+              <div class="card-body"><blockquote class="law-text">Prerendered e2e law text</blockquote></div>
+            </article>
+          </div>
+        </main>`,
+      );
+      await route.fulfill({ response: shell, body: html });
+    });
+    await page.route('**/api/v1/laws/7', route => route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"unavailable"}' }));
+
+    await page.goto('/law/7');
+
+    await expect(page.getByText('Prerendered e2e law text')).toBeVisible();
+    await expect(page.getByText("Some features of this page couldn't load")).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Try Again' })).toBeVisible();
+    await expect(page.getByText('Law Not Found')).toHaveCount(0);
   });
 
   for (const route of [

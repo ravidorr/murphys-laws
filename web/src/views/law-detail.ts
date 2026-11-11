@@ -30,12 +30,17 @@ interface LawDetailProps {
   lawId: string;
   onNavigate: (page: string, param?: string) => void;
   onStructuredData?: (law: Law) => void;
+  /** The static page's main element on a direct visit, which may already hold this law. */
+  prerendered?: HTMLElement | null;
 }
 
 interface LawLoadFailure {
   failure_reason: string;
   http_status?: number;
 }
+
+// Failure reasons that mean the law is missing (the API answered 404, or the ID can't name a law)
+const MISSING_LAW_REASONS: ReadonlySet<string> = new Set(['not_found', 'missing_id', 'invalid_id']);
 
 /** Map a fetchLaw() rejection to a reason and, when the API answered, its HTTP status. Exported for testing. */
 export function describeLawLoadFailure(error: unknown): LawLoadFailure {
@@ -69,7 +74,7 @@ export function getReferrerDomain(): string {
   }
 }
 
-export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProps): HTMLDivElement {
+export function LawDetail({ lawId, onNavigate, onStructuredData, prerendered }: LawDetailProps): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'container page law-detail pt-0';
 
@@ -82,7 +87,14 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
   const corollariesContainer = el.querySelector('[data-corollaries-container]');
   const notFoundState = el.querySelector('[data-not-found]');
   const notFoundTemplate = el.querySelector('[data-not-found-template]');
+  const loadErrorTemplate = el.querySelector('[data-load-error-template]');
   const lawCardTemplate = el.querySelector('[data-law-card-template]');
+  const prerenderedState = el.querySelector('[data-prerendered-law]');
+  const loadFailedNoticeTemplate = el.querySelector('[data-load-failed-notice-template]');
+
+  // A direct visit arrives with the law already prerendered. Only a page that holds a law card counts,
+  // not the generic loading shell served for a law that was published after the last static build.
+  let prerenderedLaw = prerendered?.querySelector('.law-detail-card')?.closest('.law-detail') ?? null;
 
   // Replace static loading message with random one
   /* v8 ignore start -- loadingState/loadingText are always provided by the component template */
@@ -98,20 +110,77 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     loadingState?.removeAttribute('hidden');
     lawContent?.setAttribute('hidden', '');
     notFoundState?.setAttribute('hidden', '');
+    prerenderedState?.setAttribute('hidden', '');
   }
 
-  function showNotFound() {
+  // Only a law the API reports missing, or an ID that can't name one, gets the "Law Not Found" copy.
+  // A forbidden, server, network or timeout failure says nothing about whether the law exists.
+  // After a retry the button the visitor pressed is gone, so focus goes to the new Try Again button
+  // instead of dropping to the page body. The first load never moves focus.
+  function showNotFound(failure: LawLoadFailure, isRetry = false) {
     loadingState?.setAttribute('hidden', '');
     lawContent?.setAttribute('hidden', '');
-    /* v8 ignore start -- notFoundState/notFoundTemplate are always provided by the component template */
+    prerenderedState?.setAttribute('hidden', '');
+    const template = MISSING_LAW_REASONS.has(failure.failure_reason) ? notFoundTemplate : loadErrorTemplate;
+    /* v8 ignore start -- notFoundState and both templates are always provided by the component template */
     if (notFoundState) {
       notFoundState.removeAttribute('hidden');
-      if (notFoundTemplate instanceof HTMLTemplateElement) {
-        notFoundState.replaceChildren(notFoundTemplate.content.cloneNode(true));
+      if (template instanceof HTMLTemplateElement) {
+        notFoundState.replaceChildren(template.content.cloneNode(true));
         hydrateIcons(notFoundState);
+        if (isRetry) notFoundState.querySelector<HTMLElement>('[data-action="retry-law"]')?.focus();
       }
     }
     /* v8 ignore stop */
+  }
+
+  // Once the API has answered with the law, or said it is gone, the prerendered copy is no longer needed
+  function dropPrerenderedLaw() {
+    prerenderedLaw = null;
+    prerenderedState?.replaceChildren();
+  }
+
+  // A direct visit already holds the law, so it goes on screen at once instead of behind a spinner.
+  // Returns the element holding it, or null when there is no prerendered law to show.
+  function revealPrerenderedLaw(): Element | null {
+    if (!prerenderedLaw) return null;
+    /* v8 ignore start -- @preserve; prerenderedState is always provided by the component template */
+    if (!prerenderedState) return null;
+    /* v8 ignore stop */
+    if (!prerenderedState.hasChildNodes()) {
+      prerenderedState.append(...Array.from(prerenderedLaw.childNodes));
+      hydrateIcons(prerenderedState);
+    }
+    loadingState?.setAttribute('hidden', '');
+    lawContent?.setAttribute('hidden', '');
+    notFoundState?.setAttribute('hidden', '');
+    prerenderedState.removeAttribute('hidden');
+    return prerenderedState;
+  }
+
+  // A failed request says nothing about the law unless the API reported it missing, so keep the
+  // prerendered law on screen with a notice and a retry instead of telling the visitor it doesn't exist.
+  // Returns false when there is no prerendered law to show.
+  function showPrerenderedLaw(failure: LawLoadFailure, isRetry: boolean): boolean {
+    if (MISSING_LAW_REASONS.has(failure.failure_reason)) dropPrerenderedLaw();
+    const state = revealPrerenderedLaw();
+    if (!state) return false;
+    if (!state.querySelector('[data-action="retry-law"]')) {
+      /* v8 ignore start -- @preserve; loadFailedNoticeTemplate is always provided by the component template */
+      if (loadFailedNoticeTemplate instanceof HTMLTemplateElement) {
+        state.prepend(loadFailedNoticeTemplate.content.cloneNode(true));
+        hydrateIcons(state);
+      }
+      /* v8 ignore stop */
+    }
+    // A retry disables the button while its request runs, and the button the visitor pressed stays
+    // in place, so a second failure re-enables it and hands focus back to it
+    const retryButton = state.querySelector<HTMLButtonElement>('[data-action="retry-law"]');
+    /* v8 ignore start -- @preserve; the notice template always holds the retry button */
+    if (retryButton) retryButton.disabled = false;
+    /* v8 ignore stop */
+    if (isRetry) retryButton?.focus();
+    return true;
   }
 
   // A prerendered page for a law the API no longer has would otherwise stay indexable and be reported
@@ -124,6 +193,8 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
   function showLaw() {
     loadingState?.setAttribute('hidden', '');
     notFoundState?.setAttribute('hidden', '');
+    dropPrerenderedLaw();
+    prerenderedState?.setAttribute('hidden', '');
     lawContent?.removeAttribute('hidden');
     // A retry that finds the law again makes the page indexable again
     if (markedNoindex && !unmounted) {
@@ -139,10 +210,13 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
   }
 
   // A page view of /law/:id can't tell a broken inbound link from a successful view
-  function trackLawNotFound(failure: LawLoadFailure, isRetry: boolean) {
+  function trackLawNotFound(failure: LawLoadFailure, isRetry: boolean, showedPrerenderedLaw = false) {
     trackPendoEvent('law_not_found', {
       law_id: lawId || undefined,
       ...failure,
+      // Set only when the visitor still sees the law that came with the page, so a load failure that
+      // left them with the law can be told apart from one that left them on an error screen
+      ...(showedPrerenderedLaw ? { showed_prerendered_law: true } : {}),
       is_retry: isRetry,
       referrer_domain: getReferrerDomain(),
     });
@@ -501,10 +575,12 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
   el.setAttribute('aria-busy', 'true');
 
   if (!lawId) {
-    showNotFound();
+    const failure = { failure_reason: 'missing_id' };
+    showNotFound(failure);
     clearExportContent();
-    trackLawNotFound({ failure_reason: 'missing_id' }, false);
+    trackLawNotFound(failure, false);
   } else {
+    revealPrerenderedLaw();
     fetchLaw(lawId)
       .then(data => {
         el.setAttribute('aria-busy', 'false');
@@ -512,11 +588,12 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
       })
       .catch((error: unknown) => {
         el.setAttribute('aria-busy', 'false');
-        showNotFound();
-        clearExportContent();
         const failure = describeLawLoadFailure(error);
+        const showedPrerenderedLaw = showPrerenderedLaw(failure, false);
+        if (!showedPrerenderedLaw) showNotFound(failure);
+        clearExportContent();
         markMissingLaw(failure);
-        trackLawNotFound(failure, false);
+        trackLawNotFound(failure, false, showedPrerenderedLaw);
       });
   }
 
@@ -524,11 +601,17 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
     const t = e.target;
     if (!(t instanceof Element)) return;
 
-    if (t.closest('[data-action="retry-law"]')) {
+    const retryButton = t.closest('[data-action="retry-law"]');
+    if (retryButton) {
       /* v8 ignore start -- lawId is always set when the retry action is triggered */
       if (!lawId) return;
       /* v8 ignore stop */
-      showLoading();
+      // The prerendered law stays on screen while the request runs, so only the button is held back
+      if (retryButton instanceof HTMLButtonElement && retryButton.closest('[data-prerendered-law]')) {
+        retryButton.disabled = true;
+      } else {
+        showLoading();
+      }
       el.setAttribute('aria-busy', 'true');
       fetchLaw(lawId)
         .then((data) => {
@@ -537,11 +620,12 @@ export function LawDetail({ lawId, onNavigate, onStructuredData }: LawDetailProp
         })
         .catch((error: unknown) => {
           el.setAttribute('aria-busy', 'false');
-          showNotFound();
-          clearExportContent();
           const failure = describeLawLoadFailure(error);
+          const showedPrerenderedLaw = showPrerenderedLaw(failure, true);
+          if (!showedPrerenderedLaw) showNotFound(failure, true);
+          clearExportContent();
           markMissingLaw(failure);
-          trackLawNotFound(failure, true);
+          trackLawNotFound(failure, true, showedPrerenderedLaw);
         });
       return;
     }

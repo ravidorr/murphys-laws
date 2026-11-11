@@ -1329,14 +1329,19 @@
   line-height: 1.4;
 }
 
+/* Persistent underline so touch visitors, who never see hover, can tell the law opens. --muted-fg is a solid token
+   that clears the 3:1 non-text contrast minimum in both themes (7.6:1 on white, 7.7:1 on the dark page). */
 .law-card-link {
   color: inherit;
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-color: var(--muted-fg);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
 }
 
 .law-card-link:hover,
 .law-card-link:focus-visible {
-  text-decoration: underline;
+  text-decoration-color: currentcolor;
 }
 
 .law-card-attrib {
@@ -1362,6 +1367,25 @@
 
 .law-card-category:hover {
   background: color-mix(in oklab, var(--btn-primary-bg) 28%, transparent);
+}
+
+.law-card-more {
+  font-size: var(--text-xs);
+  margin: 0 0 0.5rem;
+}
+
+.law-card-more-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--component-control-min-size);
+  color: var(--link);
+  text-decoration: none;
+}
+
+.law-card-more-link:hover,
+.law-card-more-link:focus-visible {
+  color: var(--link-hover);
+  text-decoration: underline;
 }
 
 .law-card-footer {
@@ -1504,6 +1528,11 @@
 .favorites-subtitle {
   padding: 0.75rem 1rem 0;
   margin: 0;
+}
+
+/* Category page: the Explore nearby links follow the law list and its pagination */
+.category-hub-links {
+  margin-top: var(--space-8);
 }
 
 /* Dark mode: adjust favorite color */

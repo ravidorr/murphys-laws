@@ -123,15 +123,25 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
   // Render law cards
   function renderLaws(laws: Law[], query?: string) {
     if (!laws || laws.length === 0) {
+      // Offer the search panel's Clear action right next to the message when there is something to clear
+      const clearFiltersButton = hasActiveFilters(currentFilters)
+        ? `<button type="button" class="btn outline" data-action="clear-filters">
+              <span class="icon" data-icon="clear" aria-hidden="true"></span>
+              <span class="btn-text">Clear filters</span>
+            </button>`
+        : '';
       return `
         <div class="empty-state">
           <span class="icon empty-state-icon" data-icon="searchOff" aria-hidden="true"></span>
           <p class="empty-state-title">Murphy spared these results</p>
           <p class="empty-state-text">Try adjusting your search filters or clearing them to see more results.</p>
-          <button class="btn mt-4" data-nav="submit">
-            <span class="btn-text">Submit a Law</span>
-            <span class="icon" data-icon="send" aria-hidden="true"></span>
-          </button>
+          <div class="not-found-actions">
+            ${clearFiltersButton}
+            <button class="btn" data-nav="submit">
+              <span class="btn-text">Submit a Law</span>
+              <span class="icon" data-icon="send" aria-hidden="true"></span>
+            </button>
+          </div>
         </div>
       `;
     }
@@ -309,6 +319,14 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
       return;
     }
 
+    // The empty state's Clear filters button reuses the search panel's Clear action
+    if (t.closest('[data-action="clear-filters"]')) {
+      el.querySelector<HTMLButtonElement>('#clear-btn')!.click();
+      // The button is about to be replaced by the redrawn list, so keep keyboard focus on a stable control (WCAG 2.4.3)
+      el.querySelector<HTMLInputElement>('#search-keyword')!.focus();
+      return;
+    }
+
     // Handle copy text/link actions (shared utility) - sync guard, async clipboard
     if (t.closest('[data-action="copy-text"]') || t.closest('[data-action="copy-link"]')) {
       void handleCopyAction(e, t);
@@ -377,12 +395,16 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
   const searchComponent = AdvancedSearch({
     initialFilters: currentFilters,
     onSearch: (filters) => {
-      trackProductEvent('archive.search', { surface: 'browse', result: 'submitted' });
       currentFilters = filters;
       currentSort = filters.q ? 'relevance' : 'score';
       currentOrder = 'desc';
-      // Clearing the form also calls onSearch({}), which isn't a search
-      pendingSearchSurface = hasActiveFilters(filters) ? 'browse_advanced' : null;
+      // Clearing the form also calls onSearch({}), which isn't a search, so it is neither tracked nor reported
+      if (hasActiveFilters(filters)) {
+        trackProductEvent('archive.search', { surface: 'browse', result: 'submitted' });
+        pendingSearchSurface = 'browse_advanced';
+      } else {
+        pendingSearchSurface = null;
+      }
       updateWidgetsVisibility();
       currentPage = 1;
       loadPage(1);

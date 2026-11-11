@@ -142,10 +142,13 @@ export function startRouter(rootEl: HTMLElement, notFoundRender: RouteRenderFn |
     // The prerendered head is authoritative on first load; later routes start from the default
     if (!keepStaticShell) setRobotsMeta('index, follow');
 
+    // Hand the prerendered main content to the first view, so a direct visit whose data request fails
+    // can keep what the server already sent instead of replacing it with an error screen
+    const prerendered = keepStaticShell ? rootEl.querySelector('main') : null;
     rootEl.innerHTML = '';
     let newContent: HTMLElement;
     try {
-      newContent = fn({ param });
+      newContent = fn({ param, prerendered });
     } catch (error) {
       if (!keepStaticShell || !staticShellHtml.trim()) throw error;
       rootEl.innerHTML = staticShellHtml;
