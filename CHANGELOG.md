@@ -214,6 +214,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A category search that finds nothing no longer says no laws have been submitted for the category yet. It now says
+  nothing in the category matches the search, offers a "Clear search" button that resets the search form and shows the
+  category's laws again, and its submit button reads "Submit a Law", the same as Browse. Web bumped to `3.4.79`; root
+  to `2.6.183`.
 - Daily 404 report of 11 November 2026 (47 requests that day): the production bundles no longer link to source maps that do not
   exist, more scanner probes are dropped, and the sized Apple icons are redirected. Every JS file the build emitted ended in
   `//# sourceMappingURL=...`, but the Sentry upload deletes the maps from `dist`, so crawlers and scrapers that follow the
