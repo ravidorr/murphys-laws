@@ -150,12 +150,22 @@ workflow uploads all of `web/dist/`, so the copies reach the server with the res
 belongs to its original. Both deploy paths replace `web/dist/` with `rsync --delete`, so the copies follow their originals;
 if you prune files by hand on the server, remove the matching `.gz` and `.br` files too.
 
+### A rejected nginx configuration
+
+The deploy copies `nginx.conf` into `/etc/nginx/sites-available/murphys-laws`, runs `nginx -t` and only then reloads
+nginx. A configuration that `nginx -t` rejects (for example a directive from a module the server does not have) makes
+the GitHub Actions deploy put the previous site file back, skip the reload and fail at that step, so nothing after it
+(migrations, PM2 restart) runs and the running nginx keeps its previous configuration. Fix the cause (install the module
+or correct the file) and deploy again. `npm run deploy` and a manual `cp` do not restore the previous file: after a
+failed `nginx -t` there, copy the old file back before anything reloads or restarts nginx. An `nginx -t` that passes
+does not prove the reload took effect: `systemctl reload` only signals nginx, so look at `/var/log/nginx/error.log`
+after a release that changes the listeners.
+
 ### Follow-up: enabling brotli (not active yet)
 
 nginx does not serve the `.br` files yet, because the brotli module is not installed on the droplet and nginx rejects
 an unknown directive. A `brotli_static on;` line deployed before the module exists makes `nginx -t` fail in the deploy
-step after `nginx.conf` has already been copied into `sites-available`, which leaves a file there that a later
-reload or restart cannot load. Do these steps in this order:
+step (see "A rejected nginx configuration" above for what the deploy does then). Do these steps in this order:
 
 1. On the droplet, install the Ubuntu 24.04 packages (universe, built for the distribution's nginx 1.24):
    `sudo apt install libnginx-mod-http-brotli-filter libnginx-mod-http-brotli-static`
