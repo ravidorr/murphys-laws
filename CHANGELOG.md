@@ -305,8 +305,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   parenthesis asked for the wrong URL. Left alone: `/app-ads.txt` (the apps show no ads), `/pendo.js`, the random-token
   canaries `/envcheck-8fd5d32d5a7b.html`, `/uczhdksmg7` and `/e8ssw0odzmq` (Censys sent two of them), the stale
   `/assets/assets/tex-chtml-*.js` (nothing in the current source loads MathJax, so no redirect target exists), a one-address
-  burst of stager-style paths (`/WuEL`, `/SiteLoader` and others) and `/img/art.com_logo.gif` (no such image ever shipped).
-  Web bumped to `3.4.102`; root to `2.6.208`.
+  burst of stager-style paths (`/WuEL`, `/SiteLoader` and others). `/img/art.com_logo.gif`, the art.com logo that the
+  old site's pages and Facebook's link crawler still ask for, is restored in `web/public/img` (a 117x28 GIF, checked by
+  the legacy-image test) instead of answering 404.
+  Web bumped to `3.4.103`; root to `2.6.209`.
 - Submitting the home page "Search the Archive" box with nothing typed now opens Browse All Laws instead of quietly
   re-rendering the home page. The `archive.search` event for a blank submit reports `result: 'blank'`, so it can be told
   apart from the Browse All Laws link (`result: 'browse'`). Web bumped to `3.4.96`; root to `2.6.200`.

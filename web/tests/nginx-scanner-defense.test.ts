@@ -729,7 +729,7 @@ describe('nginx legacy /murphy/ pages', () => {
 });
 
 describe('legacy images', () => {
-  it.each(['Murphys-law-book.gif', '10001844.gif', 'pvtmurphy.gif', 'pick_of_the_week.gif'])('%s is a real GIF, not another format renamed to .gif', (name) => {
+  it.each(['Murphys-law-book.gif', '10001844.gif', 'pvtmurphy.gif', 'pick_of_the_week.gif', 'art.com_logo.gif'])('%s is a real GIF, not another format renamed to .gif', (name) => {
     const file = resolve(root, 'web', 'public', 'img', name);
     expect(existsSync(file)).toBe(true);
     expect(['GIF87a', 'GIF89a']).toContain(readFileSync(file).subarray(0, 6).toString('ascii'));
