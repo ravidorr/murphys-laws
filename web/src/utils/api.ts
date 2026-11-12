@@ -188,9 +188,42 @@ export async function fetchLaws({ limit = 25, offset = 0, sort = 'score', order 
  * @returns {Promise<Object>} Response with law data
  */
 export async function fetchLawOfTheDay(): Promise<PaginatedResponse<Law>> {
-  const response = await fetchAPI('/api/v1/law-of-day') as { law: Law };
+  // Adopt the request the home page started before the bundle loaded (see index.html), if there is one
+  const early = consumeEarlyLawOfTheDay();
+  const earlyLaw = early ? await early : null;
+  const law = earlyLaw ?? (await fetchAPI('/api/v1/law-of-day') as { law: Law }).law;
   // Return in same format as fetchLaws for compatibility
-  return { data: [response.law], total: 1, limit: 1, offset: 0 };
+  return { data: [law], total: 1, limit: 1, offset: 0 };
+}
+
+/**
+ * How long a result of the early request stays usable. The law changes at midnight UTC, so a tab that
+ * kept an unconsumed result across a day boundary must not show it later.
+ */
+const EARLY_LAW_MAX_AGE_MS = 60_000;
+
+function freshEarlyLawOfDay(): EarlyLawOfDay | null {
+  const early = window.__earlyLawOfDay;
+  return early && Date.now() - early.startedAt <= EARLY_LAW_MAX_AGE_MS ? early : null;
+}
+
+/**
+ * The Law of the Day the early request has already fetched, or null while it is pending or failed.
+ * Does not consume it: call consumeEarlyLawOfTheDay() once the law is used.
+ */
+export function peekEarlyLawOfTheDay(): Law | null {
+  return freshEarlyLawOfDay()?.law ?? null;
+}
+
+/**
+ * Takes over the early Law of the Day request started by the inline script in index.html, so the home page
+ * does not issue a second request. Returns a promise that never rejects (null when the early request failed),
+ * or null when there is nothing to adopt. Only the first call gets it: a later visit or a retry fetches again.
+ */
+export function consumeEarlyLawOfTheDay(): Promise<Law | null> | null {
+  const early = freshEarlyLawOfDay();
+  window.__earlyLawOfDay = undefined;
+  return early ? early.promise : null;
 }
 
 /**

@@ -8,7 +8,7 @@ vi.mock('@sentry/browser', () => ({
 }));
 
 import * as Sentry from '@sentry/browser';
-import { fetchAPI, fetchDuplicateCandidates, fetchLaw, fetchRelatedCategories, fetchRelatedLaws, fetchLaws, fetchLawOfTheDay, fetchTopVoted, fetchTrending, fetchRecentlyAdded, fetchCategories, fetchSuggestions } from '../src/utils/api.ts';
+import { fetchAPI, fetchDuplicateCandidates, fetchLaw, fetchRelatedCategories, fetchRelatedLaws, fetchLaws, fetchLawOfTheDay, consumeEarlyLawOfTheDay, peekEarlyLawOfTheDay, fetchTopVoted, fetchTrending, fetchRecentlyAdded, fetchCategories, fetchSuggestions } from '../src/utils/api.ts';
 
 describe('API utilities', () => {
   let fetchSpy: MockInstance;
@@ -533,6 +533,115 @@ describe('API utilities', () => {
         limit: 1,
         offset: 0
       });
+    });
+  });
+
+  describe('early Law of the Day request', () => {
+    const law = { id: 5, text: 'Early law.', upvotes: 0, downvotes: 0 };
+
+    function setEarly(overrides: Partial<EarlyLawOfDay> = {}): EarlyLawOfDay {
+      const early: EarlyLawOfDay = { law, startedAt: Date.now(), promise: Promise.resolve(law), ...overrides };
+      window.__earlyLawOfDay = early;
+      return early;
+    }
+
+    afterEach(() => {
+      delete window.__earlyLawOfDay;
+      vi.useRealTimers();
+    });
+
+    it('peeks at the law without consuming it', () => {
+      const early = setEarly();
+
+      expect(peekEarlyLawOfTheDay()).toBe(law);
+      expect(window.__earlyLawOfDay).toBe(early);
+    });
+
+    it('has nothing to peek at or consume without an early request', () => {
+      expect(peekEarlyLawOfTheDay()).toBeNull();
+      expect(consumeEarlyLawOfTheDay()).toBeNull();
+    });
+
+    it('has no law to peek at while the early request is pending', () => {
+      setEarly({ law: null, promise: new Promise(() => {}) });
+
+      expect(peekEarlyLawOfTheDay()).toBeNull();
+    });
+
+    it('hands the early request over once', () => {
+      const early = setEarly();
+
+      expect(consumeEarlyLawOfTheDay()).toBe(early.promise);
+      expect(window.__earlyLawOfDay).toBeUndefined();
+      expect(consumeEarlyLawOfTheDay()).toBeNull();
+    });
+
+    it('ignores, and drops, a result older than a minute', () => {
+      vi.useFakeTimers();
+      setEarly({ startedAt: Date.now() });
+      vi.advanceTimersByTime(60_001);
+
+      expect(peekEarlyLawOfTheDay()).toBeNull();
+      expect(consumeEarlyLawOfTheDay()).toBeNull();
+      expect(window.__earlyLawOfDay).toBeUndefined();
+    });
+
+    it('still adopts a result that is exactly a minute old', () => {
+      vi.useFakeTimers();
+      const early = setEarly({ startedAt: Date.now() });
+      vi.advanceTimersByTime(60_000);
+
+      expect(consumeEarlyLawOfTheDay()).toBe(early.promise);
+    });
+
+    it('fetchLawOfTheDay adopts the early law without a second request', async () => {
+      setEarly();
+
+      const result = await fetchLawOfTheDay();
+
+      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(result).toEqual({ data: [law], total: 1, limit: 1, offset: 0 });
+      expect(window.__earlyLawOfDay).toBeUndefined();
+    });
+
+    it('fetchLawOfTheDay waits for a pending early request', async () => {
+      let resolveEarly!: (value: typeof law | null) => void;
+      setEarly({ law: null, promise: new Promise((resolve) => { resolveEarly = resolve; }) });
+
+      const pending = fetchLawOfTheDay();
+      resolveEarly(law);
+
+      await expect(pending).resolves.toEqual({ data: [law], total: 1, limit: 1, offset: 0 });
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('fetchLawOfTheDay requests the law itself when the early request failed', async () => {
+      setEarly({ law: null, promise: Promise.resolve(null) });
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ law: { id: 9, text: 'Fresh law.' }, featured_date: '2025-10-29' })
+      });
+
+      const result = await fetchLawOfTheDay();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(result.data[0]).toEqual({ id: 9, text: 'Fresh law.' });
+    });
+
+    it('fetchLawOfTheDay fetches again on a retry after the early request was used', async () => {
+      setEarly();
+      await fetchLawOfTheDay();
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ law: { id: 6, text: 'Retried.' } })
+      });
+
+      const result = await fetchLawOfTheDay();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(result.data[0]).toEqual({ id: 6, text: 'Retried.' });
     });
   });
 

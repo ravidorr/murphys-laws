@@ -14,6 +14,7 @@ import {
   renderArticleSubmitAction,
   renderInternalLinkList
 } from '../src/utils/internal-links.ts';
+import { ARCHIVE_SEARCH_HTML } from '../src/views/home-archive-search.ts';
 import { renderNotFoundContent, renderNotFoundLaws } from '../src/utils/not-found-content.ts';
 import { externalLinkRenderer } from '../src/utils/markdown-links.ts';
 import { insertContentFigure } from '../src/utils/content-figures.ts';
@@ -1271,40 +1272,18 @@ function buildStaticHomeContent(featuredLaw?: Law): string {
           <p class="text-muted-fg small">A featured law from the archive; the daily rotating law loads with JavaScript. <a href="/browse">Browse the full archive</a> for more.</p>`
     : '<p>Today\'s rotating law could not be loaded. <a href="/browse">Browse the full archive</a> instead.</p>';
   return `
-    <div class="container page pt-0">
-      <section class="section card card--section section-card mb-12" data-home-zone="archive-search">
-        <div class="section-header">
-          <h1 class="section-title" data-section-title="Search the Archive"><span class="accent-text">Search</span> the Archive</h1>
-        </div>
-        <div class="section-subheader">
-          <p class="section-subtitle">Explore Murphy's Law history, browse thousands of laws, and find the category that fits your next mishap.</p>
-        </div>
-        <div class="section-body">
-          <form action="/browse" method="get" role="search" class="not-found-search-form" aria-label="Search the archive">
-            <label class="visually-hidden" for="static-home-search">Search laws</label>
-            <input id="static-home-search" type="search" name="q" class="form-control" placeholder="Search laws, categories, and mishaps">
-            <button type="submit" class="btn primary">Search the Archive</button>
-          </form>
-          <div class="home-proof-points" aria-label="Archive facts">
-            <span class="home-proof-point"><strong>Complete</strong> <span>archive</span></span>
-            <span class="home-proof-point"><strong>55+</strong> <span>categories</span></span>
-            <span class="home-proof-point"><strong>Human-reviewed</strong> <span>submissions</span></span>
-            <span class="home-proof-point"><strong>Curated</strong> <span>since 1998</span></span>
+    <div class="container page pt-0 min-h-400">
+      ${ARCHIVE_SEARCH_HTML.trim()}
+      <div class="min-h-400" data-home-zone="law-of-day" data-prerendered>
+        <section class="section card card--section section-card mb-12">
+          <div class="section-header">
+            <h2 class="section-title"><span class="accent-text">Murphy's</span> Law of the Day</h2>
           </div>
-          <div class="not-found-actions">
-            <a href="/browse" class="btn">Browse All Laws</a>
-            <a href="/categories" class="btn outline">Explore Categories</a>
+          <div class="section-body">
+            ${lawOfDayBody}
           </div>
-        </div>
-      </section>
-      <section class="section card card--section section-card mb-12" data-home-zone="law-of-day">
-        <div class="section-header">
-          <h2 class="section-title"><span class="accent-text">Law</span> of the Day</h2>
-        </div>
-        <div class="section-body">
-          ${lawOfDayBody}
-        </div>
-      </section>
+        </section>
+      </div>
       <section class="section card card--section section-card mb-12" data-home-zone="category-discovery">
         <div class="section-header">
           <h2 class="section-title"><span class="accent-text">Browse</span> by Theme</h2>
@@ -1887,7 +1866,9 @@ ${articleArchive.submitAction}
   // Inject into main
   homeHtml = homeHtml.replace(
     /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/, 
-    `<main id="main-content" class="flex-1 container page">${homeContent}</main>`
+    // The app renders the home page straight into <main class="flex-1"> (its own .container wraps the content). A
+    // second container here would make the prerendered page narrower and wrap the Law of the Day differently
+    `<main id="main-content" class="flex-1">${homeContent}</main>`
   );
 
   // Pre-render JSON-LD for homepage

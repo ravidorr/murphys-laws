@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, type Mock } from 'vitest';
+import { afterEach, describe, it, expect, vi, type Mock } from 'vitest';
 import type { OnNavigate } from '../src/types/app.d.ts';
 import type { CleanableElement } from '../src/types/app.js';
 import { Home, renderHome } from '../src/views/home.ts';
 import * as exportContext from '../src/utils/export-context.js';
 import * as metrics from '../src/utils/metrics.js';
+import * as ads from '../src/utils/ads.ts';
 
 function createDeferred<T>() {
   let resolve!: (value: T) => void;
@@ -83,6 +84,120 @@ describe('Home view', () => {
     expect(el.querySelector('[data-home-zone="trending"]')).toBe(trendingZone);
     expect(searchInput.value).toBe('retained query');
     expect(el.querySelector('[data-home-zone="law-of-day"]')?.getAttribute('data-daily-law-state')).toBe('ready');
+  });
+
+  describe('early daily law from index.html', () => {
+    const earlyLaw = { id: 77, text: 'The early law is ready before the bundle.', upvotes: 4, downvotes: 1 };
+    const dailyLawRequests = (fetchMock: Mock) => fetchMock.mock.calls.filter(([url]) => String(url).includes('/law-of-day'));
+
+    afterEach(() => {
+      delete window.__earlyLawOfDay;
+      vi.restoreAllMocks();
+    });
+
+    it('renders an already fetched law in the first pass, without a spinner or a second request', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: [] }) });
+      globalThis.fetch = fetchMock;
+      const triggerAdSense = vi.spyOn(ads, 'triggerAdSense');
+      const setExportContent = vi.spyOn(exportContext, 'setExportContent');
+      window.__earlyLawOfDay = { law: earlyLaw, startedAt: Date.now(), promise: Promise.resolve(earlyLaw) };
+
+      const el = Home({ onNavigate: vi.fn() });
+      const zone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]')!;
+
+      expect(zone.dataset.dailyLawState).toBe('ready');
+      expect(zone.getAttribute('aria-busy')).toBe('false');
+      expect(zone.querySelector('[role="status"]')).toBeNull();
+      expect(zone.querySelector('.lod-link')?.getAttribute('data-law-id')).toBe('77');
+      expect(window.__earlyLawOfDay).toBeUndefined();
+
+      // Ads and export content follow once the page is mounted, not during the first render
+      expect(triggerAdSense).not.toHaveBeenCalled();
+      await vi.waitFor(() => {
+        expect(triggerAdSense).toHaveBeenCalledWith(el);
+      });
+      expect(setExportContent).toHaveBeenCalledWith(expect.objectContaining({ data: earlyLaw }));
+      expect(dailyLawRequests(fetchMock)).toHaveLength(0);
+    });
+
+    it('reports the law to an ad listener that main.ts registers after the first render', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: [] }) });
+      window.__earlyLawOfDay = { law: earlyLaw, startedAt: Date.now(), promise: Promise.resolve(earlyLaw) };
+      const listener = vi.fn();
+
+      const el = Home({ onNavigate: vi.fn() });
+      // main.ts calls setupAdSense() after startRouter(), that is after Home() returned
+      document.addEventListener('murphys-laws-content-ready', listener, { once: true });
+      document.body.appendChild(el);
+
+      try {
+        await vi.waitFor(() => {
+          expect(listener).toHaveBeenCalledTimes(1);
+        });
+      } finally {
+        el.remove();
+        document.removeEventListener('murphys-laws-content-ready', listener);
+      }
+    });
+
+    it('shows the loading state, then the early law, when the early request is still pending', async () => {
+      const early = createDeferred<typeof earlyLaw | null>();
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: [] }) });
+      globalThis.fetch = fetchMock;
+      window.__earlyLawOfDay = { law: null, startedAt: Date.now(), promise: early.promise };
+
+      const el = Home({ onNavigate: vi.fn() });
+      const zone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]')!;
+      expect(zone.dataset.dailyLawState).toBe('loading');
+
+      early.resolve(earlyLaw);
+
+      await vi.waitFor(() => {
+        expect(zone.dataset.dailyLawState).toBe('ready');
+      });
+      expect(zone.querySelector('.lod-link')?.getAttribute('data-law-id')).toBe('77');
+      expect(dailyLawRequests(fetchMock)).toHaveLength(0);
+    });
+
+    it('requests the daily law itself when the early request failed', async () => {
+      globalThis.fetch = vi.fn().mockImplementation((input: string | URL | Request) =>
+        Promise.resolve({
+          ok: true,
+          json: async () => (String(input).includes('/law-of-day') ? { law: { id: 78, text: 'Fetched by the app.', upvotes: 0, downvotes: 0 } } : { data: [] })
+        })
+      );
+      window.__earlyLawOfDay = { law: null, startedAt: Date.now(), promise: Promise.resolve(null) };
+
+      const el = Home({ onNavigate: vi.fn() });
+
+      await vi.waitFor(() => {
+        expect(el.querySelector('.lod-link')?.getAttribute('data-law-id')).toBe('78');
+      });
+    });
+
+    it('fetches again on retry because the early request is single use', async () => {
+      const fetchMock = vi.fn().mockImplementation((input: string | URL | Request) =>
+        String(input).includes('/law-of-day')
+          ? Promise.reject(new Error('Daily law unavailable'))
+          : Promise.resolve({ ok: true, json: async () => ({ data: [] }) })
+      );
+      globalThis.fetch = fetchMock;
+      window.__earlyLawOfDay = { law: null, startedAt: Date.now(), promise: Promise.resolve(null) };
+
+      const el = Home({ onNavigate: vi.fn() });
+      // The app took the early request over as soon as it started: nothing is left for a retry to reuse
+      expect(window.__earlyLawOfDay).toBeUndefined();
+      await vi.waitFor(() => {
+        expect(el.querySelector('[data-home-zone="law-of-day"] [data-action="retry"]')).toBeTruthy();
+      });
+      const requestsBeforeRetry = dailyLawRequests(fetchMock).length;
+
+      el.querySelector<HTMLElement>('[data-action="retry"]')!.click();
+
+      await vi.waitFor(() => {
+        expect(dailyLawRequests(fetchMock).length).toBe(requestsBeforeRetry + 1);
+      });
+    });
   });
 
   it('keeps a stable daily-law fallback when no law is available', async () => {

@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { marked } from 'marked';
 import { CALCULATOR_META_DESCRIPTIONS } from '../src/utils/constants.ts';
+import { Home, renderHome } from '../src/views/home.ts';
+import { ARCHIVE_SEARCH_HTML } from '../src/views/home-archive-search.ts';
 import {
   wrapFirstWordWithAccent,
   enhanceMarkdownHtml,
@@ -442,6 +444,47 @@ describe('SSG Static Route Content', () => {
     expect(html).toContain('/submit');
     expect(html).toContain('Trending</span> Now');
     expect(html).not.toMatch(/Loading/i);
+  });
+
+  it('prerenders the Law of the Day zone with the app reserved height and title so the early paint does not shift the page', () => {
+    const html = buildStaticHomeContent({ id: 7, text: 'Everything takes longer.', upvotes: 1, downvotes: 0 });
+
+    expect(html).toContain('<div class="min-h-400" data-home-zone="law-of-day" data-prerendered>');
+    expect(html).toContain('<span class="accent-text">Murphy\'s</span> Law of the Day');
+    expect(html).toContain('<div class="section-body">');
+  });
+
+  it('prerenders the same Search the Archive card the app renders, and keeps it working without JavaScript', () => {
+    const html = buildStaticHomeContent();
+
+    expect(html).toContain(ARCHIVE_SEARCH_HTML.trim());
+    expect(html).toContain('<form action="/browse" method="get" role="search"');
+    expect(html).toContain('<input type="search" name="q"');
+    expect(html).toContain('<div class="container page pt-0 min-h-400">');
+  });
+
+  it('prerenders the same skeleton the app renders around the Law of the Day, so the early paint and the app agree on geometry', () => {
+    // A pending request keeps the app in its loading state; only the structure around the law is compared
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})));
+    const app = Home({ onNavigate: () => {} });
+    vi.unstubAllGlobals();
+    const prerendered = document.createElement('div');
+    prerendered.innerHTML = buildStaticHomeContent({ id: 7, text: 'Everything takes longer.', upvotes: 1, downvotes: 0 });
+    const staticRoot = prerendered.firstElementChild!;
+    const icons = (markup: string) => markup.replace(/<svg[\s\S]*?<\/svg>/g, '<icon>').replace(/<span class="icon"[^>]*><\/span>/g, '<icon>').replace(/\s+/g, ' ');
+    const zone = (root: Element) => root.querySelector('[data-home-zone="law-of-day"]')!;
+
+    expect(staticRoot.className).toBe(app.className);
+    expect([...staticRoot.children].slice(0, 2).map((el) => el.getAttribute('data-home-zone')))
+      .toEqual([...app.children].slice(0, 2).map((el) => el.getAttribute('data-home-zone')));
+    expect(icons(staticRoot.querySelector('[data-home-zone="archive-search"]')!.outerHTML))
+      .toBe(icons(app.querySelector('[data-home-zone="archive-search"]')!.outerHTML));
+    expect(zone(staticRoot).className).toBe(zone(app).className);
+    expect(zone(staticRoot).firstElementChild!.className).toBe(zone(app).firstElementChild!.className);
+    const loaded = document.createElement('div');
+    renderHome(loaded, { id: 7, text: 'Everything takes longer.', upvotes: 1, downvotes: 0 }, [], () => {});
+    expect(zone(staticRoot).querySelector('.section-header .section-title')!.textContent)
+      .toBe(zone(loaded).querySelector('.section-header .section-title')!.textContent);
   });
 
   it('keeps words separated without relying on flex gap in static home markup', () => {

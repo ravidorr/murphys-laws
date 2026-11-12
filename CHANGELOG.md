@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The home page no longer waits for the app bundle before it can show the Law of the Day, the element that was the
+  largest contentful paint on `/` (real-user P75 LCP 13.4 s, always `a.lod-link`). A small inline script in `index.html`,
+  placed before the stylesheet, requests `/api/v1/law-of-day` as soon as the HTML arrives and paints the law into the
+  prerendered zone when the page is parsed; the bundle then adopts the same response (no second request, no spinner) and
+  falls back to its own request if the early one failed or is older than a minute. The prerendered home page now matches
+  what the app renders so the first paint is also the last largest paint: `<main>` no longer adds a second container
+  (the prerendered page was 32 px narrower, so the quote wrapped differently and the app's later render was a larger
+  element that moved LCP back to the bundle's render time), the Search the Archive card is one shared string
+  (`views/home-archive-search.ts`) used by the app and the build, and the Law of the Day zone has the app's reserved
+  height and title. The no-JavaScript card and the search form still work. Measured in Chrome with the production build
+  under CPU and network throttling: LCP 0.6 s instead of 1.2 s (150 ms RTT, 1.6 Mbps, 4x CPU) and 1.1 s instead of 2.1 s
+  (300 ms RTT, 0.8 Mbps, 6x CPU), a single LCP entry, CLS 0. Tests run the inline script from `index.html` (home only,
+  never rejects, 10 s timeout, paints text as text) and check its markup against the component's for every attribution
+  shape. Two guards keep the prerendered and app layouts together: a unit test compares the prerendered home skeleton
+  with the app's, and a Playwright spec (`e2e/prerender-law-of-day.spec.ts`, run against the production build, which the
+  e2e CI job now builds first) checks at four phone and desktop sizes, for short, long, titled and multi-attribution
+  laws, that the early quote has the app quote's x, width and height, is never lower, and is the last LCP entry.
+  Web bumped to `3.4.110`; root to `2.6.219`.
 - Both deploy paths (`npm run deploy` and the Deploy to Production workflow) now run
   `backend/scripts/verify-installed-dependencies.mjs` right after `npm ci`. It resolves every runtime dependency in
   `backend/package.json` the way an ESM `import` does, checks that the file it resolves to exists (an `exports` map
