@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-web",
-  "version": "3.4.112",
+  "version": "3.4.113",
   "description": "Murphy's Laws Web Application",
   "type": "module",
   "scripts": {

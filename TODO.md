@@ -13,6 +13,11 @@ This document outlines additional tasks and potential improvements for the Murph
   does not serve them because the brotli module is not installed on the droplet (an unknown directive would fail `nginx -t` in the
   deploy step). Install `libnginx-mod-http-brotli-filter` and `libnginx-mod-http-brotli-static` first, then add `brotli_static on;` to
   the hashed-assets location of `nginx.conf` (steps, verification and rollback in `shared/docs/DEPLOYMENT.md`).
+- [ ] **Serve `/manifest.webmanifest` with its real type and revalidate the pages:** the server sends the manifest as
+  `application/octet-stream` (`/etc/nginx/mime.types` has no `webmanifest` entry), so it is not compressed either (`gzip_types` lists
+  `application/manifest+json`). Add `types { application/manifest+json webmanifest; }` inside `location = /manifest.webmanifest` only (a `types` block replaces the whole inherited map, so at server level it would break `.css`, `.js` and `.html`). The prerendered pages, `ads.txt`, `llms.txt` and
+  `social/home.webp` still send no `Cache-Control`, so browsers decide how long to keep them; `no-cache` for the HTML would make a deploy
+  show up on the next visit.
 
 ## Site data
 
