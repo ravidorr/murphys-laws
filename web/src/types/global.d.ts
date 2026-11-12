@@ -30,7 +30,19 @@ interface PendoAgent {
 }
 
 declare global {
+  /**
+   * Result of the early Law of the Day request that the inline script in index.html starts on the home page,
+   * before the app bundle loads. `law` is set once the response arrived; `promise` never rejects (null on failure).
+   */
+  interface EarlyLawOfDay {
+    law: import('./app.d.ts').Law | null;
+    startedAt: number;
+    promise: Promise<import('./app.d.ts').Law | null>;
+  }
+
   interface Window {
+    /** Early Law of the Day request started by the inline script in index.html (home page only) */
+    __earlyLawOfDay?: EarlyLawOfDay;
     adsbygoogle?: Array<Record<string, unknown>>;
     dataLayer?: Array<unknown>;
     gtag?: (...args: unknown[]) => void;

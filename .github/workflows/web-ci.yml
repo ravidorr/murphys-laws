@@ -194,6 +194,11 @@ jobs:
           exit 1
         working-directory: web
 
+      # web/e2e/prerender-law-of-day.spec.ts reads the production build (web/dist) to check that the prerendered
+      # Law of the Day has the same geometry as the app's, so the build has to exist before the suite runs.
+      - name: Build the web app for the prerender layout spec
+        run: npm run build:web
+
       - name: Run E2E tests
         run: npm run test:e2e
         working-directory: web

@@ -49,6 +49,86 @@
     content="Explore Murphy's Law corollaries and experiment with interactive calculators that quantify inevitable mishaps.">
   <meta property="twitter:image" content="https://murphys-laws.com/social/home.png">
 
+  <!-- Law of the Day early start (home page only). The daily law is the largest element on the page, so waiting for the
+       app bundle to download, run and then request it put the law on a 9-12 second LCP path. This starts the request
+       before the stylesheet and the bundle, and paints the law into the prerendered zone as soon as it arrives. The app
+       adopts the same result (see consumeEarlyLawOfTheDay in src/utils/api.ts), so there is no second request. The
+       markup built here must match src/components/law-of-day.ts (tests/early-law-of-day.test.ts enforces that).
+       Plain ES5 on purpose: it runs on the oldest browsers the legacy bundle supports and must never throw. -->
+  <script>
+    (function () {
+      var path = location.pathname;
+      if ((path !== '/' && path !== '/index.html') || typeof fetch !== 'function') return;
+
+      var state = { law: null, startedAt: Date.now(), promise: null };
+      var controller = typeof AbortController === 'function' ? new AbortController() : null;
+      var timer = controller ? setTimeout(function () { controller.abort(); }, 10000) : 0;
+
+      function attribution(law) {
+        var first = law.attributions && law.attributions.length ? law.attributions[0] : null;
+        if (!first) return law.author ? '- ' + law.author : '';
+        var name = typeof first.name === 'string' ? first.name.trim() : '';
+        var note = typeof first.note === 'string' ? first.note.trim() : '';
+        return 'Sent by ' + (name ? name + (note ? ' - ' + note : '') : note);
+      }
+
+      function paint(law) {
+        var body = document.querySelector('[data-home-zone="law-of-day"][data-prerendered] .section-body');
+        if (!body) return;
+        var link = document.createElement('a');
+        link.href = '/law/' + law.id;
+        link.className = 'lod-link';
+        link.setAttribute('data-law-id', String(law.id));
+        link.setAttribute('aria-label', 'Read full law details');
+        var quote = document.createElement('blockquote');
+        quote.className = 'lod-quote-large';
+        quote.textContent = (law.title ? law.title + ': ' : '') + law.text;
+        link.appendChild(quote);
+        var credit = document.createElement('p');
+        credit.className = 'lod-attrib';
+        credit.textContent = attribution(law);
+        body.textContent = '';
+        body.appendChild(link);
+        body.appendChild(credit);
+      }
+
+      // The zone exists once the page is parsed. Waiting for DOMContentLoaded would wait for the deferred app bundle,
+      // but readyState turns 'interactive' (and fires readystatechange) before deferred module scripts run.
+      function paintWhenParsed(law) {
+        if (document.readyState !== 'loading') {
+          paint(law);
+          return;
+        }
+        document.addEventListener('readystatechange', function onReady() {
+          if (document.readyState === 'loading') return;
+          document.removeEventListener('readystatechange', onReady);
+          paint(law);
+        });
+      }
+
+      // The promise never rejects: it resolves to null on any failure, so the bundle falls back to its own request
+      // and no unhandled rejection can reach the error banner before the bundle attaches a handler.
+      state.promise = fetch('/api/v1/law-of-day', {
+        headers: { Accept: 'application/json' },
+        signal: controller ? controller.signal : undefined
+      }).then(function (response) {
+        if (!response.ok) throw new Error('law-of-day ' + response.status);
+        return response.json();
+      }).then(function (payload) {
+        var law = payload && payload.law;
+        if (!law || !law.id || typeof law.text !== 'string') return null;
+        state.law = law;
+        paintWhenParsed(law);
+        return law;
+      }).catch(function () {
+        return null;
+      }).then(function (law) {
+        clearTimeout(timer);
+        return law;
+      });
+      window.__earlyLawOfDay = state;
+    })();
+  </script>
   <link rel="stylesheet" href="/styles/site.css">
   <script>
     window.dataLayer = window.dataLayer || [];

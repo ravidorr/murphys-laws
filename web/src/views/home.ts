@@ -4,7 +4,8 @@ import { LawOfTheDay } from '@components/law-of-day.ts';
 import { SodCalculatorSimple } from '@components/sod-calculator-simple.ts';
 import { Trending } from '@components/trending.ts';
 import { DailyEmailSignup } from '@components/daily-email-signup.ts';
-import { fetchLawOfTheDay } from '../utils/api.ts';
+import { ARCHIVE_SEARCH_HTML } from './home-archive-search.ts';
+import { consumeEarlyLawOfTheDay, fetchLawOfTheDay, peekEarlyLawOfTheDay } from '../utils/api.ts';
 import { triggerAdSense } from '../utils/ads.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { hydrateIcons } from '@utils/icons.ts';
@@ -18,36 +19,6 @@ type DailyLawState = 'loading' | 'ready' | 'empty' | 'error';
 interface RenderHomeOptions {
   dailyLawState?: DailyLawState;
 }
-
-const ARCHIVE_SEARCH_HTML = `
-  <section class="section card card--section section-card mb-12 browse-cta" data-home-zone="archive-search" aria-labelledby="browse-cta-heading">
-    <div class="section-header">
-      <h1 id="browse-cta-heading" class="section-title"><span class="accent-text">Search</span> the Archive</h1>
-    </div>
-    <div class="section-subheader">
-      <p class="section-subtitle">Start with the complete Murphy's Law archive, then save, vote, share, or submit the next inevitable discovery.</p>
-    </div>
-    <div class="section-body">
-      <form role="search" class="not-found-search-form" aria-label="Search the archive">
-        <input type="search" class="form-control" placeholder="Search laws, categories, and mishaps" aria-label="Search laws">
-        <button type="submit" class="btn primary">
-          <span class="btn-text">Search the Archive</span>
-          <span class="icon" data-icon="search" aria-hidden="true"></span>
-        </button>
-      </form>
-      <div class="home-proof-points" aria-label="Archive facts">
-        <span class="home-proof-point"><strong>Complete</strong> <span>archive</span></span>
-        <span class="home-proof-point"><strong>55+</strong> <span>categories</span></span>
-        <span class="home-proof-point"><strong>Human-reviewed</strong> <span>submissions</span></span>
-        <span class="home-proof-point"><strong>Curated</strong> <span>since 1998</span></span>
-      </div>
-      <a href="/browse" class="btn primary" data-nav="browse">
-        <span class="btn-text">Browse All Laws</span>
-        <span class="icon" data-icon="list" aria-hidden="true"></span>
-      </a>
-    </div>
-  </section>
-`;
 
 const CATEGORY_DISCOVERY_HTML = `
   <section class="section card card--section section-card mb-12" data-home-zone="category-discovery" aria-labelledby="category-discovery-heading">
@@ -205,7 +176,26 @@ export function Home({ onNavigate, onSearch }: { onNavigate: OnNavigate; onSearc
   el.className = 'container page pt-0 min-h-400';
   el.setAttribute('aria-live', 'polite');
 
-  renderHome(el, null, [], onNavigate, onSearch, { dailyLawState: 'loading' });
+  // The inline script in index.html starts the daily-law request before this bundle loads. If its answer is
+  // already here, render the law in the first pass: no spinner, no second request, nothing repainted.
+  const earlyLaw = peekEarlyLawOfTheDay();
+  renderHome(el, earlyLaw, [], onNavigate, onSearch, { dailyLawState: earlyLaw ? 'ready' : 'loading' });
+
+  function onDailyLawShown(lawOfTheDay: Law | null) {
+    // Signal that meaningful content is ready for ads - pass element for validation
+    triggerAdSense(el);
+
+    // Register export content for home page (law of the day if available)
+    if (lawOfTheDay) {
+      setExportContent({
+        type: ContentType.SINGLE_LAW,
+        title: 'Law of the Day',
+        data: lawOfTheDay
+      });
+    } else {
+      clearExportContent();
+    }
+  }
 
   function fetchAndRender() {
     const lawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]')!;
@@ -219,19 +209,7 @@ export function Home({ onNavigate, onSearch }: { onNavigate: OnNavigate; onSearc
         if (currentLawZone) {
           renderDailyLawZone(currentLawZone, lawOfTheDay, onNavigate, lawOfTheDay ? 'ready' : 'empty');
         }
-        // Signal that meaningful content is ready for ads - pass element for validation
-        triggerAdSense(el);
-
-        // Register export content for home page (law of the day if available)
-        if (lawOfTheDay) {
-          setExportContent({
-            type: ContentType.SINGLE_LAW,
-            title: 'Law of the Day',
-            data: lawOfTheDay
-          });
-        } else {
-          clearExportContent();
-        }
+        onDailyLawShown(lawOfTheDay);
       })
       .catch(() => {
         const currentLawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]');
@@ -244,7 +222,14 @@ export function Home({ onNavigate, onSearch }: { onNavigate: OnNavigate; onSearc
   }
 
   // The complete page structure is already rendered; only the reserved daily-law slot changes.
-  fetchAndRender();
+  if (earlyLaw) {
+    consumeEarlyLawOfTheDay();
+    // Deferred to a microtask: the page is not mounted yet, and main.ts registers the ad listener right after
+    // the first render, so a synchronous content-ready event would be missed and no ads would load.
+    void Promise.resolve().then(() => onDailyLawShown(earlyLaw));
+  } else {
+    fetchAndRender();
+  }
 
   el.addEventListener('click', (e) => {
     const t = e.target;
