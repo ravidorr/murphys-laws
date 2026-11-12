@@ -2,6 +2,7 @@
 import * as Sentry from '@sentry/browser';
 import { API_BASE_URL, DEFAULT_FETCH_HEADERS, FETCH_TIMEOUT_MS } from './constants.ts';
 import { createTimeoutSignal } from './timeout-signal.ts';
+import { votedSince, votedWithinCacheWindow } from './recent-vote.ts';
 import type { Law, Category, PaginatedResponse, RelatedLawsResponse, ListResponse } from '../types/app.d.ts';
 
 function isFetchTransportError(error: unknown): boolean {
@@ -28,9 +29,14 @@ function isFetchTransportError(error: unknown): boolean {
  * Fetches from API with automatic fallback
  * @param {string} endpoint - API endpoint (e.g., '/api/v1/laws')
  * @param {URLSearchParams|Object} params - Query parameters
+ * @param {Object} init - Extra fetch options (currently only `cache`)
  * @returns {Promise<any>} JSON response
  */
-export async function fetchAPI(endpoint: string, params: URLSearchParams | Record<string, string> = {}): Promise<unknown> {
+export async function fetchAPI(
+  endpoint: string,
+  params: URLSearchParams | Record<string, string> = {},
+  init: { cache?: RequestCache } = {}
+): Promise<unknown> {
   const qs = params instanceof URLSearchParams
     ? params
     : new URLSearchParams(params);
@@ -41,6 +47,7 @@ export async function fetchAPI(endpoint: string, params: URLSearchParams | Recor
   const response = await fetch(url, {
     headers: DEFAULT_FETCH_HEADERS,
     signal: createTimeoutSignal(FETCH_TIMEOUT_MS),
+    ...init,
   });
   if (!response.ok) {
     throw new Error(`API request failed: ${response.status}`);
@@ -191,7 +198,10 @@ export async function fetchLawOfTheDay(): Promise<PaginatedResponse<Law>> {
   // Adopt the request the home page started before the bundle loaded (see index.html), if there is one
   const early = consumeEarlyLawOfTheDay();
   const earlyLaw = early ? await early : null;
-  const law = earlyLaw ?? (await fetchAPI('/api/v1/law-of-day') as { law: Law }).law;
+  // The API lets caches reuse this response for up to a minute, so right after a vote ask the network: a cached
+  // copy could show a count without the visitor's own vote next to their voted highlight.
+  const cache = votedWithinCacheWindow() ? 'no-cache' : undefined;
+  const law = earlyLaw ?? (await fetchAPI('/api/v1/law-of-day', {}, cache ? { cache } : {}) as { law: Law }).law;
   // Return in same format as fetchLaws for compatibility
   return { data: [law], total: 1, limit: 1, offset: 0 };
 }
@@ -204,8 +214,9 @@ const EARLY_LAW_MAX_AGE_MS = 60_000;
 
 function freshEarlyLawOfDay(): EarlyLawOfDay | null {
   const early = window.__earlyLawOfDay;
-  // Only an answer from the API the app would ask itself, and a recent one
-  const usable = early && early.url === `${API_BASE_URL}/api/v1/law-of-day` && Date.now() - early.startedAt <= EARLY_LAW_MAX_AGE_MS;
+  // Only an answer from the API the app would ask itself, a recent one, and one that does not predate a vote
+  // (a visit that started on the home page, went to a law page and voted there)
+  const usable = early && early.url === `${API_BASE_URL}/api/v1/law-of-day` && Date.now() - early.startedAt <= EARLY_LAW_MAX_AGE_MS && !votedSince(early.startedAt);
   return usable ? early : null;
 }
 

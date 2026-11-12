@@ -9,6 +9,7 @@ vi.mock('@sentry/browser', () => ({
 
 import * as Sentry from '@sentry/browser';
 import { fetchAPI, fetchDuplicateCandidates, fetchLaw, fetchRelatedCategories, fetchRelatedLaws, fetchLaws, fetchLawOfTheDay, consumeEarlyLawOfTheDay, peekEarlyLawOfTheDay, fetchTopVoted, fetchTrending, fetchRecentlyAdded, fetchCategories, fetchSuggestions } from '../src/utils/api.ts';
+import { LAST_VOTE_AT_KEY } from '../src/utils/recent-vote.ts';
 
 describe('API utilities', () => {
   let fetchSpy: MockInstance;
@@ -533,6 +534,110 @@ describe('API utilities', () => {
         limit: 1,
         offset: 0
       });
+    });
+  });
+
+  describe('fetchAPI fetch options', () => {
+    it('passes extra fetch options such as cache through', async () => {
+      fetchSpy.mockResolvedValue({ ok: true, headers: new Headers({ 'content-type': 'application/json' }), json: async () => ({}) });
+
+      await fetchAPI('/api/v1/x', {}, { cache: 'no-cache' });
+
+      expect(fetchSpy.mock.calls[0]![1]).toMatchObject({ cache: 'no-cache' });
+    });
+
+    it('sets no cache mode by default', async () => {
+      fetchSpy.mockResolvedValue({ ok: true, headers: new Headers({ 'content-type': 'application/json' }), json: async () => ({}) });
+
+      await fetchAPI('/api/v1/x');
+
+      expect(fetchSpy.mock.calls[0]![1]).not.toHaveProperty('cache');
+    });
+  });
+
+  describe('Law of the Day after a vote', () => {
+    const lawBody = { law: { id: 9, text: 'Fresh law.' }, featured_date: '2026-11-12' };
+
+    beforeEach(() => {
+      localStorage.clear();
+      fetchSpy.mockResolvedValue({ ok: true, headers: new Headers({ 'content-type': 'application/json' }), json: async () => lawBody });
+    });
+
+    afterEach(() => {
+      localStorage.clear();
+      delete window.__earlyLawOfDay;
+    });
+
+    it('uses the HTTP cache when the visitor has not voted lately', async () => {
+      await fetchLawOfTheDay();
+
+      expect(fetchSpy.mock.calls[0]![1]).not.toHaveProperty('cache');
+    });
+
+    it('asks the network for the law within a minute of a vote, so the count includes it', async () => {
+      localStorage.setItem(LAST_VOTE_AT_KEY, String(Date.now() - 5_000));
+
+      await fetchLawOfTheDay();
+
+      expect(fetchSpy.mock.calls[0]![1]).toMatchObject({ cache: 'no-cache' });
+    });
+
+    it('uses the HTTP cache again a minute after the vote', async () => {
+      localStorage.setItem(LAST_VOTE_AT_KEY, String(Date.now() - 60_000));
+
+      await fetchLawOfTheDay();
+
+      expect(fetchSpy.mock.calls[0]![1]).not.toHaveProperty('cache');
+    });
+
+    it('does not adopt an early result that was fetched before the vote, and fetches fresh instead', async () => {
+      const preVoteLaw = { id: 5, text: 'Pre-vote law.', upvotes: 3, downvotes: 0 };
+      window.__earlyLawOfDay = {
+        law: preVoteLaw,
+        url: '/api/v1/law-of-day',
+        startedAt: Date.now() - 20_000,
+        promise: Promise.resolve(preVoteLaw),
+      };
+      localStorage.setItem(LAST_VOTE_AT_KEY, String(Date.now() - 5_000));
+
+      expect(peekEarlyLawOfTheDay()).toBeNull();
+      const result = await fetchLawOfTheDay();
+
+      expect(window.__earlyLawOfDay).toBeUndefined();
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy.mock.calls[0]![1]).toMatchObject({ cache: 'no-cache' });
+      expect(result.data[0]).toEqual(lawBody.law);
+    });
+
+    it('fetches fresh when the early request failed and the visitor voted a moment ago', async () => {
+      window.__earlyLawOfDay = { law: null, url: '/api/v1/law-of-day', startedAt: Date.now(), promise: Promise.resolve(null) };
+      localStorage.setItem(LAST_VOTE_AT_KEY, String(Date.now() - 5_000));
+
+      const result = await fetchLawOfTheDay();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy.mock.calls[0]![1]).toMatchObject({ cache: 'no-cache' });
+      expect(result.data[0]).toEqual(lawBody.law);
+    });
+
+    it('still adopts a fresh early result when localStorage cannot be read', () => {
+      const law = { id: 5, text: 'Early law.', upvotes: 4, downvotes: 0 };
+      window.__earlyLawOfDay = { law, url: '/api/v1/law-of-day', startedAt: Date.now(), promise: Promise.resolve(law) };
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('denied'); });
+
+      expect(peekEarlyLawOfTheDay()).toBe(law);
+    });
+
+    it('still adopts an early result that was fetched after the vote', async () => {
+      localStorage.setItem(LAST_VOTE_AT_KEY, String(Date.now() - 5_000));
+      const law = { id: 5, text: 'Post-vote law.', upvotes: 4, downvotes: 0 };
+      window.__earlyLawOfDay = { law, url: '/api/v1/law-of-day', startedAt: Date.now() - 1_000, promise: Promise.resolve(law) };
+
+      expect(peekEarlyLawOfTheDay()).toBe(law);
+      const result = await fetchLawOfTheDay();
+
+      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(result.data[0]).toBe(law);
     });
   });
 

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { VoteType } from '../src/types/app.d.ts';
 import { getUserVote, voteLaw, unvoteLaw, toggleVote } from '../src/utils/voting.ts';
+import { votedWithinCacheWindow } from '../src/utils/recent-vote.ts';
 
 // Mock constants
 vi.mock('../src/utils/constants.ts', async (importOriginal) => {
@@ -115,6 +116,29 @@ describe('Voting utilities', () => {
       expect(getUserVote(123)).toBe('up');
     });
 
+    it('records the time of the vote, so the Law of the Day is fetched fresh for the next minute', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        json: async () => ({ upvotes: 11, downvotes: 2 })
+      } as unknown as Response);
+
+      await voteLaw(123, 'up');
+
+      expect(votedWithinCacheWindow()).toBe(true);
+    });
+
+    it('does not record a vote that failed', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ error: 'boom' })
+      } as unknown as Response);
+
+      await expect(voteLaw(123, 'up')).rejects.toThrow();
+
+      expect(votedWithinCacheWindow()).toBe(false);
+    });
+
     it('successfully votes down', async () => {
       fetchSpy.mockResolvedValue({
         ok: true,
@@ -192,6 +216,29 @@ describe('Voting utilities', () => {
       expect(getUserVote(123)).toBeNull();
     });
 
+    it('does not record a removal that failed', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ error: 'boom' })
+      } as unknown as Response);
+
+      await expect(unvoteLaw(123)).rejects.toThrow();
+
+      expect(votedWithinCacheWindow()).toBe(false);
+    });
+
+    it('records the time of the removal, so the Law of the Day is fetched fresh for the next minute', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        json: async () => ({ upvotes: 10, downvotes: 2 })
+      } as unknown as Response);
+
+      await unvoteLaw(123);
+
+      expect(votedWithinCacheWindow()).toBe(true);
+    });
+
     it('handles error response with error property', async () => {
       fetchSpy.mockResolvedValue({
         ok: false,
@@ -244,6 +291,21 @@ describe('Voting utilities', () => {
       const result = await toggleVote(123, 'up');
       expect(result).toEqual({ upvotes: 11, downvotes: 2 });
       expect(getUserVote(123)).toBe('up');
+    });
+
+    it('marks the vote time for an added, a switched and a removed vote', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        json: async () => ({ upvotes: 11, downvotes: 2 })
+      } as unknown as Response);
+
+      for (const voteType of ['up', 'down', 'down'] as const) {
+        localStorage.removeItem('murphy_last_vote_at');
+
+        await toggleVote(123, voteType);
+
+        expect(votedWithinCacheWindow()).toBe(true);
+      }
     });
 
     it('removes vote when clicking same vote type', async () => {
