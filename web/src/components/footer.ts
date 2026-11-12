@@ -1,6 +1,6 @@
 import templateHtml from '@components/templates/footer.html?raw';
 import { APP_VERSION } from '@utils/app-version.ts';
-import { ensureAdsense } from '@utils/third-party.ts';
+import { ensureAdsense, scheduleWhenIdle } from '@utils/third-party.ts';
 import { hasMinimumContent } from '@utils/ads.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { isKindleBrowser } from '@utils/legacy-display.ts';
@@ -67,14 +67,6 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
       }
     };
 
-    const defer = (cb: () => void) => {
-      if (typeof window.requestIdleCallback === 'function') {
-        window.requestIdleCallback(cb, { timeout: 1500 });
-      } else {
-        window.setTimeout(cb, 1200);
-      }
-    };
-
     const scheduleAd = () => {
       // Hide the "Advertisement" placeholder until we are about to load; show only when triggering.
       adHost.classList.add('hidden');
@@ -91,8 +83,6 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
         }, { rootMargin: '0px 0px 200px 0px' });
 
         observer.observe(footer);
-      } else {
-        defer(showShellAndLoadAd);
       }
     };
 
@@ -111,7 +101,15 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
 
       scheduleAd();
 
-      const triggerOnce = () => {
+      // The ad no longer waits for a click or keystroke: it loads on its own once the page has loaded and
+      // the browser is idle. This moves the start off the first interaction; it does not guarantee the work
+      // never overlaps input (an idle callback with a timeout can fire on a busy thread, and the ad
+      // iframe renders when the ad response arrives).
+      scheduleWhenIdle(() => {
+        // Skip if the ad already loaded (footer scrolled near view) or this footer was replaced by navigation
+        if (adHost.dataset.loaded === 'true' || !footer.isConnected) {
+          return;
+        }
         // Re-check content at trigger time in case page changed
         const mainEl = document.querySelector<HTMLElement>('main');
         if (!mainEl || !hasMinimumContent(mainEl)) {
@@ -119,11 +117,7 @@ export function Footer({ onNavigate, hideAds = false }: { onNavigate: OnNavigate
           return;
         }
         showShellAndLoadAd();
-      };
-
-      window.addEventListener('pointerdown', triggerOnce, { once: true });
-      window.addEventListener('keydown', triggerOnce, { once: true });
-      window.addEventListener('scroll', triggerOnce, { once: true, passive: true });
+      });
     };
 
     footer.addEventListener('adslot:init', () => {

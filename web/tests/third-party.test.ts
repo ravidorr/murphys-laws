@@ -1,8 +1,28 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ensureAdsense, initAnalyticsBootstrap, loadScript, shouldLoadThirdParty, toAbsoluteUrl } from '../src/utils/third-party.ts';
+import { ANALYTICS_CEILING_MS, ensureAdsense, initAnalyticsBootstrap, loadScript, scheduleWhenIdle, shouldLoadThirdParty, toAbsoluteUrl } from '../src/utils/third-party.ts';
 
 /** Window plus analytics globals; Vitest's globalThis.window type doesn't merge with src/types/global.d.ts */
 type WindowWithAnalytics = Window & { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void };
+
+type IdleWindow = { requestIdleCallback?: typeof window.requestIdleCallback };
+
+let idleQueue: Array<() => void> = [];
+
+/** Replaces requestIdleCallback with a queue the test drains by hand, so "the browser went idle" is explicit. */
+function installIdleQueue(): void {
+  idleQueue = [];
+  (window as unknown as IdleWindow).requestIdleCallback = ((callback: IdleRequestCallback) => {
+    idleQueue.push(() => callback({ didTimeout: false, timeRemaining: () => 50 }));
+    return idleQueue.length;
+  }) as typeof window.requestIdleCallback;
+}
+
+/** Runs every callback queued with requestIdleCallback, as the browser would once idle. */
+function flushIdle(): void {
+  const queued = idleQueue;
+  idleQueue = [];
+  queued.forEach((callback) => callback());
+}
 
 describe('third-party utilities', () => {
   it('loads third-party scripts only on the canonical production host outside tests', () => {
@@ -224,13 +244,18 @@ describe('third-party utilities', () => {
       if (globalThis.window) {
         w.dataLayer = undefined;
         w.gtag = undefined;
-        w.requestIdleCallback = undefined;
       }
+      installIdleQueue();
 
       addEventListenerSpy = vi.spyOn(globalThis as unknown as { addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => void }, 'addEventListener');
     });
 
     afterEach(() => {
+      // Remove load listeners a started module left on window so they cannot fire in a later test
+      addEventListenerSpy.mock.calls
+        .filter((call: unknown[]) => call[0] === 'load')
+        .forEach((call: unknown[]) => window.removeEventListener('load', call[1] as EventListener));
+
       // Restore spies
       if (addEventListenerSpy) {
         addEventListenerSpy.mockRestore();
@@ -246,9 +271,7 @@ describe('third-party utilities', () => {
         if (originalGtag !== undefined) {
           w.gtag = originalGtag;
         }
-        if (originalRequestIdleCallback !== undefined) {
-          w.requestIdleCallback = originalRequestIdleCallback;
-        }
+        w.requestIdleCallback = originalRequestIdleCallback;
       }
     });
 
@@ -264,19 +287,83 @@ describe('third-party utilities', () => {
       g.window = savedWindow;
     });
 
-    it('sets up interaction listeners on first call', () => {
-      initAnalyticsBootstrap();
+    it('does not wait for a user interaction', async () => {
+      vi.resetModules();
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
 
-      // Verify listeners were added for pointerdown, keydown, and scroll
-      const calls = addEventListenerSpy.mock.calls;
-      const eventTypes = calls.map((call: unknown[]) => call[0] as string);
-      
-      expect(eventTypes).toContain('pointerdown');
-      expect(eventTypes).toContain('keydown');
-      expect(eventTypes).toContain('scroll');
+      freshInit();
+
+      const eventTypes = addEventListenerSpy.mock.calls.map((call: unknown[]) => call[0] as string);
+
+      // It schedules the load itself instead of listening for the visitor
+      expect(idleQueue).toHaveLength(1);
+      expect(eventTypes).not.toContain('pointerdown');
+      expect(eventTypes).not.toContain('keydown');
+      expect(eventTypes).not.toContain('scroll');
     });
 
-    it('sets up idle callback fallback when available', async () => {
+    it('leaves everything alone when third-party loading is disabled', async () => {
+      vi.resetModules();
+      vi.stubEnv('MODE', 'production');
+      vi.stubEnv('PROD', false);
+      const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+      try {
+        const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+
+        freshInit();
+
+        expect(idleQueue).toHaveLength(0);
+        expect(setTimeoutSpy).not.toHaveBeenCalled();
+        expect(addEventListenerSpy.mock.calls.some((call: unknown[]) => call[0] === 'load')).toBe(false);
+      } finally {
+        setTimeoutSpy.mockRestore();
+        vi.unstubAllEnvs();
+      }
+    });
+
+    it('does not load analytics before the browser is idle', async () => {
+      vi.resetModules();
+      document.querySelectorAll('script[src*="googletagmanager"]').forEach((script) => script.remove());
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+
+      freshInit();
+      window.dispatchEvent(new Event('pointerdown'));
+      window.dispatchEvent(new Event('keydown'));
+      // A listener on document (not window) would also see these bubbling events
+      document.body.dispatchEvent(new Event('keydown', { bubbles: true }));
+      document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      document.body.dispatchEvent(new Event('scroll', { bubbles: true }));
+
+      expect(document.querySelector('script[src*="googletagmanager"]')).toBeNull();
+
+      flushIdle();
+
+      expect(document.querySelectorAll('script[src*="googletagmanager"]')).toHaveLength(1);
+    });
+
+    it('waits for the load event when the document is still loading', async () => {
+      vi.resetModules();
+      document.querySelectorAll('script[src*="googletagmanager"]').forEach((script) => script.remove());
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+      const readyState = vi.spyOn(document, 'readyState', 'get').mockReturnValue('loading');
+
+      try {
+        freshInit();
+        expect(idleQueue).toHaveLength(0);
+        expect(addEventListenerSpy.mock.calls.some((call: unknown[]) => call[0] === 'load')).toBe(true);
+
+        window.dispatchEvent(new Event('load'));
+        expect(idleQueue).toHaveLength(1);
+        expect(document.querySelector('script[src*="googletagmanager"]')).toBeNull();
+
+        flushIdle();
+        expect(document.querySelectorAll('script[src*="googletagmanager"]')).toHaveLength(1);
+      } finally {
+        readyState.mockRestore();
+      }
+    });
+
+    it('schedules the load with requestIdleCallback when available', async () => {
       // Reload module to reset state
       vi.resetModules();
       const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
@@ -289,53 +376,163 @@ describe('third-party utilities', () => {
 
       freshInit();
 
-      // requestIdleCallback should be called synchronously
-      expect(idleCallbackSpy).toHaveBeenCalled();
+      // requestIdleCallback should be called synchronously, bounded by the idle timeout
+      expect(idleCallbackSpy).toHaveBeenCalledWith(expect.any(Function), { timeout: 3000 });
     });
 
-    it('uses setTimeout fallback when requestIdleCallback not available', async () => {
+    it('uses a timer that fires at exactly 3000 ms when requestIdleCallback is not available', async () => {
+      // Reload module to reset state
+      vi.resetModules();
+      document.querySelectorAll('script[src*="googletagmanager"]').forEach((script) => script.remove());
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+      (window as unknown as IdleWindow).requestIdleCallback = undefined;
+      vi.useFakeTimers();
+
+      try {
+        freshInit();
+
+        vi.advanceTimersByTime(2999);
+        expect(document.querySelector('script[src*="googletagmanager"]')).toBeNull();
+        vi.advanceTimersByTime(1);
+        expect(document.querySelectorAll('script[src*="googletagmanager"]')).toHaveLength(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('loads analytics at the 5000 ms ceiling when the load event never comes', async () => {
+      vi.resetModules();
+      document.querySelectorAll('script[src*="googletagmanager"]').forEach((script) => script.remove());
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+      const readyState = vi.spyOn(document, 'readyState', 'get').mockReturnValue('loading');
+      vi.useFakeTimers();
+
+      try {
+        freshInit();
+
+        expect(ANALYTICS_CEILING_MS).toBe(5000);
+        vi.advanceTimersByTime(4999);
+        expect(document.querySelector('script[src*="googletagmanager"]')).toBeNull();
+        vi.advanceTimersByTime(1);
+        expect(document.querySelectorAll('script[src*="googletagmanager"]')).toHaveLength(1);
+      } finally {
+        vi.useRealTimers();
+        readyState.mockRestore();
+      }
+    });
+
+    it('does not load a second time when the load event and idle callback arrive after the ceiling', async () => {
+      vi.resetModules();
+      document.querySelectorAll('script[src*="googletagmanager"]').forEach((script) => script.remove());
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+      const readyState = vi.spyOn(document, 'readyState', 'get').mockReturnValue('loading');
+      vi.useFakeTimers();
+
+      try {
+        freshInit();
+        vi.advanceTimersByTime(5000);
+        expect(document.querySelectorAll('script[src*="googletagmanager"]')).toHaveLength(1);
+        const gtagScript = document.querySelector('script[src*="googletagmanager"]');
+
+        window.dispatchEvent(new Event('load'));
+        expect(idleQueue).toHaveLength(1);
+        flushIdle();
+
+        expect(document.querySelectorAll('script[src*="googletagmanager"]')).toHaveLength(1);
+        expect(document.querySelector('script[src*="googletagmanager"]')).toBe(gtagScript);
+      } finally {
+        vi.useRealTimers();
+        readyState.mockRestore();
+      }
+    });
+
+    it.each([
+      ['the idle load runs first and the ceiling follows', true],
+      ['the ceiling runs first and the idle load follows', false],
+    ])('configures gtag exactly once when %s', async (_name, idleFirst) => {
+      vi.resetModules();
+      document.querySelectorAll('script[src*="googletagmanager"]').forEach((script) => script.remove());
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+      const gtagSpy = vi.fn();
+      (window as WindowWithAnalytics).gtag = gtagSpy;
+      const readyState = vi.spyOn(document, 'readyState', 'get').mockReturnValue('loading');
+      vi.useFakeTimers();
+
+      try {
+        freshInit();
+        const fireIdle = () => {
+          // jsdom does not fire the real load event by itself
+          window.dispatchEvent(new Event('load'));
+          flushIdle();
+        };
+
+        if (idleFirst) {
+          fireIdle();
+          vi.advanceTimersByTime(5000);
+        } else {
+          vi.advanceTimersByTime(5000);
+          fireIdle();
+        }
+        document.querySelector('script[src*="googletagmanager"]')!.dispatchEvent(new Event('load'));
+        await vi.advanceTimersByTimeAsync(0);
+
+        const names = gtagSpy.mock.calls.map((call) => call[0]);
+        expect(names.filter((name) => name === 'js')).toHaveLength(1);
+        expect(names.filter((name) => name === 'config')).toHaveLength(1);
+      } finally {
+        vi.useRealTimers();
+        readyState.mockRestore();
+      }
+    });
+
+    it('does not load a second time when the ceiling fires after the idle load already ran', async () => {
+      vi.resetModules();
+      document.querySelectorAll('script[src*="googletagmanager"]').forEach((script) => script.remove());
+      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+      vi.useFakeTimers();
+
+      try {
+        freshInit();
+        flushIdle();
+        const win = window as WindowWithAnalytics;
+        const dataLayer = win.dataLayer;
+        const gtag = win.gtag;
+        expect(document.querySelectorAll('script[src*="googletagmanager"]')).toHaveLength(1);
+
+        vi.advanceTimersByTime(5000);
+
+        expect(document.querySelectorAll('script[src*="googletagmanager"]')).toHaveLength(1);
+        expect(win.dataLayer).toBe(dataLayer);
+        expect(win.gtag).toBe(gtag);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('initializes dataLayer once the browser is idle', async () => {
       // Reload module to reset state
       vi.resetModules();
       const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
       
-      const setTimeoutSpy = vi.spyOn(globalThis.window, 'setTimeout');
-
       freshInit();
 
-      // setTimeout should be called synchronously for idle fallback
-      expect(setTimeoutSpy).toHaveBeenCalled();
+      flushIdle();
 
-      setTimeoutSpy.mockRestore();
-    });
-
-    it('initializes dataLayer on user interaction', async () => {
-      // Reload module to reset state
-      vi.resetModules();
-      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
-      
-      freshInit();
-
-      // Simulate pointerdown event
-      const pointerdownEvent = new Event('pointerdown', { bubbles: true });
-      globalThis.window.dispatchEvent(pointerdownEvent);
-
-      // After interaction, dataLayer should be initialized
+      // Once idle, dataLayer should be initialized
       expect((globalThis.window as WindowWithAnalytics).dataLayer).toBeDefined();
       expect(Array.isArray((globalThis.window as WindowWithAnalytics).dataLayer)).toBe(true);
     });
 
-    it('initializes gtag function on user interaction', async () => {
+    it('initializes gtag function once the browser is idle', async () => {
       // Reload module to reset state
       vi.resetModules();
       const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
 
       freshInit();
 
-      // Simulate keydown event
-      const keydownEvent = new Event('keydown', { bubbles: true });
-      globalThis.window.dispatchEvent(keydownEvent);
+      flushIdle();
 
-      // After interaction, gtag should be initialized
+      // Once idle, gtag should be initialized
       expect((globalThis.window as WindowWithAnalytics).gtag).toBeDefined();
       expect(typeof (globalThis.window as WindowWithAnalytics).gtag).toBe('function');
     });
@@ -344,22 +541,10 @@ describe('third-party utilities', () => {
       vi.resetModules();
       const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
       freshInit();
-      globalThis.window.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      flushIdle();
       const win = globalThis.window as WindowWithAnalytics;
       expect(win.gtag).toBeDefined();
       expect(win.dataLayer).toBeDefined();
-    });
-
-    it('L109 B1: gtag config called after loadScript resolves', async () => {
-      vi.resetModules();
-      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
-      freshInit();
-      const gtagSpy = vi.fn();
-      (globalThis.window as WindowWithAnalytics).gtag = gtagSpy;
-      globalThis.window.dispatchEvent(new Event('scroll', { bubbles: true }));
-      await vi.waitFor(() => {
-        expect(gtagSpy.mock.calls.length).toBeGreaterThanOrEqual(0);
-      }, { timeout: 100 });
     });
 
     it('resolves ensureAdsense after timeout if adsbygoogle never appears', async () => {
@@ -429,7 +614,7 @@ describe('third-party utilities', () => {
       freshInit();
 
       // Simulate user interaction to trigger third-party loads
-      window.dispatchEvent(new Event('scroll'));
+      flushIdle();
 
       const win = window as WindowWithAnalytics;
       // Check that gtag is defined and functional
@@ -454,7 +639,7 @@ describe('third-party utilities', () => {
       const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
 
       freshInit();
-      window.dispatchEvent(new Event('pointerdown'));
+      flushIdle();
       localThis.script = document.querySelector('script[src*="googletagmanager"]') as HTMLScriptElement;
       localThis.script.dispatchEvent(new Event('load'));
       await vi.waitFor(() => {
@@ -471,31 +656,38 @@ describe('third-party utilities', () => {
       const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
 
       freshInit();
-      window.dispatchEvent(new Event('keydown'));
+      flushIdle();
       localThis.script = document.querySelector('script[src*="googletagmanager"]') as HTMLScriptElement;
       delete (window as WindowWithAnalytics).gtag;
       localThis.script.dispatchEvent(new Event('load'));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      await expect(Promise.resolve()).resolves.toBeUndefined();
+      // The load handler found no gtag and did not recreate it
+      expect((window as WindowWithAnalytics).gtag).toBeUndefined();
     });
 
-    it('removes interaction listeners after first interaction', async () => {
+    it('loads analytics only once however many times it is started', async () => {
       vi.resetModules();
+      document.querySelectorAll('script[src*="googletagmanager"]').forEach((script) => script.remove());
       const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
 
-      const removeEventSpy = vi.spyOn(window, 'removeEventListener');
+      const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
 
-      freshInit();
+      try {
+        freshInit();
+        freshInit();
 
-      // First interaction
-      window.dispatchEvent(new Event('pointerdown'));
+        // One idle callback and one ceiling timer, however many times it is started
+        expect(idleQueue).toHaveLength(1);
+        expect(setTimeoutSpy.mock.calls.filter((call) => call[1] === 5000)).toHaveLength(1);
 
-      // Listeners should be removed
-      expect(removeEventSpy).toHaveBeenCalledWith('pointerdown', expect.any(Function));
-      expect(removeEventSpy).toHaveBeenCalledWith('keydown', expect.any(Function));
-      expect(removeEventSpy).toHaveBeenCalledWith('scroll', expect.any(Function));
+        flushIdle();
+        flushIdle();
 
-      removeEventSpy.mockRestore();
+        expect(document.querySelectorAll('script[src*="googletagmanager"]')).toHaveLength(1);
+      } finally {
+        setTimeoutSpy.mockRestore();
+      }
     });
 
     it('does not reinitialize gtag if already exists', async () => {
@@ -511,32 +703,64 @@ describe('third-party utilities', () => {
       freshInit();
 
       // Trigger interaction
-      window.dispatchEvent(new Event('pointerdown'));
+      flushIdle();
 
       // gtag should still be the original function
       expect(win.gtag).toBe(existingGtag);
     });
+  });
 
-    it('does not trigger loads again if already triggered', async () => {
-      vi.resetModules();
-      const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
+  describe('scheduleWhenIdle', () => {
+    afterEach(() => {
+      installIdleQueue();
+      vi.useRealTimers();
+    });
 
-      freshInit();
+    it('defaults to the shared idle timeout', () => {
+      const spy = vi.fn(() => 1);
+      (window as unknown as { requestIdleCallback: unknown }).requestIdleCallback = spy;
 
-      const win = window as WindowWithAnalytics;
-      // First trigger via scroll
-      window.dispatchEvent(new Event('scroll'));
-      const firstDataLayerRef = win.dataLayer;
+      scheduleWhenIdle(() => undefined);
 
-      // Try to trigger again via keydown (should be no-op since already triggered)
-      window.dispatchEvent(new Event('keydown'));
+      expect(spy).toHaveBeenCalledWith(expect.any(Function), { timeout: 3000 });
+    });
 
-      // dataLayer should be the same reference
-      expect(win.dataLayer).toBe(firstDataLayerRef);
+    it('defaults to a 3000 ms timer without requestIdleCallback', () => {
+      vi.useFakeTimers();
+      (window as unknown as IdleWindow).requestIdleCallback = undefined;
+      const callback = vi.fn();
+
+      scheduleWhenIdle(callback);
+      vi.advanceTimersByTime(2999);
+      expect(callback).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+
+    it('falls back to a timer of the same length without requestIdleCallback', () => {
+      vi.useFakeTimers();
+      (window as unknown as IdleWindow).requestIdleCallback = undefined;
+      const callback = vi.fn();
+
+      scheduleWhenIdle(callback, 1234);
+      vi.advanceTimersByTime(1233);
+      expect(callback).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+
+      expect(callback).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('loadScript', () => {
+    beforeEach(() => {
+      installIdleQueue();
+    });
+
+    afterEach(() => {
+      (window as unknown as IdleWindow).requestIdleCallback = undefined;
+    });
+
     it('resolves immediately without a document', async () => {
       vi.stubGlobal('document', undefined);
 
@@ -597,7 +821,7 @@ describe('third-party utilities', () => {
       vi.resetModules();
       const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
       freshInit();
-      window.dispatchEvent(new Event('scroll'));
+      flushIdle();
       const script = document.querySelector('script[src*="googletagmanager"]') as HTMLScriptElement;
       expect(script).toBeTruthy();
       script.dispatchEvent(new Event('load', { bubbles: false }));
@@ -619,7 +843,7 @@ describe('third-party utilities', () => {
       vi.resetModules();
       const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
       freshInit();
-      window.dispatchEvent(new Event('scroll'));
+      flushIdle();
       const script = document.querySelector('script[src*="googletagmanager"]') as HTMLScriptElement;
       expect(script).toBeTruthy();
       script.dispatchEvent(new Event('error', { bubbles: false }));
@@ -628,7 +852,7 @@ describe('third-party utilities', () => {
       expect(win.gtag).toBeDefined();
     });
 
-    it('L106: sets window.gtag when undefined on first interaction', async () => {
+    it('L106: sets window.gtag when undefined once idle', async () => {
       const localThis: { win?: WindowWithAnalytics } = {};
       vi.resetModules();
       localThis.win = globalThis.window as WindowWithAnalytics;
@@ -636,7 +860,7 @@ describe('third-party utilities', () => {
       localThis.win.dataLayer = undefined;
       const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
       freshInit();
-      globalThis.window.dispatchEvent(new Event('pointerdown'));
+      flushIdle();
       expect(localThis.win.gtag).toBeDefined();
       expect(typeof localThis.win.gtag).toBe('function');
     });
@@ -646,7 +870,7 @@ describe('third-party utilities', () => {
       vi.resetModules();
       const { initAnalyticsBootstrap: freshInit } = await import('../src/utils/third-party.ts');
       freshInit();
-      globalThis.window.dispatchEvent(new Event('keydown'));
+      flushIdle();
       localThis.script = document.querySelector('script[src*="googletagmanager"]') as HTMLScriptElement;
       expect(localThis.script).toBeTruthy();
       localThis.script.dispatchEvent(new Event('error', { bubbles: false }));

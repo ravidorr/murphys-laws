@@ -94,6 +94,7 @@ export function loadScript(src: string, props: ScriptProps = {}): Promise<void> 
   });
 }
 
+// Two schedules race to call this (idle after load, and the hard ceiling), so the first one wins.
 function triggerThirdPartyLoads(): void {
   if (thirdPartyTriggered) {
     return;
@@ -110,7 +111,7 @@ function triggerThirdPartyLoads(): void {
     };
   }
 
-  // Load Google Analytics script (deferred until user interaction)
+  // Load Google Analytics script once the page has loaded and the browser is idle (or after the ceiling)
   // Catch errors silently - users with ad blockers will block this
   void loadScript(GTAG_SRC)
     .then(() => {
@@ -125,12 +126,37 @@ function triggerThirdPartyLoads(): void {
     });
 }
 
-function cleanupInteractionListeners(listener: EventListener): void {
-  window.removeEventListener('pointerdown', listener);
-  window.removeEventListener('keydown', listener);
-  window.removeEventListener('scroll', listener);
+/**
+ * Longest wait, after the window load event, before a third-party script is loaded. The browser
+ * normally picks an earlier idle moment; this only bounds the wait on a continuously busy page.
+ */
+export const THIRD_PARTY_IDLE_TIMEOUT_MS = 3000;
+
+/**
+ * Runs `callback` once the main thread is idle, at the latest after `timeoutMs`. Browsers without
+ * requestIdleCallback (Safari) get a plain timer of the same length. Both can still fire while the main
+ * thread is busy: this defers the start, it does not guarantee the work never overlaps input.
+ */
+export function scheduleWhenIdle(callback: () => void, timeoutMs: number = THIRD_PARTY_IDLE_TIMEOUT_MS): void {
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(callback, { timeout: timeoutMs });
+  } else {
+    window.setTimeout(callback, timeoutMs);
+  }
 }
 
+/**
+ * Longest wait, from the start of the page, before analytics loads even if the window load event is
+ * late (slow mobile, async ad and Pendo scripts hold it up). Keeps a visitor who taps around and leaves
+ * before load counted, as the old 5 s idle fallback did.
+ */
+export const ANALYTICS_CEILING_MS = 5000;
+
+/**
+ * Loads analytics on whichever comes first: the window load event followed by an idle moment, or the
+ * ceiling timer. It is not tied to a user interaction, so the script no longer starts on a first
+ * keystroke or tap. The loser of the race finds the guard set and does nothing.
+ */
 export function initAnalyticsBootstrap(): void {
   if (analyticsBootstrapStarted || !shouldLoadThirdParty()) {
     return;
@@ -138,24 +164,13 @@ export function initAnalyticsBootstrap(): void {
 
   analyticsBootstrapStarted = true;
 
-  const interactionListener = () => {
-    cleanupInteractionListeners(interactionListener);
-    triggerThirdPartyLoads();
-  };
+  window.setTimeout(triggerThirdPartyLoads, ANALYTICS_CEILING_MS);
+  const loadWhenIdle = () => scheduleWhenIdle(triggerThirdPartyLoads);
 
-  window.addEventListener('pointerdown', interactionListener, { once: true });
-  window.addEventListener('keydown', interactionListener, { once: true });
-  window.addEventListener('scroll', interactionListener, { once: true, passive: true });
-
-  const idleFallback = () => {
-    cleanupInteractionListeners(interactionListener);
-    triggerThirdPartyLoads();
-  };
-
-  if (typeof window.requestIdleCallback === 'function') {
-    window.requestIdleCallback(idleFallback, { timeout: 5000 });
+  if (document.readyState === 'complete') {
+    loadWhenIdle();
   } else {
-    setTimeout(idleFallback, 5000);
+    window.addEventListener('load', loadWhenIdle, { once: true });
   }
 }
 

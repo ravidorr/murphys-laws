@@ -2,6 +2,25 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import rootPackage from '../../package.json';
 import { Footer } from '../src/components/footer.js';
 
+type IdleWindow = { requestIdleCallback?: typeof window.requestIdleCallback };
+
+let idleQueue: Array<() => void> = [];
+const mountedFooters: HTMLElement[] = [];
+
+/** Runs everything queued with requestIdleCallback, as the browser would once idle. */
+function flushIdle(): void {
+  const queued = idleQueue;
+  idleQueue = [];
+  queued.forEach((callback) => callback());
+}
+
+/** Attaches a footer to the document, as the router does, so its idle ad load is not skipped as detached. */
+function mount(el: HTMLElement): HTMLElement {
+  document.body.appendChild(el);
+  mountedFooters.push(el);
+  return el;
+}
+
 interface FooterLocalThis {
   originalReadyState: string;
   mainElement: HTMLElement;
@@ -20,6 +39,11 @@ describe('Footer component', () => {
   let mainElement: HTMLElement;
 
   beforeEach(() => {
+    idleQueue = [];
+    (window as unknown as IdleWindow).requestIdleCallback = ((callback: IdleRequestCallback) => {
+      idleQueue.push(() => callback({ didTimeout: false, timeRemaining: () => 50 }));
+      return idleQueue.length;
+    }) as typeof window.requestIdleCallback;
     // Save original readyState before each test
     originalReadyState = document.readyState;
     // Reset adsbygoogle array
@@ -33,6 +57,8 @@ describe('Footer component', () => {
   });
 
   afterEach(() => {
+    (window as unknown as IdleWindow).requestIdleCallback = undefined;
+    mountedFooters.splice(0).forEach((footer) => footer.remove());
     // Restore readyState after each test (guaranteed cleanup even if test fails)
     Object.defineProperty(document, 'readyState', {
       value: originalReadyState,
@@ -184,7 +210,7 @@ describe('Footer component', () => {
     expect(window.adsbygoogle!.length).toBe(1);
   });
 
-  it('does not load ad when main is missing (L87)', () => {
+  it('does not load ad when main is missing', () => {
     if (mainElement.parentNode) mainElement.parentNode.removeChild(mainElement);
     Object.defineProperty(document, 'readyState', {
       value: 'complete',
@@ -208,7 +234,7 @@ describe('Footer component', () => {
     document.body.appendChild(mainElement);
   });
 
-  it('defer uses setTimeout when requestIdleCallback is undefined (L65 B0)', () => {
+  it('loads the ad after the idle timeout when requestIdleCallback is undefined', () => {
     Object.defineProperty(document, 'readyState', {
       value: 'complete',
       writable: true,
@@ -222,8 +248,8 @@ describe('Footer component', () => {
     win.requestIdleCallback = undefined;
     vi.useFakeTimers();
     try {
-      const el = Footer({ onNavigate: () => {} });
-      vi.advanceTimersByTime(1500);
+      const el = mount(Footer({ onNavigate: () => {} }));
+      vi.advanceTimersByTime(3000);
       const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
       expect(adSlot?.dataset.loaded).toBe('true');
     } finally {
@@ -233,7 +259,7 @@ describe('Footer component', () => {
     }
   });
 
-  it('defer uses requestIdleCallback when available (L65 B1)', () => {
+  it('schedules the ad with requestIdleCallback when IntersectionObserver is not available', () => {
     Object.defineProperty(document, 'readyState', {
       value: 'complete',
       writable: true,
@@ -257,7 +283,7 @@ describe('Footer component', () => {
     }
   });
 
-  it('handles AdSense errors gracefully (L50 catch when push throws)', () => {
+  it('handles AdSense errors gracefully when push throws', () => {
     const throwingPush = vi.fn(() => {
       throw new Error('AdSense error');
     });
@@ -271,7 +297,7 @@ describe('Footer component', () => {
     expect(throwingPush).toHaveBeenCalled();
   });
 
-  it('uses setTimeout when requestIdleCallback is not available (L65)', () => {
+  it('loads the ad after the idle timeout when requestIdleCallback is not available', () => {
     Object.defineProperty(document, 'readyState', {
       value: 'complete',
       writable: true,
@@ -285,8 +311,8 @@ describe('Footer component', () => {
     win.requestIdleCallback = undefined;
     vi.useFakeTimers();
     try {
-      localThis.el = Footer({ onNavigate: () => {} });
-      vi.advanceTimersByTime(1200);
+      localThis.el = mount(Footer({ onNavigate: () => {} }));
+      vi.advanceTimersByTime(3000);
       const adSlot = localThis.el!.querySelector<HTMLElement>('[data-ad-slot]');
       expect(adSlot?.dataset.loaded).toBe('true');
     } finally {
@@ -296,7 +322,7 @@ describe('Footer component', () => {
     }
   });
 
-  it('defers loadAd when IntersectionObserver is not available (L86)', () => {
+  it('schedules the ad on the idle timeout when IntersectionObserver is not available', () => {
     Object.defineProperty(document, 'readyState', {
       value: 'complete',
       writable: true,
@@ -309,14 +335,14 @@ describe('Footer component', () => {
     (window as unknown as { requestIdleCallback?: typeof window.requestIdleCallback }).requestIdleCallback = undefined;
     try {
       Footer({ onNavigate: () => {} });
-      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 1200);
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 3000);
     } finally {
       g.IntersectionObserver = origIO;
       setTimeoutSpy.mockRestore();
     }
   });
 
-  it('L65 B0: defer uses setTimeout when requestIdleCallback is not available', () => {
+  it('schedules the ad with setTimeout when requestIdleCallback is not available', () => {
     Object.defineProperty(document, 'readyState', {
       value: 'complete',
       writable: true,
@@ -331,7 +357,7 @@ describe('Footer component', () => {
     const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
     try {
       Footer({ onNavigate: () => {} });
-      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 1200);
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 3000);
     } finally {
       g.IntersectionObserver = origIO;
       if (origRIC !== undefined) win.requestIdleCallback = origRIC;
@@ -339,7 +365,7 @@ describe('Footer component', () => {
     }
   });
 
-  it('L86 B0: scheduleAd calls defer when IntersectionObserver is not available', () => {
+  it('schedules the idle ad load even when IntersectionObserver is not available', () => {
     Object.defineProperty(document, 'readyState', {
       value: 'complete',
       writable: true,
@@ -348,17 +374,175 @@ describe('Footer component', () => {
     const g = globalThis as unknown as { IntersectionObserver?: typeof globalThis.IntersectionObserver };
     const origIO = g.IntersectionObserver;
     g.IntersectionObserver = undefined;
-    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
     try {
-      Footer({ onNavigate: () => {} });
-      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 1200);
+      const el = mount(Footer({ onNavigate: () => {} }));
+      const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
+      expect(idleQueue).toHaveLength(1);
+      expect(adSlot?.dataset.loaded).not.toBe('true');
+
+      flushIdle();
+
+      expect(adSlot?.dataset.loaded).toBe('true');
     } finally {
       g.IntersectionObserver = origIO;
-      setTimeoutSpy.mockRestore();
     }
   });
 
-  it('L126 B0: registers load listener when readyState is not complete', () => {
+  it('does not wait for a user interaction to schedule the ad', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
+    try {
+      const el = mount(Footer({ onNavigate: () => {} }));
+      const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]')!;
+
+      // The load is scheduled for idle instead of listening for the visitor
+      expect(idleQueue).toHaveLength(1);
+      const eventTypes = addEventListenerSpy.mock.calls.map((call) => call[0]);
+      expect(eventTypes).not.toContain('pointerdown');
+      expect(eventTypes).not.toContain('keydown');
+      expect(eventTypes).not.toContain('scroll');
+
+      // Events bubbling to document (or window) do not load the ad before idle
+      document.body.dispatchEvent(new Event('keydown', { bubbles: true }));
+      document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      document.body.dispatchEvent(new Event('scroll', { bubbles: true }));
+      window.dispatchEvent(new Event('keydown'));
+      expect(adSlot.dataset.loaded).not.toBe('true');
+      expect(window.adsbygoogle).toHaveLength(0);
+
+      flushIdle();
+      expect(adSlot.dataset.loaded).toBe('true');
+    } finally {
+      addEventListenerSpy.mockRestore();
+    }
+  });
+
+  it('skips the idle ad load when the footer was replaced before the browser went idle', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const el = mount(Footer({ onNavigate: () => {} }));
+    el.remove();
+
+    flushIdle();
+
+    expect((el.querySelector('[data-ad-slot]') as HTMLElement).dataset.loaded).not.toBe('true');
+    expect(window.adsbygoogle).toHaveLength(0);
+  });
+
+  it('leaves an already loaded ad visible when the page lost its content before the browser went idle', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const el = mount(Footer({ onNavigate: () => {} }));
+    el.dispatchEvent(new Event('adslot:init'));
+    mainElement.textContent = 'Too short';
+
+    flushIdle();
+
+    // The loaded guard returns before the content check, which would have hidden the slot
+    const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]')!;
+    expect(adSlot.dataset.loaded).toBe('true');
+    expect(adSlot.classList.contains('hidden')).toBe(false);
+  });
+
+  it('loads the ad through the observer and the idle callback together with one ad and one push', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const g = globalThis as unknown as { IntersectionObserver?: typeof globalThis.IntersectionObserver };
+    const origIO = g.IntersectionObserver;
+    let fire: IntersectionObserverCallback | undefined;
+    g.IntersectionObserver = class StubObserver {
+      constructor(callback: IntersectionObserverCallback) {
+        fire = callback;
+      }
+      observe = vi.fn();
+      disconnect = vi.fn();
+    } as unknown as typeof IntersectionObserver;
+    try {
+      const el = mount(Footer({ onNavigate: () => {} }));
+      fire!([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+
+      flushIdle();
+
+      expect(el.querySelectorAll('ins.adsbygoogle')).toHaveLength(1);
+      expect(window.adsbygoogle).toHaveLength(1);
+    } finally {
+      g.IntersectionObserver = origIO;
+    }
+  });
+
+  it('keeps the ad unloaded when the idle callback fires before the footer is mounted, then loads it once mounted', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const el = Footer({ onNavigate: () => {} });
+
+    flushIdle();
+
+    const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]')!;
+    expect(adSlot.dataset.loaded).not.toBe('true');
+
+    // The observer and adslot:init paths still work for a footer that is mounted later
+    mount(el);
+    el.dispatchEvent(new Event('adslot:init'));
+
+    expect(adSlot.dataset.loaded).toBe('true');
+    expect(el.querySelectorAll('ins.adsbygoogle')).toHaveLength(1);
+  });
+
+  it('loads the ad at exactly 3000 ms without requestIdleCallback and not a millisecond earlier', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    (window as unknown as IdleWindow).requestIdleCallback = undefined;
+    vi.useFakeTimers();
+    try {
+      const el = mount(Footer({ onNavigate: () => {} }));
+      const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]')!;
+
+      vi.advanceTimersByTime(2999);
+      expect(adSlot.dataset.loaded).not.toBe('true');
+      vi.advanceTimersByTime(1);
+
+      expect(adSlot.dataset.loaded).toBe('true');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('hides the shell instead of loading when the page lost its content before the browser went idle', () => {
+    Object.defineProperty(document, 'readyState', {
+      value: 'complete',
+      writable: true,
+      configurable: true
+    });
+    const el = mount(Footer({ onNavigate: () => {} }));
+    mainElement.textContent = 'Too short';
+
+    flushIdle();
+
+    const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]')!;
+    expect(adSlot.dataset.loaded).not.toBe('true');
+    expect(adSlot.classList.contains('hidden')).toBe(true);
+  });
+
+  it('registers a load listener when readyState is not complete', () => {
     const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
     Object.defineProperty(document, 'readyState', {
       value: 'loading',
@@ -373,7 +557,7 @@ describe('Footer component', () => {
     }
   });
 
-  it('adds load listener when readyState is not complete (L126)', () => {
+  it('adds a one-shot load listener when readyState is not complete', () => {
     window.adsbygoogle = [];
     localThis.originalReadyState = document.readyState;
     const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
@@ -707,7 +891,7 @@ describe('Footer component', () => {
     });
 
     // Should use setTimeout instead of requestIdleCallback
-    expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 1200);
+    expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 3000);
 
     // Restore
     Object.defineProperty(document, 'readyState', {
@@ -751,7 +935,7 @@ describe('Footer component', () => {
     });
 
     // Should use requestIdleCallback
-    expect(requestIdleCallbackSpy).toHaveBeenCalledWith(expect.any(Function), { timeout: 1500 });
+    expect(requestIdleCallbackSpy).toHaveBeenCalledWith(expect.any(Function), { timeout: 3000 });
 
     // Restore
     Object.defineProperty(document, 'readyState', {
@@ -764,7 +948,7 @@ describe('Footer component', () => {
     }
   });
 
-  it('handles user interactions to trigger ad loading', () => {
+  it('loads the ad once the browser is idle, not on a user interaction', () => {
     window.adsbygoogle = [];
     const originalReadyState = document.readyState;
 
@@ -774,14 +958,18 @@ describe('Footer component', () => {
       configurable: true
     });
 
-    const el = Footer({
+    const el = mount(Footer({
       onNavigate: () => { }
-    });
+    }));
 
-    // Simulate pointerdown event
+    // A user interaction must not load the ad on its own
     window.dispatchEvent(new Event('pointerdown'));
+    expect((el.querySelector('[data-ad-slot]') as HTMLElement).dataset.loaded).not.toBe('true');
 
-    // Ad should be loaded after user interaction
+    // It loads once the page has loaded and the browser is idle
+    flushIdle();
+
+    // Ad should be loaded
     const adSlot = el.querySelector('[data-ad-slot]') as HTMLElement | null;
     expect(adSlot?.dataset.loaded).toBe('true');
 
@@ -829,17 +1017,17 @@ describe('Footer component', () => {
     });
   });
 
-  it('does not reload an ad when a later user interaction occurs', () => {
+  it('does not reload an ad when the idle callback runs later', () => {
     Object.defineProperty(document, 'readyState', {
       value: 'complete',
       writable: true,
       configurable: true
     });
-    const el = Footer({ onNavigate: () => {} });
+    const el = mount(Footer({ onNavigate: () => {} }));
     el.dispatchEvent(new Event('adslot:init'));
     const initialAdCount = window.adsbygoogle!.length;
 
-    window.dispatchEvent(new Event('pointerdown'));
+    flushIdle();
 
     expect(window.adsbygoogle!.length).toBe(initialAdCount);
   });
@@ -861,7 +1049,7 @@ describe('Footer component', () => {
     global.IntersectionObserver = originalIntersectionObserver;
   });
 
-  it('does not load again when a deferred fallback runs after the ad is loaded', () => {
+  it('does not load again when the 3000 ms fallback timer runs after the ad is loaded', () => {
     vi.useFakeTimers();
     Object.defineProperty(document, 'readyState', {
       value: 'complete',
@@ -869,23 +1057,28 @@ describe('Footer component', () => {
       configurable: true
     });
     const global = globalThis as unknown as { IntersectionObserver?: typeof globalThis.IntersectionObserver };
-    const windowWithIdle = window as unknown as { requestIdleCallback?: typeof window.requestIdleCallback };
     const originalIntersectionObserver = global.IntersectionObserver;
-    const originalRequestIdleCallback = windowWithIdle.requestIdleCallback;
     global.IntersectionObserver = undefined;
-    windowWithIdle.requestIdleCallback = undefined;
+    (window as unknown as IdleWindow).requestIdleCallback = undefined;
     try {
-      const el = Footer({ onNavigate: () => {} });
+      const el = mount(Footer({ onNavigate: () => {} }));
       el.dispatchEvent(new Event('adslot:init'));
-      const initialAdCount = window.adsbygoogle!.length;
+      const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]')!;
+      expect(adSlot.dataset.loaded).toBe('true');
+      expect(window.adsbygoogle).toHaveLength(1);
+      expect(vi.getTimerCount()).toBe(1);
 
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(2999);
+      expect(vi.getTimerCount()).toBe(1);
+      vi.advanceTimersByTime(1);
 
-      expect(window.adsbygoogle!.length).toBe(initialAdCount);
+      // The timer ran and found the ad already loaded
+      expect(vi.getTimerCount()).toBe(0);
+      expect(window.adsbygoogle).toHaveLength(1);
+      expect(el.querySelectorAll('ins.adsbygoogle')).toHaveLength(1);
     } finally {
       vi.useRealTimers();
       global.IntersectionObserver = originalIntersectionObserver;
-      if (originalRequestIdleCallback !== undefined) windowWithIdle.requestIdleCallback = originalRequestIdleCallback;
     }
   });
 
@@ -903,7 +1096,8 @@ describe('Footer component', () => {
     
     // Use vi.doMock() for dynamic mocking (not hoisted like vi.mock())
     vi.doMock('../src/utils/third-party.ts', () => ({
-      ensureAdsense: vi.fn().mockRejectedValue(new Error('Failed to load AdSense'))
+      ensureAdsense: vi.fn().mockRejectedValue(new Error('Failed to load AdSense')),
+      scheduleWhenIdle: vi.fn()
     }));
 
     // Now import Footer which will use the mocked module
@@ -930,17 +1124,17 @@ describe('Footer component', () => {
       configurable: true
     });
 
-    const el = Footer({
+    const el = mount(Footer({
       onNavigate: () => { }
-    });
+    }));
 
     const adSlot = el.querySelector('[data-ad-slot]') as HTMLElement | null;
     expect(adSlot).toBeTruthy();
     // Pre-set the loaded flag before primeAd would run
     adSlot!.dataset.loaded = 'true';
 
-    // Trigger primeAd via scroll
-    window.dispatchEvent(new Event('scroll'));
+    // Run the idle callback
+    flushIdle();
 
     // Ad should remain marked as loaded but no new ad created
     expect(adSlot!.dataset.loaded).toBe('true');
@@ -1034,12 +1228,12 @@ describe('Footer component', () => {
       configurable: true
     });
 
-    const el = Footer({
+    const el = mount(Footer({
       onNavigate: () => { }
-    });
+    }));
 
     // primeAd should check content and skip loading
-    window.dispatchEvent(new Event('scroll'));
+    flushIdle();
 
     const adSlot = el.querySelector('[data-ad-slot]') as HTMLElement | null;
     // Ad should not be loaded due to insufficient content
@@ -1051,7 +1245,7 @@ describe('Footer component', () => {
     emptyMain.remove();
   });
 
-  it('loadAd catch when push throws (L49)', () => {
+  it('does not throw when adsbygoogle.push throws on the idle load', () => {
     window.adsbygoogle = [];
     const badPush = vi.fn().mockImplementation(() => {
       throw new Error('Ad blocked');
@@ -1068,8 +1262,8 @@ describe('Footer component', () => {
       configurable: true
     });
 
-    const el = Footer({ onNavigate: () => { } });
-    window.dispatchEvent(new Event('scroll'));
+    mount(Footer({ onNavigate: () => { } }));
+    flushIdle();
 
     expect(badPush).toHaveBeenCalled();
     window.adsbygoogle = [];

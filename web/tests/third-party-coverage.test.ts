@@ -1,10 +1,26 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
+type IdleWindow = { requestIdleCallback?: typeof window.requestIdleCallback };
+
+let idleQueue: Array<() => void> = [];
+
+/** Runs everything queued with requestIdleCallback, as the browser would once idle. */
+function flushIdle(): void {
+  const queued = idleQueue;
+  idleQueue = [];
+  queued.forEach((callback) => callback());
+}
+
 describe('third-party utils coverage', () => {
   let originalDocument;
   let originalWindow;
 
   beforeEach(() => {
+    idleQueue = [];
+    (window as unknown as IdleWindow).requestIdleCallback = ((callback: IdleRequestCallback) => {
+      idleQueue.push(() => callback({ didTimeout: false, timeRemaining: () => 50 }));
+      return idleQueue.length;
+    }) as typeof window.requestIdleCallback;
     // JSDOM persistence workaround
     document.head.innerHTML = '';
     document.body.innerHTML = '';
@@ -13,6 +29,7 @@ describe('third-party utils coverage', () => {
   });
 
   afterEach(() => {
+    (window as unknown as IdleWindow).requestIdleCallback = undefined;
     document.head.innerHTML = '';
     document.body.innerHTML = '';
     vi.restoreAllMocks();
@@ -44,7 +61,7 @@ describe('third-party utils coverage', () => {
     
     // Trigger load
     initAnalyticsBootstrap();
-    window.dispatchEvent(new Event('scroll'));
+    flushIdle();
     
     // Verify script didn't duplicate
     const scripts = document.querySelectorAll('script[src*="googletagmanager"]');
@@ -68,7 +85,7 @@ describe('third-party utils coverage', () => {
   it('loadScript accepts props and sets attributes', async () => {
     const { initAnalyticsBootstrap } = await import('../src/utils/third-party.ts');
     initAnalyticsBootstrap();
-    window.dispatchEvent(new Event('scroll'));
+    flushIdle();
     
     const script = document.querySelector('script[src*="googletagmanager"]') as HTMLScriptElement | null;
     expect(script).not.toBeNull();
@@ -91,20 +108,15 @@ describe('third-party utils coverage', () => {
     expect(spy.mock.calls.length).toBe(count);
   });
 
-  it('triggerThirdPartyLoads returns early if already triggered', async () => {
+  it('starting analytics twice schedules a single script load', async () => {
     const { initAnalyticsBootstrap } = await import('../src/utils/third-party.ts');
-    
-    // First trigger via scroll
+
     initAnalyticsBootstrap();
-    window.dispatchEvent(new Event('scroll'));
-    
-    const scriptsCount = document.querySelectorAll('script').length;
-    
-    // Try to trigger again via another event
-    window.dispatchEvent(new Event('keydown'));
-    
-    // Should not have added more scripts
-    expect(document.querySelectorAll('script').length).toBe(scriptsCount);
+    initAnalyticsBootstrap();
+    expect(idleQueue).toHaveLength(1);
+    flushIdle();
+
+    expect(document.querySelectorAll('script[src*="googletagmanager"]')).toHaveLength(1);
   });
 
   it('uses requestIdleCallback when available', async () => {
@@ -300,7 +312,7 @@ describe('third-party utils coverage', () => {
     initAnalyticsBootstrap();
     
     // Trigger third-party loads
-    window.dispatchEvent(new Event('scroll'));
+    flushIdle();
     
     // Find the gtag script and simulate error (ad blocker scenario)
     const script = document.querySelector('script[src*="googletagmanager"]');
@@ -324,7 +336,7 @@ describe('third-party utils coverage', () => {
 
     const { initAnalyticsBootstrap } = await import('../src/utils/third-party.ts');
     initAnalyticsBootstrap();
-    window.dispatchEvent(new Event('scroll'));
+    flushIdle();
 
     const script = document.querySelector('script[src*="googletagmanager"]') as HTMLScriptElement | null;
     expect(script).toBeTruthy();

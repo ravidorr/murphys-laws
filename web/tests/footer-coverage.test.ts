@@ -1,11 +1,35 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Footer } from '../src/components/footer.js';
 
+type IdleWindow = { requestIdleCallback?: typeof window.requestIdleCallback };
+
+let idleQueue: Array<() => void> = [];
+const mountedFooters: HTMLElement[] = [];
+
+/** Runs everything queued with requestIdleCallback, as the browser would once idle. */
+function flushIdle(): void {
+  const queued = idleQueue;
+  idleQueue = [];
+  queued.forEach((callback) => callback());
+}
+
+/** Attaches a footer to the document, as the router does, so its idle ad load is not skipped as detached. */
+function mount(el: HTMLElement): HTMLElement {
+  document.body.appendChild(el);
+  mountedFooters.push(el);
+  return el;
+}
+
 describe('Footer component - Coverage', () => {
   let originalReadyState: string;
   let mainElement: HTMLElement;
 
   beforeEach(() => {
+    idleQueue = [];
+    (window as unknown as IdleWindow).requestIdleCallback = ((callback: IdleRequestCallback) => {
+      idleQueue.push(() => callback({ didTimeout: false, timeRemaining: () => 50 }));
+      return idleQueue.length;
+    }) as typeof window.requestIdleCallback;
     originalReadyState = document.readyState;
     window.adsbygoogle = [];
     
@@ -16,6 +40,8 @@ describe('Footer component - Coverage', () => {
   });
 
   afterEach(() => {
+    (window as unknown as IdleWindow).requestIdleCallback = undefined;
+    mountedFooters.splice(0).forEach((footer) => footer.remove());
     Object.defineProperty(document, 'readyState', {
       value: originalReadyState,
       writable: true,
@@ -78,22 +104,22 @@ describe('Footer component - Coverage', () => {
     expect(adSlot?.dataset.loaded).not.toBe('true');
   });
 
-  it('does not load ad if content becomes insufficient between prime and trigger', () => {
+  it('does not load ad if content becomes insufficient between prime and the idle load', () => {
     Object.defineProperty(document, 'readyState', {
       value: 'complete',
       writable: true,
       configurable: true
     });
 
-    const el = Footer({ onNavigate: () => {} });
+    const el = mount(Footer({ onNavigate: () => {} }));
     
-    // Ad should be primed now (listeners attached)
+    // Ad should be primed now (idle load scheduled)
     
     // NOW remove content to simulate dynamic page change (e.g. SPA navigation)
     mainElement.textContent = 'Too short';
     
-    // Trigger via interaction
-    window.dispatchEvent(new Event('pointerdown'));
+    // Let the browser go idle
+    flushIdle();
     
     // Ad slot should NOT be loaded
     const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
@@ -125,11 +151,11 @@ describe('Footer component - Coverage', () => {
 
     mainElement.textContent = 'Short';
 
-    const el = Footer({ onNavigate: () => {} });
+    const el = mount(Footer({ onNavigate: () => {} }));
 
-    // Listeners should NOT be attached
-    // We can verify this by triggering an event and checking if ad loads
-    window.dispatchEvent(new Event('pointerdown'));
+    // Nothing should have been scheduled
+    expect(idleQueue).toHaveLength(0);
+    flushIdle();
 
     const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
     expect(adSlot?.dataset.loaded).not.toBe('true');
@@ -144,8 +170,9 @@ describe('Footer component - Coverage', () => {
 
     document.body.removeChild(mainElement);
 
-    const el = Footer({ onNavigate: () => {} });
-    window.dispatchEvent(new Event('pointerdown'));
+    const el = mount(Footer({ onNavigate: () => {} }));
+    expect(idleQueue).toHaveLength(0);
+    flushIdle();
 
     const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
     expect(adSlot?.dataset.loaded).not.toBe('true');
@@ -196,8 +223,8 @@ describe('Footer component - Coverage', () => {
 
     vi.useFakeTimers();
     try {
-      const el = Footer({ onNavigate: () => {} });
-      vi.advanceTimersByTime(1500);
+      const el = mount(Footer({ onNavigate: () => {} }));
+      vi.advanceTimersByTime(3000);
       const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
       expect(adSlot?.dataset.loaded).toBe('true');
     } finally {
@@ -278,14 +305,15 @@ describe('Footer component - Coverage', () => {
     vi.restoreAllMocks();
   });
 
-  it('triggerOnce runs loadAd when main has sufficient content (L126)', () => {
+  it('the idle callback loads the ad when main has sufficient content', () => {
     Object.defineProperty(document, 'readyState', {
       value: 'complete',
       writable: true,
       configurable: true
     });
-    const el = Footer({ onNavigate: () => {} });
-    window.dispatchEvent(new Event('pointerdown'));
+    const el = mount(Footer({ onNavigate: () => {} }));
+    expect(el.querySelector<HTMLElement>('[data-ad-slot]')?.dataset.loaded).not.toBe('true');
+    flushIdle();
     const adSlot = el.querySelector<HTMLElement>('[data-ad-slot]');
     expect(adSlot?.dataset.loaded).toBe('true');
   });
