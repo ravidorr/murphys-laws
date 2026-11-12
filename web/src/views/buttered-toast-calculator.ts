@@ -302,6 +302,16 @@ export function ButteredToastCalculator(): HTMLDivElement {
     updateFormula();
   }
 
+  // calculator_used only fires after a slider moves, so report the result shown on load as well:
+  // visitors who only read the default (or shared) result still reach the calculator funnel
+  trackPendoEvent('calculator_viewed', {
+    calculator: 'buttered-toast',
+    surface: 'calculator_page',
+    probability_percent: probabilityPercent,
+    risk_level: riskLevel,
+    from_shared_link: fromSharedLink,
+  });
+
   const scenarioLinks = el.querySelector<HTMLElement>('[data-calculator-scenario-links]')!;
   scenarioLinks.innerHTML = renderInternalLinkList(getCalculatorScenarioLinks('buttered-toast'));
 

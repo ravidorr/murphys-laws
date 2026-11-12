@@ -24,6 +24,7 @@ export type PendoTrackEventName =
   | 'law_not_found'
   | 'law_favorite_toggled'
   | 'favorites_cleared'
+  | 'calculator_viewed'
   | 'calculator_used'
   | 'calculator_result_shared'
   | 'law_submitted'
