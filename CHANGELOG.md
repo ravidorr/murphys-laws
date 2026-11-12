@@ -292,6 +292,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Daily 404 report of 12 November 2026 (38 requests so far that day): more scanner probes are dropped and two crawler
+  typos are redirected. Dropped (`444`, logged to `scanner.log`): one spoofed-Googlebot sweep of build and secret files
+  (`/Gemfile`, `/Gemfile.lock`, `/yarn.lock`, `/Jenkinsfile`, `/app.json`, `/database.yml`, `/local.py`,
+  `/local_settings.py`, `/config.py`, `/secrets.py`, `/credentials.py`, `/config/credentials.yml.enc`,
+  `/config/master.key`, `/config/environment.rb`, and a bare `/env` and `/env.txt`; the same names came from 8 to 12
+  addresses since 29 October), Microsoft Remote Desktop Web Access (`/RDWeb`, 21 requests from 7 addresses) and the Metabase
+  setup-token probe `/api/session/properties` (CVE-2023-38646, 8 addresses). Each pattern is anchored to the path, so a
+  search such as `/browse?q=config.py` still passes, and the agent map is unchanged, so the Googlebot user agent itself
+  is never blocked, only these paths (the sweep's Googlebot is spoofed: its address has no reverse DNS). `/browse)` and `/categories)` now
+  redirect to `/browse` and `/categories`: `llms.txt` links them as markdown, and crawlers that keep the closing
+  parenthesis asked for the wrong URL. Left alone: `/app-ads.txt` (the apps show no ads), `/pendo.js`, the random-token
+  canaries `/envcheck-8fd5d32d5a7b.html`, `/uczhdksmg7` and `/e8ssw0odzmq` (Censys sent two of them), the stale
+  `/assets/assets/tex-chtml-*.js` (nothing in the current source loads MathJax, so no redirect target exists), a one-address
+  burst of stager-style paths (`/WuEL`, `/SiteLoader` and others). `/img/art.com_logo.gif`, the art.com logo that the
+  old site's pages and Facebook's link crawler still ask for, is restored in `web/public/img` (a 117x28 GIF, checked by
+  the legacy-image test) instead of answering 404.
+  Web bumped to `3.4.103`; root to `2.6.209`.
 - Submitting the home page "Search the Archive" box with nothing typed now opens Browse All Laws instead of quietly
   re-rendering the home page. The `archive.search` event for a blank submit reports `result: 'blank'`, so it can be told
   apart from the Browse All Laws link (`result: 'browse'`). Web bumped to `3.4.96`; root to `2.6.200`.
