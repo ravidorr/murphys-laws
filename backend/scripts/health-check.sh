@@ -93,22 +93,16 @@ check_http_endpoint() {
     # -S keeps curl's error text (-s alone hides it), which goes into the log and the alert.
     local result http_code time_total curl_error err_file
     local curl_exit=0
-    err_file=$(mktemp)
+    # Without a temporary file `2>""` would stop curl from running at all and read as a site outage.
+    err_file=$(mktemp "${TMPDIR:-/tmp}/health-check-curl.XXXXXX") || {
+        log "$name: could not create a temporary file, so the check was not run"
+        return 1
+    }
     result=$(curl -o /dev/null -sS -w "%{http_code} %{time_total}" --max-time 30 "$url" 2>"$err_file") || curl_exit=$?
     curl_error=$(head -c 300 "$err_file" | tr '\n' ' ')
     curl_error="${curl_error% }"
     rm -f "$err_file"
     read -r http_code time_total <<< "$result"
-
-    # Response time in milliseconds. bc drops the leading zero below 1 ms (".4000"), which truncates to 0;
-    # no output at all means bc failed, which is logged instead of being reported as a fast response.
-    local time_ms_raw time_ms
-    time_ms_raw=$(echo "${time_total:-0} * 1000" | bc 2>/dev/null)
-    if [ -z "$time_ms_raw" ]; then
-        log "$name: could not measure the response time (bc failed on '$time_total')"
-    fi
-    time_ms="${time_ms_raw%%.*}"
-    time_ms="${time_ms:-0}"
 
     if [ $curl_exit -ne 0 ]; then
         log "$name FAILED - curl error code: $curl_exit${curl_error:+ ($curl_error)}"
@@ -125,6 +119,34 @@ This requires immediate attention." \
         return 1
     fi
 
+    # curl exited 0, so it should have printed a three-digit status. Anything else (empty, garbled) is a broken
+    # check, reported as such instead of as an HTTP error with a blank code.
+    if [[ ! "$http_code" =~ ^[0-9]{3}$ ]]; then
+        log "$name: curl returned no usable HTTP status (output: '$result')"
+        send_alert \
+            "[CRITICAL] $name Check Failed" \
+            "The $name check could not read an HTTP status from curl, so the endpoint's state is unknown.
+
+URL: $url
+curl output: '$result'
+Time: $(date)
+
+Check the monitoring host (disk space, curl) before assuming the site is down." \
+            "${name}_check_failed"
+        return 1
+    fi
+
+    # Response time in whole milliseconds, from curl's "seconds.fraction" with plain shell arithmetic (no bc,
+    # which a minimal host may lack). Anything else leaves the time unknown, which is logged and shown as such.
+    local time_ms="" time_label="unknown"
+    if [[ "$time_total" =~ ^([0-9]+)(\.([0-9]+))?$ ]]; then
+        local fraction="${BASH_REMATCH[3]}000"
+        time_ms=$((10#${BASH_REMATCH[1]} * 1000 + 10#${fraction:0:3}))
+        time_label="${time_ms}ms"
+    else
+        log "$name: could not read the response time from curl ('$time_total')"
+    fi
+
     if [ "$http_code" != "200" ]; then
         log "$name returned HTTP $http_code (expected 200)"
         send_alert \
@@ -133,7 +155,7 @@ This requires immediate attention." \
 
 URL: $url
 HTTP Status: $http_code
-Response Time: ${time_ms}ms
+Response Time: $time_label
 Time: $(date)
 
 This requires immediate attention." \
@@ -142,7 +164,9 @@ This requires immediate attention." \
     fi
 
     # Check response time
-    if [ "$time_ms" -gt "$ALERT_THRESHOLD_MS" ]; then
+    if [ -z "$time_ms" ]; then
+        log "$name OK (HTTP $http_code) - response time unknown, slow-response check skipped"
+    elif [ "$time_ms" -gt "$ALERT_THRESHOLD_MS" ]; then
         log "$name SLOW - ${time_ms}ms (threshold: ${ALERT_THRESHOLD_MS}ms)"
         send_alert \
             "[WARNING] $name Slow Response" \

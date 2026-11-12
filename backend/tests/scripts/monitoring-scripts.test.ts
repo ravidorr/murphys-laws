@@ -601,43 +601,62 @@ describe('health-monitor.sh as cron runs it', () => {
 
 describe('health-check.sh check_http_endpoint', () => {
   // A curl that behaves like the real one where it matters here: only the LAST -w format is used, so a
-  // script that passes two never sees the first. The status, timing and exit code come from the environment.
+  // script that passes two never sees the first, and the error text appears only with -S (-s alone hides it).
+  // The status, timing, exit code and error text come from the environment; FAKE_RAW replaces the whole output.
   const FAKE_CURL = [
     '#!/bin/bash',
-    'format=""',
+    'format=""; show_error=""',
     'while [ $# -gt 0 ]; do',
-    '  if [ "$1" = "-w" ]; then format="$2"; shift; fi',
+    '  case "$1" in',
+    '    -w) format="$2"; shift ;;',
+    '    --show-error) show_error=1 ;;',
+    '    --*) ;;',
+    '    -*S*) show_error=1 ;;',
+    '  esac',
     '  shift',
     'done',
-    '[ -n "$FAKE_ERR" ] && echo "$FAKE_ERR" >&2',
-    'printf "%s" "$format" | sed -e "s/%{http_code}/$FAKE_CODE/" -e "s/%{time_total}/$FAKE_TIME/"',
+    '[ -n "$FAKE_ERR" ] && [ -n "$show_error" ] && echo "$FAKE_ERR" >&2',
+    'if [ "${FAKE_RAW+set}" = set ]; then printf "%s" "$FAKE_RAW"; else',
+    '  printf "%s" "$format" | sed -e "s/%{http_code}/$FAKE_CODE/" -e "s/%{time_total}/$FAKE_TIME/"',
+    'fi',
     'exit "${FAKE_EXIT:-0}"',
     '',
   ].join('\n');
 
-  const check = (fake: { code: string; time: string; exit?: number; err?: string; brokenBc?: boolean }) => {
-    const box = sandbox();
+  interface Fake {
+    code?: string;
+    time?: string;
+    raw?: string;
+    exit?: number;
+    err?: string;
+    brokenMktemp?: boolean;
+    runs?: number;
+    box?: Sandbox;
+  }
+
+  const check = (fake: Fake) => {
+    const box = fake.box ?? sandbox();
     writeFileSync(path.join(box.bin, 'curl'), FAKE_CURL);
     chmodSync(path.join(box.bin, 'curl'), 0o755);
-    // bc is not a development prerequisite, so the sandbox always supplies its own. The working one does the
-    // "<seconds> * 1000" the script asks for and, like bc, prints no leading zero below 1 (".4000").
-    writeFileSync(
-      path.join(box.bin, 'bc'),
-      fake.brokenBc
-        ? '#!/bin/bash\ncat >/dev/null\nexit 1\n'
-        : '#!/bin/bash\nread -r a _ b\nawk -v a="$a" -v b="$b" \'BEGIN { printf "%.4f\\n", a * b }\' | sed \'s/^0\\././\'\n',
-    );
-    chmodSync(path.join(box.bin, 'bc'), 0o755);
-    const driver = 'check_http_endpoint "https://example.test" Frontend\necho "RC=$?"\n';
+    if (fake.brokenMktemp) {
+      writeFileSync(path.join(box.bin, 'mktemp'), '#!/bin/bash\necho "mktemp: failed to create file" >&2\nexit 1\n');
+      chmodSync(path.join(box.bin, 'mktemp'), 0o755);
+    }
+    // Temporary files go to a directory of their own, so a leftover one is visible.
+    const tmp = path.join(box.root, 'tmp');
+    mkdirSync(tmp, { recursive: true });
+    const driver = 'check_http_endpoint "https://example.test" Frontend\necho "RC=$?"\n'.repeat(fake.runs ?? 1);
     const file = install(box, 'health-check.sh', throughFunction('health-check.sh', 'check_http_endpoint') + driver);
     const result = runFile(file, [], box, {
       EMAIL_TO: 'admin@example.com',
-      FAKE_CODE: fake.code,
-      FAKE_TIME: fake.time,
+      TMPDIR: tmp,
+      FAKE_CODE: fake.code ?? '200',
+      FAKE_TIME: fake.time ?? '0.100',
       FAKE_EXIT: String(fake.exit ?? 0),
       FAKE_ERR: fake.err ?? '',
+      ...(fake.raw === undefined ? {} : { FAKE_RAW: fake.raw }),
     });
-    return { result, mail: readLog(box.mailLog) };
+    return { result, mail: readLog(box.mailLog), box, tmp };
   };
 
   it('treats a 200 as healthy and reports the response time, without sending anything', () => {
@@ -647,10 +666,15 @@ describe('health-check.sh check_http_endpoint', () => {
     expect(mail).toBe('');
   });
 
-  it('reads a response faster than a millisecond as 0 ms instead of failing the time comparison', () => {
-    const { result, mail } = check({ code: '200', time: '0.0004' });
-    expect(result.stdout).toContain('Frontend OK - 0ms (HTTP 200)');
-    expect(result.stderr).not.toContain('integer expression expected');
+  it.each([
+    ['a response faster than a millisecond', '0.0004', '0ms'],
+    ['curl\'s six-decimal timing', '0.000364', '0ms'],
+    ['a whole number of seconds', '2', '2000ms'],
+    ['a long fraction, cut rather than rounded', '1.2349999', '1234ms'],
+  ])('reads %s as whole milliseconds without needing bc', (_label, time, expected) => {
+    const { result, mail } = check({ code: '200', time });
+    expect(result.stdout).toContain(`Frontend OK - ${expected} (HTTP 200)`);
+    expect(result.stderr).toBe('');
     expect(mail).toBe('');
   });
 
@@ -662,12 +686,21 @@ describe('health-check.sh check_http_endpoint', () => {
     expect(mail).toContain('Response Time: 78ms');
   });
 
+  it.each(['301', '404', '204'])('treats HTTP %s as an error, since only a 200 is healthy and redirects are not followed', (code) => {
+    const { result, mail } = check({ code });
+    expect(result.stdout).toContain('RC=1');
+    expect(mail).toContain(`[CRITICAL] Frontend Error - HTTP ${code}`);
+  });
+
   it('alerts that the endpoint is down, with curl\'s exit code, when curl cannot connect', () => {
-    const { result, mail } = check({ code: '000', time: '0.000', exit: 7 });
+    const { result, mail, box } = check({ code: '000', time: '0.000', exit: 7 });
     expect(result.stdout).toContain('RC=1');
     expect(mail).toContain('[CRITICAL] Frontend Down');
     expect(mail).toContain('Error: curl exit code 7');
     expect(mail).not.toContain('Error - HTTP');
+    // A failed connection is filed under its own key, so it cannot use up the cooldown of the HTTP-error alert.
+    expect(existsSync(path.join(box.root, 'health-check-alerts/Frontend_down'))).toBe(true);
+    expect(existsSync(path.join(box.root, 'health-check-alerts/Frontend_error'))).toBe(false);
   });
 
   it('says why curl failed, in the log and in the alert, instead of only its exit code', () => {
@@ -677,11 +710,50 @@ describe('health-check.sh check_http_endpoint', () => {
     expect(mail).toContain(`Error: curl exit code 6 (${err})`);
   });
 
-  it('logs that the response time could not be measured when bc fails, rather than reporting a fast response', () => {
-    const { result, mail } = check({ code: '200', time: '0.148', brokenBc: true });
-    expect(result.stdout).toContain("Frontend: could not measure the response time (bc failed on '0.148')");
-    expect(result.stdout).toContain('RC=0');
+  it('keeps only the first 300 bytes of curl\'s error text, on one line', () => {
+    const err = `first line\n${'x'.repeat(1000)}`;
+    const { mail } = check({ code: '000', time: '0.000', exit: 35, err });
+    const line = mail.split('\n').find((l) => l.startsWith('Error: curl exit code 35')) ?? '';
+    expect(line).toContain('first line xxx');
+    expect(line.match(/x/g)?.length).toBeLessThanOrEqual(300);
+    expect(line.endsWith(')')).toBe(true);
+  });
+
+  it('reports a check that got no usable status from curl as a failed check, never as healthy or as an HTTP error', () => {
+    for (const raw of ['', '<html>200 0.1', 'garbage']) {
+      const { result, mail } = check({ raw });
+      expect(result.stdout, `raw '${raw}'`).toContain('RC=1');
+      expect(result.stdout).not.toContain('Frontend OK');
+      expect(mail).toContain('[CRITICAL] Frontend Check Failed');
+      expect(mail).not.toContain('Error - HTTP');
+    }
+  });
+
+  it('does not run, and does not claim the site is down, when no temporary file can be made', () => {
+    const { result, mail } = check({ brokenMktemp: true });
+    expect(result.stdout).toContain('could not create a temporary file, so the check was not run');
+    expect(result.stdout).toContain('RC=1');
     expect(mail).toBe('');
+  });
+
+  it('leaves no temporary file behind, whether curl succeeds or fails', () => {
+    for (const fake of [{ code: '200' }, { code: '000', exit: 7, err: 'curl: (7) refused' }]) {
+      const { tmp } = check(fake);
+      expect(readdirSync(tmp)).toEqual([]);
+    }
+  });
+
+  it('shows the response time as unknown, and says so, when curl\'s timing cannot be read', () => {
+    const ok = check({ code: '200', time: 'abc' });
+    expect(ok.result.stdout).toContain("could not read the response time from curl ('abc')");
+    expect(ok.result.stdout).toContain('Frontend OK (HTTP 200) - response time unknown, slow-response check skipped');
+    expect(ok.result.stdout).not.toContain('OK - 0ms');
+    expect(ok.result.stdout).toContain('RC=0');
+    expect(ok.mail).toBe('');
+
+    const bad = check({ code: '502', time: '' });
+    expect(bad.mail).toContain('[CRITICAL] Frontend Error - HTTP 502');
+    expect(bad.mail).toContain('Response Time: unknown');
   });
 
   it('warns, but still succeeds, when a healthy endpoint is slower than the threshold', () => {
@@ -689,6 +761,17 @@ describe('health-check.sh check_http_endpoint', () => {
     expect(result.stdout).toContain('RC=0');
     expect(mail).toContain('[WARNING] Frontend Slow Response');
     expect(mail).toContain('Response Time: 6200ms');
+  });
+
+  it('sends the same alert once per cooldown, and a different kind of failure is not suppressed by it', () => {
+    const box = sandbox();
+    const first = check({ box, code: '503', runs: 2 });
+    expect(first.result.stdout).toContain('ALERT SENT: [CRITICAL] Frontend Error - HTTP 503');
+    expect(first.result.stdout).toContain('ALERT SUPPRESSED (cooldown): [CRITICAL] Frontend Error - HTTP 503');
+    expect(existsSync(path.join(box.root, 'health-check-alerts/Frontend_error'))).toBe(true);
+    // The endpoint then stops answering: that is a different alert, so it is sent despite the 503's cooldown.
+    const down = check({ box, code: '000', exit: 7 });
+    expect(down.result.stdout).toContain('ALERT SENT: [CRITICAL] Frontend Down');
   });
 });
 
