@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import legacy from '@vitejs/plugin-legacy';
+import { earlyApiBasePlugin } from './scripts/early-api-base.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -15,6 +16,8 @@ export default defineConfig({
     cssCodeSplit: false,
   },
   plugins: [
+    // The inline early Law of the Day request in index.html must target the API the app is built for
+    earlyApiBasePlugin(),
     // Older embedded browsers (Kindle) cannot run the modern module bundle; emit a
     // transpiled nomodule bundle with polyfills for them. Modern browsers are unaffected.
     legacy({

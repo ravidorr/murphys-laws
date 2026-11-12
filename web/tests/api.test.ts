@@ -540,7 +540,7 @@ describe('API utilities', () => {
     const law = { id: 5, text: 'Early law.', upvotes: 0, downvotes: 0 };
 
     function setEarly(overrides: Partial<EarlyLawOfDay> = {}): EarlyLawOfDay {
-      const early: EarlyLawOfDay = { law, startedAt: Date.now(), promise: Promise.resolve(law), ...overrides };
+      const early: EarlyLawOfDay = { law, url: '/api/v1/law-of-day', startedAt: Date.now(), promise: Promise.resolve(law), ...overrides };
       window.__earlyLawOfDay = early;
       return early;
     }
@@ -560,6 +560,29 @@ describe('API utilities', () => {
     it('has nothing to peek at or consume without an early request', () => {
       expect(peekEarlyLawOfTheDay()).toBeNull();
       expect(consumeEarlyLawOfTheDay()).toBeNull();
+    });
+
+    it('ignores a result that came from another API than the one the app requests', async () => {
+      setEarly({ url: 'https://other.example/api/v1/law-of-day' });
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ law: { id: 9, text: 'From the configured API.' } })
+      });
+
+      expect(peekEarlyLawOfTheDay()).toBeNull();
+      const result = await fetchLawOfTheDay();
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(result.data[0]).toEqual({ id: 9, text: 'From the configured API.' });
+      expect(window.__earlyLawOfDay).toBeUndefined();
+    });
+
+    it('drops, and does not hand over, a result from another API', () => {
+      setEarly({ url: '/v2/api/v1/law-of-day' });
+
+      expect(consumeEarlyLawOfTheDay()).toBeNull();
+      expect(window.__earlyLawOfDay).toBeUndefined();
     });
 
     it('has no law to peek at while the early request is pending', () => {

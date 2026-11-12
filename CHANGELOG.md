@@ -11,8 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The home page no longer waits for the app bundle before it can show the Law of the Day, the element that was the
   largest contentful paint on `/` (real-user P75 LCP 13.4 s, always `a.lod-link`). A small inline script in `index.html`,
   placed before the stylesheet, requests `/api/v1/law-of-day` as soon as the HTML arrives and paints the law into the
-  prerendered zone when the page is parsed; the bundle then adopts the same response (no second request, no spinner) and
-  falls back to its own request if the early one failed or is older than a minute. The prerendered home page now matches
+  prerendered zone when the page is parsed. The request goes to the API the app is built for (the build puts
+  `VITE_API_URL` into the script; same origin when unset), and the bundle adopts the response (no second request, no
+  spinner) only if it came from the URL the app itself would request; otherwise, or if the early request failed or is
+  older than a minute, it makes its own request. The prerendered home page now matches
   what the app renders so the first paint is also the last largest paint: `<main>` no longer adds a second container
   (the prerendered page was 32 px narrower, so the quote wrapped differently and the app's later render was a larger
   element that moved LCP back to the bundle's render time), the Search the Archive card is one shared string

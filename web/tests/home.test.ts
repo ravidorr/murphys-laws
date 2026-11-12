@@ -100,7 +100,7 @@ describe('Home view', () => {
       globalThis.fetch = fetchMock;
       const triggerAdSense = vi.spyOn(ads, 'triggerAdSense');
       const setExportContent = vi.spyOn(exportContext, 'setExportContent');
-      window.__earlyLawOfDay = { law: earlyLaw, startedAt: Date.now(), promise: Promise.resolve(earlyLaw) };
+      window.__earlyLawOfDay = { law: earlyLaw, url: '/api/v1/law-of-day', startedAt: Date.now(), promise: Promise.resolve(earlyLaw) };
 
       const el = Home({ onNavigate: vi.fn() });
       const zone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]')!;
@@ -122,7 +122,7 @@ describe('Home view', () => {
 
     it('reports the law to an ad listener that main.ts registers after the first render', async () => {
       globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: [] }) });
-      window.__earlyLawOfDay = { law: earlyLaw, startedAt: Date.now(), promise: Promise.resolve(earlyLaw) };
+      window.__earlyLawOfDay = { law: earlyLaw, url: '/api/v1/law-of-day', startedAt: Date.now(), promise: Promise.resolve(earlyLaw) };
       const listener = vi.fn();
 
       const el = Home({ onNavigate: vi.fn() });
@@ -144,7 +144,7 @@ describe('Home view', () => {
       const early = createDeferred<typeof earlyLaw | null>();
       const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: [] }) });
       globalThis.fetch = fetchMock;
-      window.__earlyLawOfDay = { law: null, startedAt: Date.now(), promise: early.promise };
+      window.__earlyLawOfDay = { law: null, url: '/api/v1/law-of-day', startedAt: Date.now(), promise: early.promise };
 
       const el = Home({ onNavigate: vi.fn() });
       const zone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]')!;
@@ -166,7 +166,7 @@ describe('Home view', () => {
           json: async () => (String(input).includes('/law-of-day') ? { law: { id: 78, text: 'Fetched by the app.', upvotes: 0, downvotes: 0 } } : { data: [] })
         })
       );
-      window.__earlyLawOfDay = { law: null, startedAt: Date.now(), promise: Promise.resolve(null) };
+      window.__earlyLawOfDay = { law: null, url: '/api/v1/law-of-day', startedAt: Date.now(), promise: Promise.resolve(null) };
 
       const el = Home({ onNavigate: vi.fn() });
 
@@ -182,7 +182,7 @@ describe('Home view', () => {
           : Promise.resolve({ ok: true, json: async () => ({ data: [] }) })
       );
       globalThis.fetch = fetchMock;
-      window.__earlyLawOfDay = { law: null, startedAt: Date.now(), promise: Promise.resolve(null) };
+      window.__earlyLawOfDay = { law: null, url: '/api/v1/law-of-day', startedAt: Date.now(), promise: Promise.resolve(null) };
 
       const el = Home({ onNavigate: vi.fn() });
       // The app took the early request over as soon as it started: nothing is left for a retry to reuse
