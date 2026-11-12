@@ -187,8 +187,9 @@
   }
 
   /* A slider that takes focus scrolls into view above the pinned score, never under it (WCAG 2.4.11).
-     The pinned score is about 96px tall; this leaves a 16px gap. */
-  .calc-slider-group input[type="range"] {
+     The pinned score is about 96px tall; this leaves a 16px gap. Scoped to the card that has this bar so the
+     Buttered Toast rule further down, which has the same specificity, does not override it. */
+  .card:has(.calc-result-display--sticky) .calc-slider-group input[type="range"] {
     scroll-margin-block-end: calc(var(--space-16) + var(--space-12));
   }
 }
@@ -200,7 +201,7 @@
       padding-bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
     }
 
-    .calc-slider-group input[type="range"] {
+    .card:has(.calc-result-display--sticky) .calc-slider-group input[type="range"] {
       scroll-margin-block-end: calc(var(--space-16) + var(--space-12) + env(safe-area-inset-bottom, 0px));
     }
   }
@@ -251,7 +252,7 @@
   }
 
   /* WCAG 2.2 2.4.11: keep a focused slider clear of the pinned bar when the browser scrolls it into view */
-  .calc-slider-group input[type="range"] {
+  .card:has(.calc-result-sticky) .calc-slider-group input[type="range"] {
     scroll-margin-block-end: calc(var(--space-16) + var(--space-4));
   }
 
