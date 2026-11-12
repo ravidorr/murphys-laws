@@ -7,6 +7,13 @@ This document outlines additional tasks and potential improvements for the Murph
 - [ ] **Make the disaster-recovery PM2 step work on a fresh droplet:** `backend/ecosystem.config.cjs` hardcodes `/root/.nvm/versions/node/v22.20.0/bin/node` (while `.nvmrc` says 22.16.0), but `DISASTER-RECOVERY.md` installs nvm and pm2 for the `ravidor` user and runs the PM2 step as root. Install Node and pm2 for root at the version the config names, or make the interpreter follow `.nvmrc`.
 - [ ] **Renew `/.well-known/security.txt` before 2027-11-06:** the `Expires` date in `nginx.conf` must be moved forward. A test in `nginx-scanner-defense.test.ts` fails 30 days before it passes.
 
+## Performance
+
+- [ ] **Enable brotli for the precompressed assets:** `npm run build` already writes `.br` copies next to the hashed JS and CSS, but nginx
+  does not serve them because the brotli module is not installed on the droplet (an unknown directive would fail `nginx -t` in the
+  deploy step). Install `libnginx-mod-http-brotli-filter` and `libnginx-mod-http-brotli-static` first, then add `brotli_static on;` to
+  the hashed-assets location of `nginx.conf` (steps, verification and rollback in `shared/docs/DEPLOYMENT.md`).
+
 ## Site data
 
 - [ ] **Let a visitor add a corollary to a law that is already published:** the submit form only creates a new law
