@@ -17,6 +17,50 @@ function locationBody(opening: string): string {
   return apex.slice(start, apex.indexOf('\n        }', start));
 }
 
+// nginx header names are case-insensitive and may be quoted, so a header written as `Add_Header "cache-control"` still
+// counts. Both patterns are global: use them with match/matchAll only.
+const CACHE_CONTROL_DIRECTIVE = /^\s*add_header\s+"?cache-control"?\s/gim;
+const CACHE_CONTROL_VALUE = /^\s*add_header\s+"?cache-control"?\s+"([^"]+)"/gim;
+
+// The server block with every `location` block (and what is nested in it) cut out, so only the directives of the
+// server level are left. Braces inside quotes (a regex quantifier such as {8}) and comment lines do not count.
+function serverLevelDirectives(block: string): string {
+  const source = block.replace(/^\s*#.*$/gm, '');
+  let output = '';
+  let statement = '';
+  let quoted = false;
+  const stack: boolean[] = [];
+  for (const char of source) {
+    if (char === '"') {
+      quoted = !quoted;
+    }
+    if (!quoted && char === '{') {
+      const isLocation = /^\s*location\s/.test(statement);
+      if (isLocation && !stack.includes(true)) {
+        // Cut the `location ...` line itself, which was already copied while it was being read.
+        output = output.slice(0, output.length - statement.length);
+      }
+      stack.push(isLocation);
+      statement = '';
+      output += stack.includes(true) ? '' : char;
+    } else if (!quoted && char === '}') {
+      const inLocation = stack.includes(true);
+      stack.pop();
+      statement = '';
+      output += inLocation ? '' : char;
+    } else {
+      if (!quoted && char === ';') {
+        statement = '';
+      } else {
+        statement += char;
+      }
+      output += stack.includes(true) ? '' : char;
+    }
+  }
+  expect(stack, 'the braces of the server block are balanced').toEqual([]);
+  return output;
+}
+
 describe('nginx compression', () => {
   const gzipTypes = (/^\s*gzip_types\s+([^;]+);/m.exec(apex)?.[1] ?? '').trim().split(/\s+/);
 
@@ -57,31 +101,33 @@ describe('nginx compression', () => {
 });
 
 // The static-file locations nested in `location /`, in file order. nginx tests the regex locations of one block in
-// that order and uses the first match, so the order of this list is the precedence. The pattern is either quoted
-// (when it holds a brace) or a single word.
+// that order and uses the first match, so the order of this list is the precedence. Either quoted or a single word.
+// The operator decides the case rule: ~* ignores case, ~ does not (an exact = or prefix ^~ location is not read at all,
+// which a test below guards against).
 const staticLocations = [
-  ...apex.matchAll(/^ {8}location ~\* (?:"([^"]+)"|(\S+)) \{\n([\s\S]*?)\n {8}\}$/gm),
+  ...apex.matchAll(/^ {8}location (~\*?) (?:"([^"]+)"|(\S+)) \{\n([\s\S]*?)\n {8}\}$/gm),
 ].map((match) => ({
-  pattern: new RegExp(match[1] ?? match[2] ?? '(?!)', 'i'),
-  body: match[3] ?? '',
+  operator: match[1] ?? '',
+  pattern: new RegExp(match[2] ?? match[3] ?? '(?!)', match[1] === '~*' ? 'i' : ''),
+  body: match[4] ?? '',
 }));
 
 type CacheClass = 'immutable' | 'revalidate' | 'one-year' | 'unset';
 
 // What nginx sends for a file served through `location /`: the nested location a URI lands in decides it.
-function cacheFor(uri: string): { cacheClass: CacheClass; headers: string[]; expires: boolean } {
+function cacheFor(uri: string): { cacheClass: CacheClass; headers: string[]; expires: string | null } {
   // nginx matches a location against the path without its query string.
   const path = uri.split('?')[0] ?? uri;
   const location = staticLocations.find(({ pattern }) => pattern.test(path));
-  const headers = [...(location?.body.matchAll(/add_header Cache-Control "([^"]+)"/g) ?? [])].map((m) => m[1] ?? '');
-  const expires = /^\s*expires /m.test(location?.body ?? '');
+  const headers = [...(location?.body.matchAll(CACHE_CONTROL_VALUE) ?? [])].map((m) => m[1] ?? '');
+  const expires = /^\s*expires\s+([^;]+);/m.exec(location?.body ?? '')?.[1]?.trim() ?? null;
   if (headers.some((header) => header.includes('immutable'))) {
     return { cacheClass: 'immutable', headers, expires };
   }
   if (headers.includes('no-cache')) {
     return { cacheClass: 'revalidate', headers, expires };
   }
-  return { cacheClass: expires ? 'one-year' : 'unset', headers, expires };
+  return { cacheClass: expires === null ? 'unset' : 'one-year', headers, expires };
 }
 
 describe('nginx hashed asset caching', () => {
@@ -92,10 +138,10 @@ describe('nginx hashed asset caching', () => {
 
   it('serves precompressed files and sets one immutable Cache-Control header', () => {
     expect(hashed).toMatch(/^\s*gzip_static on;$/m);
-    expect(hashed.match(/add_header Cache-Control /g)).toHaveLength(1);
+    expect(hashed.match(CACHE_CONTROL_DIRECTIVE)).toHaveLength(1);
     expect(hashed).toContain('add_header Cache-Control "public, max-age=31536000, immutable";');
     // expires would add a second Cache-Control header next to add_header.
-    expect(hashed).not.toContain('expires');
+    expect(hashed).not.toMatch(/^\s*(expires|add_header\s+"?expires"?)\b/im);
   });
 
   it.each([
@@ -139,20 +185,26 @@ describe('nginx hashed asset caching', () => {
     expect(staticLocations[0]?.body).toContain('immutable');
   });
 
-  it('leaves the other static files without immutable, since their names do not change', () => {
+  it('leaves the other static files without immutable, since they are not content-hashed', () => {
     for (const location of staticLocations.slice(1)) {
       expect(location.body, location.pattern.source).not.toContain('immutable');
     }
   });
 
-  it('does not set add_header above the nested locations, which would be lost there', () => {
-    const beforeNested = apex.slice(0, apex.indexOf('location / {'));
-    expect(beforeNested).not.toMatch(/^\s*add_header\s/m);
+  it('sets no add_header at the server level, which every location that sets its own would silently drop', () => {
+    const serverLevel = serverLevelDirectives(apex);
+    // The stripping kept the server's own directives and cut every location out.
+    expect(serverLevel).toMatch(/^\s*gzip on;$/m);
+    expect(serverLevel).not.toContain('Cache-Control');
+    expect(serverLevel).not.toMatch(/^\s*location\s/m);
+    expect(serverLevel).not.toMatch(/^\s*add_header\s/im);
   });
 });
 
 describe('nginx caching of the files that are not hashed', () => {
-  // File names from web/dist (the build in web/package.json) and the paths the pages link to.
+  // File names from web/dist (the build in web/package.json) and the paths the pages link to, plus upper-case
+  // spellings. The lists below also hold made-up probe names (/some-future-script.js, /assets/main.js, /some/logo.svg,
+  // /assets/logo.png).
   it.each([
     '/sw.js',
     '/offline.js',
@@ -162,6 +214,9 @@ describe('nginx caching of the files that are not hashed', () => {
     '/styles/partials/variables.css',
     '/assets/main.js',
     '/some-future-script.js',
+    '/SW.JS',
+    '/Styles/Embed.CSS',
+    '/Manifest.WebManifest',
     '/sw.js?v=2',
     '/styles/embed.css?x=1',
     '/manifest.webmanifest',
@@ -169,7 +224,7 @@ describe('nginx caching of the files that are not hashed', () => {
     '/sitemap.xml',
     '/image-sitemap.xml',
   ])('makes the browser revalidate %s with one no-cache header and no expires', (uri) => {
-    expect(cacheFor(uri)).toEqual({ cacheClass: 'revalidate', headers: ['no-cache'], expires: false });
+    expect(cacheFor(uri)).toEqual({ cacheClass: 'revalidate', headers: ['no-cache'], expires: null });
   });
 
   it.each([
@@ -185,11 +240,18 @@ describe('nginx caching of the files that are not hashed', () => {
     '/img/sledtrk.jpg',
     '/some/logo.svg',
     '/assets/logo.png',
+    '/FAVICON.ICO',
+    '/img/SledTrk.JPG',
   ])('keeps the one-year lifetime of the image %s', (uri) => {
-    expect(cacheFor(uri)).toEqual({ cacheClass: 'one-year', headers: ['public, no-transform'], expires: true });
+    expect(cacheFor(uri)).toEqual({ cacheClass: 'one-year', headers: ['public, no-transform'], expires: '1y' });
   });
 
-  it.each(['/assets/index-DZClfRb6.js', '/assets/style-BhqpAbOy.css', '/assets/logo-AbCdEfGh.png'])(
+  it.each([
+    '/assets/index-DZClfRb6.js',
+    '/assets/style-BhqpAbOy.css',
+    '/assets/logo-AbCdEfGh.png',
+    '/assets/INDEX-DZClfRb6.JS',
+  ])(
     'still caches the hashed %s for good',
     (uri) => {
       expect(cacheFor(uri).cacheClass).toBe('immutable');
@@ -207,25 +269,37 @@ describe('nginx caching of the files that are not hashed', () => {
     '/assets/index-DZClfRb6.js.map',
     '/assets/font.woff2',
   ])('adds no cache rule to %s', (uri) => {
-    expect(cacheFor(uri)).toEqual({ cacheClass: 'unset', headers: [], expires: false });
+    expect(cacheFor(uri)).toEqual({ cacheClass: 'unset', headers: [], expires: null });
   });
 
   it('is not blind to a nested location of another kind, which would take precedence in nginx', () => {
-    // The parser only reads `location ~* pattern`; an exact (=), prefix (^~) or case-sensitive (~) location
-    // nested in `location /` would win over these and be invisible to cacheFor, so there must be none.
+    // The parser reads `location ~* pattern` and `location ~ pattern` (in file order, like nginx does for regexes); an
+    // exact (=) or prefix (^~) location nested in `location /` would win over these and be invisible to cacheFor,
+    // so there must be none.
     const nestedOpenings = apex.match(/^ {8}location /gm) ?? [];
     expect(nestedOpenings).toHaveLength(staticLocations.length);
   });
 
-  it('matches file names without regard to case, like the ~* locations do', () => {
-    for (const { pattern } of staticLocations) {
-      expect(pattern.flags).toContain('i');
+  it('reads every static-file location as a case-insensitive ~* location, as nginx does', () => {
+    // The parser takes the case rule from the operator, so a plain ~ (case-sensitive) location is modelled as such
+    // and fails here instead of being treated as case-insensitive without anyone noticing.
+    for (const { operator, pattern } of staticLocations) {
+      expect(operator, pattern.source).toBe('~*');
+      expect(pattern.flags, pattern.source).toBe('i');
+    }
+  });
+
+  it('sends no Expires header from the no-cache locations, which would sit next to Cache-Control', () => {
+    const revalidating = staticLocations.filter(({ body }) => body.includes('no-cache'));
+    expect(revalidating).toHaveLength(2);
+    for (const { body, pattern } of revalidating) {
+      expect(body, pattern.source).not.toMatch(/^\s*(expires|add_header\s+"?expires"?)\b/im);
     }
   });
 
   it('has exactly one add_header Cache-Control in every static-file location', () => {
     for (const { body, pattern } of staticLocations) {
-      expect(body.match(/add_header Cache-Control /g), pattern.source).toHaveLength(1);
+      expect(body.match(CACHE_CONTROL_DIRECTIVE), pattern.source).toHaveLength(1);
     }
   });
 });

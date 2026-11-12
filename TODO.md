@@ -13,11 +13,16 @@ This document outlines additional tasks and potential improvements for the Murph
   does not serve them because the brotli module is not installed on the droplet (an unknown directive would fail `nginx -t` in the
   deploy step). Install `libnginx-mod-http-brotli-filter` and `libnginx-mod-http-brotli-static` first, then add `brotli_static on;` to
   the hashed-assets location of `nginx.conf` (steps, verification and rollback in `shared/docs/DEPLOYMENT.md`).
-- [ ] **Serve `/manifest.webmanifest` with its real type and revalidate the pages:** the server sends the manifest as
-  `application/octet-stream` (`/etc/nginx/mime.types` has no `webmanifest` entry), so it is not compressed either (`gzip_types` lists
-  `application/manifest+json`). Add `types { application/manifest+json webmanifest; }` inside `location = /manifest.webmanifest` only (a `types` block replaces the whole inherited map, so at server level it would break `.css`, `.js` and `.html`). The prerendered pages, `ads.txt`, `llms.txt` and
-  `social/home.webp` still send no `Cache-Control`, so browsers decide how long to keep them; `no-cache` for the HTML would make a deploy
-  show up on the next visit.
+- [ ] **Serve `/manifest.webmanifest` with its real type:** the server sends the manifest as `application/octet-stream`
+  (`/etc/nginx/mime.types` has no `webmanifest` entry), so it is not compressed either (`gzip_types` lists
+  `application/manifest+json`). Add a new `location = /manifest.webmanifest` with `types { application/manifest+json webmanifest; }`,
+  and repeat `add_header Cache-Control "no-cache";` in it: an exact-match location wins over the regex rule that sets that header today, and
+  its `add_header` is not inherited, so leaving it out would silently undo the manifest's revalidation. Update the location model in
+  `web/tests/nginx-performance.test.ts` too. Do not put `types` in the existing regex location: it would strip the `text/plain` and
+  `text/xml` mapping from `robots.txt` and the sitemaps (a `types` block replaces the whole inherited map).
+- [ ] **Revalidate the prerendered pages:** send `Cache-Control: no-cache` for them, so a deploy shows up on the next visit (they send no
+  `Cache-Control` today, so browsers decide how long to keep them), and decide the same for `ads.txt`, `llms.txt`, `llms-full.txt` and
+  `social/home.webp`, which send none either.
 
 ## Site data
 
