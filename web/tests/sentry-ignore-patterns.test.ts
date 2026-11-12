@@ -1,4 +1,4 @@
-import { isSentryErrorIgnored, isInjectedScriptStackOverflow, SENTRY_IGNORED_ERROR_PATTERNS } from '../src/utils/sentry-ignore-patterns.ts';
+import { isSentryErrorIgnored, isInjectedScriptStackOverflow, SENTRY_DENIED_URLS, SENTRY_IGNORED_ERROR_PATTERNS } from '../src/utils/sentry-ignore-patterns.ts';
 
 describe('sentry-ignore-patterns', () => {
   describe('isSentryErrorIgnored', () => {
@@ -114,6 +114,30 @@ describe('sentry-ignore-patterns', () => {
 
     it('returns false for other errors', () => {
       expect(isInjectedScriptStackOverflow('Cannot read properties of undefined', documentFrames, documents)).toBe(false);
+    });
+  });
+
+  describe('SENTRY_DENIED_URLS', () => {
+    const isDenied = (url: string): boolean => SENTRY_DENIED_URLS.some((pattern) => pattern.test(url));
+
+    it('denies the Startpage proxy copy of gtag.js that threw JAVASCRIPT-1B', () => {
+      expect(isDenied('https://av-eu1.startpage.com/__av/AWrpspOp1zpUkObd87LbYfl4iQXaaHR0cHM6Ly93d3cuZ29vZ2xldGFnbWFuYWdlci5jb20vZ3RhZy9qcz9pZD1HLVhHN0c2S1JQMEU')).toBe(true);
+      expect(isDenied('https://startpage.com/__av/x')).toBe(true);
+      expect(isDenied('http://www.startpage.com/script.js')).toBe(true);
+    });
+
+    it('keeps our own scripts and look-alike hosts', () => {
+      expect(isDenied('https://murphys-laws.com/assets/index-abc123.js')).toBe(false);
+      expect(isDenied('https://www.googletagmanager.com/gtag/js?id=G-XG7G6KRP0E')).toBe(false);
+      expect(isDenied('https://notstartpage.com/x.js')).toBe(false);
+      expect(isDenied('https://startpage.com.evil.example/x.js')).toBe(false);
+      expect(isDenied('https://murphys-laws.com/search?q=startpage.com/')).toBe(false);
+    });
+
+    it('still denies the ad script hosts', () => {
+      expect(isDenied('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js')).toBe(true);
+      expect(isDenied('https://securepubads.g.doubleclick.net/tag/js/gpt.js')).toBe(true);
+      expect(isDenied('https://www.googleadservices.com/pagead/conversion.js')).toBe(true);
     });
   });
 

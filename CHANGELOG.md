@@ -296,6 +296,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Sentry no longer reports `Can only call Window.setInterval on instances of Window` (JAVASCRIPT-1B), seen once from
+  Mobile Safari on an iPad. Every frame was in `av-eu1.startpage.com/__av/...`, Startpage's anonymous-view proxy, which
+  re-serves our Google tag script from its own origin with a rewritten `window`; the error is thrown by that copy, not by
+  our code. `startpage.com` and its subdomains join the Sentry `denyUrls` (kept in `sentry-ignore-patterns.ts` as
+  `SENTRY_DENIED_URLS` so a test covers them), so errors whose throwing frame is a Startpage URL are dropped. A message
+  filter was avoided on purpose: the same wording from our own bundle would still be reported.
+  Web bumped to `3.4.105`; root to `2.6.211`.
 - Daily 404 report of 12 November 2026 (38 requests so far that day): more scanner probes are dropped and two crawler
   typos are redirected. Dropped (`444`, logged to `scanner.log`): one spoofed-Googlebot sweep of build and secret files
   (`/Gemfile`, `/Gemfile.lock`, `/yarn.lock`, `/Jenkinsfile`, `/app.json`, `/database.yml`, `/local.py`,

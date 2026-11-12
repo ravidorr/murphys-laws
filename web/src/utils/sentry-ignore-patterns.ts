@@ -67,6 +67,22 @@ export function isInjectedScriptStackOverflow(
 }
 
 /**
+ * Script URLs whose errors Sentry should drop. Used by main.ts as Sentry `denyUrls`, which
+ * matches the URL of the frame that threw. Exported for unit tests.
+ */
+export const SENTRY_DENIED_URLS: RegExp[] = [
+  // Third-party ad scripts: AdSense bugs outside our control
+  /googlesyndication\.com/i,
+  /doubleclick\.net/i,
+  /googleadservices\.com/i,
+  // Startpage's "anonymous view" proxy (av-eu1.startpage.com/__av/...) re-serves the pages and
+  // scripts of sites its users open, including our gtag.js, from its own origin with a rewritten
+  // window. The rewrite makes native calls throw "Can only call Window.setInterval on instances
+  // of Window" (JAVASCRIPT-1B). The code that throws is theirs, not ours.
+  /^https?:\/\/(?:[\w-]+\.)*startpage\.com\//i,
+];
+
+/**
  * Returns true if the error message should be dropped from Sentry.
  */
 export function isSentryErrorIgnored(errorMessage: string): boolean {
