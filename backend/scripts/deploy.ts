@@ -199,6 +199,13 @@ async function deploy(): Promise<void> {
     'Installing dependencies and rebuilding native modules'
   );
 
+  // npm ci can exit 0 and still leave a package without its entry file, which only shows up later as
+  // a crashing health check; stop here, before migrations and the restart, if any dependency is unusable
+  exec(
+    `ssh ${DROPLET_HOST} "sudo -u root bash -c 'cd ${DROPLET_PATH}/backend && source ~/.nvm/nvm.sh && node scripts/verify-installed-dependencies.mjs'"`,
+    'Verifying installed dependencies resolve'
+  );
+
   log('\nApplying database migrations...', 'blue');
   exec(
     `ssh ${DROPLET_HOST} "sudo -u root bash -c 'cd ${DROPLET_PATH}/backend && source ~/.nvm/nvm.sh && npm run migrate'"`,
