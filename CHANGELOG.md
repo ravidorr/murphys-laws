@@ -129,8 +129,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The Buttered Toast calculator now sends a `calculator_viewed` Pendo event with the result shown on load (the default
   result, or the shared one when the page opens from a shared link). `calculator_used` still fires only after a slider
-  moves, so visitors who only read the first result now show up in the calculator funnel. Web bumped to `3.4.104`; root
-  to `2.6.210`.
+  moves, so visitors who only read the first result now show up in the calculator funnel. Its tests pin the reported
+  result and risk level for the default, shared and invalid-link cases. Web bumped to `3.4.104`; root to `2.6.210`.
 - Submitters can add corollaries when they submit a law, and the moderation queue treats a law and its corollaries as
   one submission. `POST /api/v1/laws` accepts an optional `corollaries` list (at most 5; each `text` 10-1000
   characters, optional `title` up to 200; no repeats of each other or the law text; the body is capped at 32 KB, 413

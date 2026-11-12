@@ -1,6 +1,7 @@
 /// <reference path="../src/types/global.d.ts" />
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ButteredToastCalculator } from '../src/views/buttered-toast-calculator.ts';
+import { CALCULATOR_RESULT_SETTLE_MS } from '../src/utils/calculator-state.ts';
 
 function input(el: HTMLElement, id: string): HTMLInputElement {
   const node = el.querySelector(`#${id}`);
@@ -853,12 +854,15 @@ describe('ButteredToastCalculator view', () => {
       expect(track).toHaveBeenCalledWith('calculator_viewed', {
         calculator: 'buttered-toast',
         surface: 'calculator_page',
-        probability_percent: parseInt(el.querySelector('#toast-probability-value')!.textContent!, 10),
-        risk_level: expect.stringMatching(/^(low|elevated|high|critical)$/),
+        probability_percent: 27,
+        risk_level: 'elevated',
         from_shared_link: false,
       });
+      // The event carries the result the visitor is looking at
+      expect(el.querySelector('#toast-probability-value')!.textContent).toContain('27');
+      expect(el.querySelector('#toast-result-display')!.classList.contains('calc-orange')).toBe(true);
 
-      vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(CALCULATOR_RESULT_SETTLE_MS);
       el.cleanup!();
       expect(track).toHaveBeenCalledTimes(1);
       expect(track).not.toHaveBeenCalledWith('calculator_used', expect.anything());
@@ -874,10 +878,37 @@ describe('ButteredToastCalculator view', () => {
       const el = ButteredToastCalculator() as HTMLElement & { cleanup?: () => void };
       document.body.appendChild(el);
 
-      expect(track).toHaveBeenCalledWith('calculator_viewed', expect.objectContaining({
-        probability_percent: parseInt(el.querySelector('#toast-probability-value')!.textContent!, 10),
+      expect(track).toHaveBeenCalledTimes(1);
+      expect(track).toHaveBeenCalledWith('calculator_viewed', {
+        calculator: 'buttered-toast',
+        surface: 'calculator_page',
+        probability_percent: 93,
+        risk_level: 'critical',
         from_shared_link: true,
-      }));
+      });
+      expect(el.querySelector('#toast-probability-value')!.textContent).toContain('93');
+      expect(el.querySelector('#toast-result-display')!.classList.contains('calc-dark')).toBe(true);
+      el.cleanup!();
+      document.body.removeChild(el);
+    });
+
+    it('reports the default result as not shared when every link parameter is invalid', () => {
+      vi.stubGlobal('location', {
+        ...window.location,
+        search: '?h=999&g=-100&o=50&b=abc',
+        href: 'http://localhost:3000/calculator/buttered-toast?h=999&g=-100&o=50&b=abc'
+      });
+      const el = ButteredToastCalculator() as HTMLElement & { cleanup?: () => void };
+      document.body.appendChild(el);
+
+      expect(track).toHaveBeenCalledTimes(1);
+      expect(track).toHaveBeenCalledWith('calculator_viewed', {
+        calculator: 'buttered-toast',
+        surface: 'calculator_page',
+        probability_percent: 27,
+        risk_level: 'elevated',
+        from_shared_link: false,
+      });
       el.cleanup!();
       document.body.removeChild(el);
     });
@@ -888,7 +919,7 @@ describe('ButteredToastCalculator view', () => {
 
       slide(el, 'toast-height', '120');
       slide(el, 'toast-butter', '1.5');
-      vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(CALCULATOR_RESULT_SETTLE_MS);
 
       expect(track).toHaveBeenCalledTimes(2);
       expect(track.mock.calls[0]![0]).toBe('calculator_viewed');
