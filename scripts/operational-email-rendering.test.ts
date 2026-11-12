@@ -491,16 +491,27 @@ test('log-analyzer errorSamples caps at 10 distinct requests per code, most freq
   assert.equal(parsed.errorSamples[1].samples[0].request, 'GET /boom');
 });
 
+// The scripts under test count only recent rows, measured from the real clock, so a fixed date in a fixture stops matching
+// as the calendar moves on: analyze-resource-peaks.sh reads only the current and the previous month's CSV, and it and the
+// capacity analyzer behind cost-optimization-report.sh both use only rows from the last 30 days. This sample is a day old,
+// which leaves a wide margin on both sides of that window, and is stamped in UTC like the collector writes it. The
+// file name's month is the timestamp's month, so the row is in the current or the previous month's file.
+// The response times are the frontend, API and database columns; an empty one is allowed.
+function recentMetricsSample(role: string, responseTimes: { frontend?: number; api?: number; db?: number } = {}) {
+  const timestamp = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
+  const header =
+    'timestamp,role,frontend_response_ms,api_response_ms,db_query_ms,memory_used_mb,memory_available_mb,memory_pressure_percent,swap_used_mb,swap_in,swap_out,cpu_cores,cpu_load_1m,cpu_load_5m,cpu_load_15m,cpu_normalized_percent,disk_used_gb,disk_available_gb,disk_percent,db_size_mb,pm2_api_restarts,pm2_api_uptime_hours,pm2_api_rss_mb,pm2_api_memory_limit_mb,collector_errors';
+  const times = [responseTimes.frontend, responseTimes.api, responseTimes.db].map((value) => value ?? '').join(',');
+  const row = `${timestamp},${role},${times},400,500,50,0,0,0,1,0.5,0.4,0.3,50,10,14,49,1.6,0,1,120,512,`;
+  return { timestamp, fileName: `metrics-${role}-${timestamp.slice(0, 7)}.csv`, content: `${header}\n${row}\n` };
+}
+
 test('analyze-resource-peaks --format json returns metrics array', () => {
   const tempDir = mkdtempSync(path.join(tmpdir(), 'peaks-'));
   const metricsDir = path.join(tempDir, 'metrics');
   mkdirSync(metricsDir, { recursive: true });
-  const month = '2026-10';
-  const header =
-    'timestamp,role,frontend_response_ms,api_response_ms,db_query_ms,memory_used_mb,memory_available_mb,memory_pressure_percent,swap_used_mb,swap_in,swap_out,cpu_cores,cpu_load_1m,cpu_load_5m,cpu_load_15m,cpu_normalized_percent,disk_used_gb,disk_available_gb,disk_percent,db_size_mb,pm2_api_restarts,pm2_api_uptime_hours,pm2_api_rss_mb,pm2_api_memory_limit_mb,collector_errors';
-  const row =
-    '2026-10-10T12:00:00Z,main-app,,,,400,500,50,0,0,0,1,0.5,0.4,0.3,50,10,14,49,1.6,0,1,120,512,';
-  writeFileSync(path.join(metricsDir, `metrics-main-app-${month}.csv`), `${header}\n${row}\n`);
+  const sample = recentMetricsSample('main-app');
+  writeFileSync(path.join(metricsDir, sample.fileName), sample.content);
 
   const script = path.join(rootDirectory, 'backend/scripts/analyze-resource-peaks.sh');
   const stdout = execFileSync('bash', [script, '--format', 'json', '--role', 'main-app'], {
@@ -508,18 +519,20 @@ test('analyze-resource-peaks --format json returns metrics array', () => {
     encoding: 'utf8',
   });
 
-  const parsed = JSON.parse(stdout) as { metrics: Array<{ label: string }>; sampleCount: number };
-  assert.ok(parsed.metrics.length > 0);
-  assert.ok(parsed.sampleCount > 0);
+  const parsed = JSON.parse(stdout) as { metrics: Array<{ label: string; value: string; timestamp: string }>; sampleCount: number };
+  // A fixture outside the 30-day window prints {"sampleCount":0,"metrics":[]}.
+  assert.equal(parsed.sampleCount, 1);
+  assert.deepEqual(parsed.metrics.find((metric) => metric.label === 'Min MemAvailable MB'), {
+    label: 'Min MemAvailable MB',
+    value: '500 MB',
+    timestamp: sample.timestamp,
+  });
 });
 
 test('cost-optimization-report --format json includes capacity decision', () => {
   const metricsDir = mkdtempSync(path.join(tmpdir(), 'cost-metrics-'));
-  const header =
-    'timestamp,role,frontend_response_ms,api_response_ms,db_query_ms,memory_used_mb,memory_available_mb,memory_pressure_percent,swap_used_mb,swap_in,swap_out,cpu_cores,cpu_load_1m,cpu_load_5m,cpu_load_15m,cpu_normalized_percent,disk_used_gb,disk_available_gb,disk_percent,db_size_mb,pm2_api_restarts,pm2_api_uptime_hours,pm2_api_rss_mb,pm2_api_memory_limit_mb,collector_errors';
-  const row =
-    '2026-10-10T12:00:00Z,main-app,100,100,1,400,500,50,0,0,0,1,0.5,0.4,0.3,50,10,14,49,1.6,0,1,120,512,';
-  writeFileSync(path.join(metricsDir, 'metrics-main-app-2026-10.csv'), `${header}\n${row}\n`);
+  const sample = recentMetricsSample('main-app', { frontend: 100, api: 100, db: 1 });
+  writeFileSync(path.join(metricsDir, sample.fileName), sample.content);
 
   const inventoryFile = path.join(rootDirectory, 'backend/config/infrastructure-inventory.json.example');
   const script = path.join(rootDirectory, 'backend/scripts/cost-optimization-report.sh');
@@ -534,8 +547,14 @@ test('cost-optimization-report --format json includes capacity decision', () => 
     encoding: 'utf8',
   });
 
-  const parsed = JSON.parse(stdout) as { capacity: { decision: string } };
-  assert.ok(['Collecting baseline', 'No change justified', 'Manual review candidate'].includes(parsed.capacity.decision));
+  const parsed = JSON.parse(stdout) as { capacity: { decision: string; reasons: string[] } };
+  // One sample is far below the 90% hourly coverage the analyzer needs, so the decision is "Collecting baseline", and the
+  // reason says how many samples it counted (analyze-capacity-metrics.ts): a fixture outside the 30-day window gives 0.
+  assert.equal(parsed.capacity.decision, 'Collecting baseline', JSON.stringify(parsed.capacity));
+  assert.ok(
+    parsed.capacity.reasons.some((reason) => reason.includes('; 1 raw samples')),
+    JSON.stringify(parsed.capacity),
+  );
 });
 
 test('vulnerability-scanner --format json returns summary object', () => {
