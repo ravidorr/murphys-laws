@@ -25,6 +25,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed the category helper text under the Category dropdown.
 
 ### Fixed
+- `health-check.sh` no longer sends a false "[CRITICAL] Frontend/API Error - HTTP" alert with an empty status for a
+  healthy site (the Nov 12 10:16 UTC alerts). It passed `-w` to curl twice and curl keeps only the last, so the status
+  code was never printed and the empty value never equalled `200`. It now reads the status and the time from one
+  `-w`, and takes curl's own exit status (it read the status of `local`, always 0, so a real connection failure was
+  never reported as "Down"). The "Down" log line and alert now include curl's error text (`-S`, first 300 bytes).
+  The response time is worked out with shell arithmetic instead of `bc`, which a minimal host may not have: before,
+  a missing `bc` made every response read as 0 ms and silenced the slow-response warning. If curl's timing cannot be
+  read it is logged and shown as "unknown". Two failures of the check itself are no longer mistaken for the site:
+  curl exiting 0 with no usable status raises "[CRITICAL] ... Check Failed", and a failed `mktemp` logs that the check
+  was not run instead of reporting a "Down" site. The temporary file now goes under `$TMPDIR`. Tests run
+  `check_http_endpoint` with a curl that, like the real one, honors only the last `-w` and prints its error text only
+  with `-S`, and cover 200, other statuses, a failed connection, a slow response, sub-millisecond and unreadable
+  timings, unusable curl output, `mktemp` failure, temporary-file cleanup and the alert cooldown.
+  Backend bumped to `2.3.83`; root to `2.6.215`.
 - Select dropdown carets are now inset from the border in every dropdown.
   Web bumped to `3.4.50`; root to `2.6.136`.
 
@@ -61,7 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   mix, and the mix stays the same until votes or the published laws change. A corollary whose parent law is not
   published still counts as an ordinary law, as in the law list. The prerendered pages leave corollaries out of their
   related links too, so a corollary does not show up before the page loads and then disappear. Backend bumped to
-  `2.3.82`, web to `3.4.107`, root to `2.6.214`.
+  `2.3.84`, web to `3.4.107`, root to `2.6.216`.
 - On screens narrower than 600px, the Sod's Law Calculator keeps a compact score pinned to the bottom of the screen
   while the sliders are in view, so visitors see the score change as they move a slider instead of scrolling down to
   it. The pinned score is a labelled group (named after the "Probability of Things Going Wrong:" heading), a slider that
