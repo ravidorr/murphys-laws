@@ -32,6 +32,7 @@ import {
   REVIEWED_LAW_TITLES,
   categorySitemapPaths,
   pickRelatedLaws,
+  pickRelatedStandaloneLaws,
   renderLawLinkList,
   buildCorollaryIndex
 } from '@scripts/ssg';
@@ -800,6 +801,63 @@ describe('SSG SEO output', () => {
       expect(pickRelatedLaws({ id: 1 }, ring(1))).toEqual([]);
       expect(pickRelatedLaws({ id: 99 }, ring(10)).map((r) => r.id)).toEqual([1, 2, 3]);
       expect(pickRelatedLaws({ id: 1 }, [])).toEqual([]);
+    });
+  });
+
+  describe('pickRelatedStandaloneLaws', () => {
+    type TestLaw = { id: number; corollary_of_id?: number | null };
+    // Laws 1-40, every fifth one a corollary of law 1
+    const category: TestLaw[] = Array.from({ length: 40 }, (_, i) => ({ id: i + 1, corollary_of_id: (i + 1) % 5 === 0 ? 1 : null }));
+    const standalone = category.filter((law) => law.corollary_of_id == null);
+
+    it('never links a corollary from a standalone law', () => {
+      for (const law of standalone) {
+        const related = pickRelatedStandaloneLaws(law, category);
+        expect(related).toHaveLength(3);
+        expect(related.every((r) => r.corollary_of_id == null)).toBe(true);
+        expect(related.map((r) => r.id)).not.toContain(law.id);
+      }
+    });
+
+    it('picks the same laws as the plain ring over the standalone laws', () => {
+      for (const law of standalone) {
+        expect(pickRelatedStandaloneLaws(law, category)).toEqual(pickRelatedLaws(law, standalone));
+      }
+    });
+
+    it('links every standalone law from exactly three other standalone laws', () => {
+      const inbound = new Map<number, number>();
+      for (const law of standalone) {
+        for (const related of pickRelatedStandaloneLaws(law, category)) inbound.set(related.id, (inbound.get(related.id) || 0) + 1);
+      }
+      expect(inbound.size).toBe(standalone.length);
+      expect([...inbound.values()].every((count) => count === 3)).toBe(true);
+    });
+
+    it('gives a corollary three standalone laws, not itself', () => {
+      for (const law of category.filter((candidate) => candidate.corollary_of_id != null)) {
+        const related = pickRelatedStandaloneLaws(law, category);
+        expect(related).toHaveLength(3);
+        expect(related.every((r) => r.corollary_of_id == null)).toBe(true);
+      }
+    });
+
+    it('does not mix up corollaries with each other: different corollaries get different laws', () => {
+      const [first, second] = category.filter((candidate) => candidate.corollary_of_id != null);
+      expect(pickRelatedStandaloneLaws(first!, category).map((r) => r.id)).not.toEqual(pickRelatedStandaloneLaws(second!, category).map((r) => r.id));
+    });
+
+    it('treats a corollary of an unpublished law (no corollary_of_id) as an ordinary law', () => {
+      const orphan: TestLaw = { id: 5, corollary_of_id: null };
+      const laws = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, orphan];
+      expect(pickRelatedStandaloneLaws({ id: 1 }, laws).map((r) => r.id)).toEqual([2, 3, 5]);
+      expect(pickRelatedStandaloneLaws({ id: 4 }, laws).map((r) => r.id)).toContain(5);
+    });
+
+    it('returns nothing when a category has no other standalone law', () => {
+      const lonely: TestLaw[] = [{ id: 1 }, { id: 2, corollary_of_id: 1 }];
+      expect(pickRelatedStandaloneLaws(lonely[0]!, lonely)).toEqual([]);
+      expect(pickRelatedStandaloneLaws(lonely[1]!, lonely).map((r) => r.id)).toEqual([1]);
     });
   });
 

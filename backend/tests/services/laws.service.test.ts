@@ -1006,6 +1006,100 @@ describe('LawService', () => {
       expect(related[0].text).toBe('Published');
     });
 
+    describe('without votes', () => {
+      let ids: number[];
+
+      beforeEach(() => {
+        const categoryId = db.prepare("INSERT INTO categories (slug, title) VALUES ('misc', 'Miscellaneous')").run().lastInsertRowid;
+        ids = [];
+        for (let i = 1; i <= 30; i++) {
+          const id = Number(db.prepare("INSERT INTO laws (text, status) VALUES (?, 'published')").run(`Law ${i}`).lastInsertRowid);
+          db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(id, categoryId);
+          ids.push(id);
+        }
+      });
+
+      const relatedIds = async (lawId: number, limit = 3): Promise<number[]> =>
+        ((await lawService.getRelatedLaws(lawId, { limit })) as { id: number }[]).map((r) => r.id);
+
+      it('gives the same laws on every request for the same page', async () => {
+        const first = await relatedIds(ids[0]!);
+        expect(first).toHaveLength(3);
+        expect(await relatedIds(ids[0]!)).toEqual(first);
+      });
+
+      it('does not give every page the newest laws', async () => {
+        const newest = [...ids].reverse().slice(0, 3);
+        const lists = await Promise.all(ids.slice(0, 10).map((id) => relatedIds(id)));
+        expect(new Set(lists.map((list) => list.join(','))).size).toBeGreaterThan(5);
+        expect(lists.filter((list) => list.join(',') === newest.join(',')).length).toBeLessThan(3);
+      });
+
+      it('lets votes outrank the shuffle', async () => {
+        const upvoted = ids[4]!;
+        db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'v1')").run(upvoted);
+        for (const id of [ids[0]!, ids[10]!, ids[20]!]) {
+          expect((await relatedIds(id))[0]).toBe(upvoted);
+        }
+      });
+    });
+
+    it('should not return corollaries', async () => {
+      const categoryId = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run().lastInsertRowid;
+      const insertLaw = (text: string): number => {
+        const id = Number(db.prepare("INSERT INTO laws (text, status) VALUES (?, 'published')").run(text).lastInsertRowid);
+        db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(id, categoryId);
+        return id;
+      };
+      const current = insertLaw('Current');
+      const standalone = insertLaw('Standalone');
+      const parent = insertLaw('Parent');
+      const child = insertLaw('Child corollary');
+      db.prepare("INSERT INTO law_relations (from_law_id, to_law_id, relation_type) VALUES (?, ?, 'COROLLARY_OF')").run(child, parent);
+      // A relation that is not a corollary does not hide a law
+      const commented = insertLaw('Commented law');
+      db.prepare("INSERT INTO law_relations (from_law_id, to_law_id, relation_type) VALUES (?, ?, 'COMMENT_ON')").run(commented, standalone);
+
+      const related = (await lawService.getRelatedLaws(current)) as { id: number }[];
+      expect(related.map((r) => r.id).sort((a, b) => a - b)).toEqual([standalone, parent, commented]);
+    });
+
+    it('should not return corollaries even when they have the most votes', async () => {
+      const categoryId = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run().lastInsertRowid;
+      const insertLaw = (text: string): number => {
+        const id = Number(db.prepare("INSERT INTO laws (text, status) VALUES (?, 'published')").run(text).lastInsertRowid);
+        db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(id, categoryId);
+        return id;
+      };
+      const current = insertLaw('Current');
+      const parent = insertLaw('Parent');
+      const child = insertLaw('Popular corollary');
+      db.prepare("INSERT INTO law_relations (from_law_id, to_law_id, relation_type) VALUES (?, ?, 'COROLLARY_OF')").run(child, parent);
+      db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'v1')").run(child);
+
+      const related = (await lawService.getRelatedLaws(current)) as { id: number }[];
+      expect(related.map((r) => r.id)).toEqual([parent]);
+    });
+
+    it('should still return a corollary whose parent is not published', async () => {
+      const categoryId = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run().lastInsertRowid;
+      const insertLaw = (text: string, status = 'published'): number => {
+        const id = Number(db.prepare('INSERT INTO laws (text, status) VALUES (?, ?)').run(text, status).lastInsertRowid);
+        db.prepare('INSERT INTO law_categories (law_id, category_id) VALUES (?, ?)').run(id, categoryId);
+        return id;
+      };
+      const current = insertLaw('Current');
+      const inReviewParent = insertLaw('Parent in review', 'in_review');
+      const rejectedParent = insertLaw('Rejected parent', 'rejected');
+      const underReview = insertLaw('Corollary of a law in review');
+      const underRejected = insertLaw('Corollary of a rejected law');
+      db.prepare("INSERT INTO law_relations (from_law_id, to_law_id, relation_type) VALUES (?, ?, 'COROLLARY_OF')").run(underReview, inReviewParent);
+      db.prepare("INSERT INTO law_relations (from_law_id, to_law_id, relation_type) VALUES (?, ?, 'COROLLARY_OF')").run(underRejected, rejectedParent);
+
+      const related = (await lawService.getRelatedLaws(current)) as { id: number }[];
+      expect(related.map((r) => r.id).sort((a, b) => a - b)).toEqual([underReview, underRejected]);
+    });
+
     it('should handle laws with multiple categories', async () => {
       const cat1 = db.prepare("INSERT INTO categories (slug, title) VALUES ('tech', 'Technology')").run();
       const cat2 = db.prepare("INSERT INTO categories (slug, title) VALUES ('humor', 'Humor')").run();

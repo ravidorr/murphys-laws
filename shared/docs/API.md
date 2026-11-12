@@ -367,7 +367,7 @@ Get a single law by ID.
 
 #### GET /api/v1/laws/:id/related
 
-Get related laws from the same category(ies) as the specified law, sorted by score.
+Get related laws from the same category(ies) as the specified law, sorted by score. Corollaries of published laws are not returned. Laws with equal scores are ordered by a fixed pattern that depends on the law's id, so each law gets its own mix and repeated requests return the same one.
 
 **Path Parameters:**
 

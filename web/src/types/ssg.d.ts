@@ -120,6 +120,7 @@ declare module '@scripts/ssg' {
   export const REVIEWED_LAW_TITLES: string[];
   export function categorySitemapPaths(categories: StaticCategory[]): string[];
   export function pickRelatedLaws<T extends { id: number }>(law: T, categoryLaws: T[], count?: number): T[];
+  export function pickRelatedStandaloneLaws<T extends { id: number; corollary_of_id?: number | null }>(law: T, categoryLaws: T[]): T[];
   export function renderLawLinkList(
     laws: StaticLaw[],
     seoById: Map<string, { title: string; description: string; headline: string }>
