@@ -24,9 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   script in `index.html` (ES5) does the same when a reload starts it inside that minute, and an early result that was
   requested before the last vote is no longer adopted, so a visit that went from the home page to a law page, voted
   there and came back refetches. Storage errors are ignored (the cache then just ages out), and a stored value that is
-  not a time, or is far ahead of the clock, is ignored rather than bypassing the cache for good. This covers the web app
-  only: the native apps (the iOS app's `URLSession` honors the new `max-age`; Android's client has no HTTP cache), the
-  SDK, CLI and MCP server are unchanged and can show counts up to 60 seconds old. Web bumped to `3.4.112`.
+  not a time, or is far ahead of the clock, is ignored rather than bypassing the cache for good. The iOS app's
+  law-of-day request now uses `.reloadIgnoringLocalCacheData` (a `cachePolicy` parameter on `APIService.request`), so
+  `URLSession` no longer answers a pull-to-refresh after a vote from the 60 second cache. The Android app's OkHttp
+  client has no cache, and the SDK, CLI and MCP server use Node `fetch`, which has none, so they always ask the server.
+  Web bumped to `3.4.112`; iOS to `1.2.13 (29)`; root to `2.6.223`.
 - The footer ad and Google Analytics (gtag) no longer start on the visitor's first click, key press or scroll (the slow
   "Email address" key press in Sentry's INP samples). The footer ad now loads once the page has loaded and the browser
   is idle (`requestIdleCallback` with a 3 s bound, a 3 s timer in Safari), and still also when the footer nears the
