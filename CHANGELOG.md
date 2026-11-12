@@ -33,7 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   logged instead of reported as a 0 ms response, and a response under a millisecond no longer breaks the
   slow-response comparison. Tests run `check_http_endpoint` with a curl that, like the real one, honors only the last
   `-w`, for 200, an error status, a failed connection, a slow response, a sub-millisecond one and a failing `bc`.
-  Root bumped to `2.6.213`; backend to `2.3.81`.
+  The tests supply their own `bc`, so they do not depend on the host having one.
+  Root bumped to `2.6.214`; backend to `2.3.82`.
 - Select dropdown carets are now inset from the border in every dropdown.
   Web bumped to `3.4.50`; root to `2.6.136`.
 

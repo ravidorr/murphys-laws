@@ -619,10 +619,15 @@ describe('health-check.sh check_http_endpoint', () => {
     const box = sandbox();
     writeFileSync(path.join(box.bin, 'curl'), FAKE_CURL);
     chmodSync(path.join(box.bin, 'curl'), 0o755);
-    if (fake.brokenBc) {
-      writeFileSync(path.join(box.bin, 'bc'), '#!/bin/bash\ncat >/dev/null\nexit 1\n');
-      chmodSync(path.join(box.bin, 'bc'), 0o755);
-    }
+    // bc is not a development prerequisite, so the sandbox always supplies its own. The working one does the
+    // "<seconds> * 1000" the script asks for and, like bc, prints no leading zero below 1 (".4000").
+    writeFileSync(
+      path.join(box.bin, 'bc'),
+      fake.brokenBc
+        ? '#!/bin/bash\ncat >/dev/null\nexit 1\n'
+        : '#!/bin/bash\nread -r a _ b\nawk -v a="$a" -v b="$b" \'BEGIN { printf "%.4f\\n", a * b }\' | sed \'s/^0\\././\'\n',
+    );
+    chmodSync(path.join(box.bin, 'bc'), 0o755);
     const driver = 'check_http_endpoint "https://example.test" Frontend\necho "RC=$?"\n';
     const file = install(box, 'health-check.sh', throughFunction('health-check.sh', 'check_http_endpoint') + driver);
     const result = runFile(file, [], box, {
