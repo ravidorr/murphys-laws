@@ -68,6 +68,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The "Related Laws" list on a law page no longer shows the same three newest laws on every page of a category, or
+  corollaries of unrelated laws. `GET /api/v1/laws/{id}/related` still ranks by votes, but it no longer returns
+  corollaries of published laws (a law page already lists its own), and laws with the same score and upvotes, which is
+  nearly all of them, are now ordered by a fixed pattern that depends on the current law's id. Each page gets its own
+  mix, and the mix stays the same until votes or the published laws change. A corollary whose parent law is not
+  published still counts as an ordinary law, as in the law list. The prerendered pages leave corollaries out of their
+  related links too, so a corollary does not show up before the page loads and then disappear. Backend bumped to
+  `2.3.84`, web to `3.4.107`, root to `2.6.216`.
 - On screens narrower than 600px, the Sod's Law Calculator keeps a compact score pinned to the bottom of the screen
   while the sliders are in view, so visitors see the score change as they move a slider instead of scrolling down to
   it. The pinned score is a labelled group (named after the "Probability of Things Going Wrong:" heading), a slider that

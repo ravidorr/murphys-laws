@@ -13,6 +13,13 @@ import { isUsefulDuplicateMatch, scoreDuplicateSimilarity } from '../../../share
 
 type Db = InstanceType<typeof Database>;
 
+/**
+ * Appended to a query over `laws l` to leave out corollaries: laws that are the "from" side of a COROLLARY_OF
+ * relation whose parent is published. A corollary under an unpublished parent has no page to point at, so it stays
+ * an ordinary law (the same published-parent rule that sets corollary_of_id).
+ */
+const EXCLUDE_PUBLISHED_COROLLARIES = ` AND NOT EXISTS (SELECT 1 FROM law_relations r JOIN laws p ON p.id = r.to_law_id WHERE r.from_law_id = l.id AND r.relation_type = '${COROLLARY_RELATION}' AND p.status = 'published')`;
+
 export interface ListLawsParams {
   limit: number;
   offset: number;
@@ -206,17 +213,12 @@ export class LawService {
     const like = `%${q}%`;
     const attributionLike = `%${attribution}%`;
 
-    // Exclude corollaries: laws that are the "from" side of a COROLLARY_OF relation whose parent is published. A
-    // corollary under an unpublished parent has no page to point at, so it stays listed as an ordinary law (the same
-    // published-parent rule that sets corollary_of_id).
-    const noCorollaryCondition = ` AND NOT EXISTS (SELECT 1 FROM law_relations r JOIN laws p ON p.id = r.to_law_id WHERE r.from_law_id = l.id AND r.relation_type = '${COROLLARY_RELATION}' AND p.status = 'published')`;
-
     // Build parameter arrays
     const countParams = [];
     const listParams = [];
 
-    let where = excludeCorollaries ? noCorollaryCondition : '';
-    let countWhere = "WHERE l.status = 'published'" + (excludeCorollaries ? noCorollaryCondition : '');
+    let where = excludeCorollaries ? EXCLUDE_PUBLISHED_COROLLARIES : '';
+    let countWhere = "WHERE l.status = 'published'" + (excludeCorollaries ? EXCLUDE_PUBLISHED_COROLLARIES : '');
 
     if (hasQ) {
       if (useFts) {
@@ -438,8 +440,12 @@ export class LawService {
 
     const categoryIds = categories.map((c: LawCategoryRow) => c.category_id);
 
-    // 2. Fetch related laws from same categories, excluding current law
-    // Sort by score, limit to requested count
+    // 2. Fetch related laws from same categories, excluding the current law and every corollary of a published law.
+    // A law page lists its own corollaries in their own section, and other laws' corollaries read oddly under an
+    // unrelated law.
+    // Sort by score, then upvotes. Many laws have no votes, so ties are common: the tie is broken by a fixed pattern
+    // that depends on the current law's id, so each page gets its own mix instead of the newest laws on every page.
+    // The mix stays the same until votes or the published laws change.
     const placeholders = categoryIds.map(() => '?').join(',');
     const sql = `
       SELECT DISTINCT
@@ -454,13 +460,13 @@ export class LawService {
       JOIN law_categories lc ON lc.law_id = l.id
       WHERE lc.category_id IN (${placeholders})
         AND l.id != ?
-        AND l.status = 'published'
-      ORDER BY score DESC, upvotes DESC, l.id DESC
+        AND l.status = 'published'${EXCLUDE_PUBLISHED_COROLLARIES}
+      ORDER BY score DESC, upvotes DESC, ((l.id + ?) * 2654435761) % 4294967296, l.id DESC
       LIMIT ?
     `;
 
     const stmt = this.db.prepare(sql);
-    return stmt.all(...categoryIds, lawId, limit);
+    return stmt.all(...categoryIds, lawId, lawId, limit);
   }
 
   async getLawOfTheDay(): Promise<{ law: LawRow; featured_date: string } | null> {

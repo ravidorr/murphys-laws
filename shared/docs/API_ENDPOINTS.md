@@ -106,7 +106,7 @@ Fetch a single law by ID.
 ---
 
 #### GET `/api/v1/laws/{id}/related`
-Fetch related laws from the same category(ies).
+Fetch related laws from the same category(ies), ranked by score, then upvotes. Corollaries of published laws are not returned. Laws with the same score and the same number of upvotes are ordered by a fixed pattern that depends on the law's id, so each law gets its own mix. The mix stays the same until votes or the published laws change.
 
 **Path Parameters:**
 - `id` (number): Law ID

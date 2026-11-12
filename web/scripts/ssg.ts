@@ -493,6 +493,27 @@ function pickRelatedLaws<T extends { id: number }>(law: T, categoryLaws: T[], co
   return [...picked.values()].slice(0, count);
 }
 
+/**
+ * The related laws for one law page: the ring walk over the category's laws that are not corollaries. A page lists
+ * its own corollaries separately, and a corollary reads oddly under an unrelated law, so the links leave corollaries
+ * out, as the API's related list does. That list replaces this one once the page loads, and the corollary rule is the
+ * only thing they share: this ring ignores votes and uses the law's primary category. `categoryLaws` must be sorted
+ * by id, as the per-category lists in the build are. A corollary's own page walks the ring from the place its id would
+ * take among the standalone laws. `corollary_of_id` is set only for a corollary of a published law, so a corollary
+ * under an unpublished one counts as an ordinary law, as everywhere else.
+ */
+function pickRelatedStandaloneLaws<T extends { id: number; corollary_of_id?: number | null }>(law: T, categoryLaws: T[]): T[] {
+  const standalone = categoryLaws.filter((candidate) => candidate.corollary_of_id == null);
+  if (law.corollary_of_id == null) return pickRelatedLaws(law, standalone);
+  return pickRelatedLaws(law, [...standalone, law].sort((left, right) => left.id - right.id));
+}
+
+/** The related laws for a law's page, from the laws of its primary category. A law without a category has none. */
+function relatedLawsForPage<T extends { id: number; category_slug?: string; corollary_of_id?: number | null }>(law: T, lawsByCategorySlug: Map<string, T[]>): T[] {
+  if (!law.category_slug) return [];
+  return pickRelatedStandaloneLaws(law, lawsByCategorySlug.get(law.category_slug) || []);
+}
+
 /** Plain list of links to laws (label only), for crawlable indexes that would be too long as cards. */
 function renderLawLinkList(laws: Law[], seoById: Map<string, LawSeo>): string {
   if (laws.length === 0) return '';
@@ -1849,9 +1870,7 @@ ${articleArchive.submitAction}
     const lawPageDir = path.join(lawDir, String(law.id));
     await fs.mkdir(lawPageDir, { recursive: true });
     
-    const relatedLaws = law.category_slug
-      ? pickRelatedLaws(law, lawsByCategorySlug.get(law.category_slug) || [])
-      : [];
+    const relatedLaws = relatedLawsForPage(law, lawsByCategorySlug);
     const lawPageHtml = generateLawPage(law, template, relatedLaws, lawSeoById.get(String(law.id)), corollaryIndex.get(law.id));
     await fs.writeFile(path.join(lawPageDir, 'index.html'), lawPageHtml);
   }
@@ -2013,6 +2032,8 @@ export {
   REVIEWED_LAW_TITLES,
   categorySitemapPaths,
   pickRelatedLaws,
+  pickRelatedStandaloneLaws,
+  relatedLawsForPage,
   renderLawLinkList,
   buildCorollaryIndex
 };
