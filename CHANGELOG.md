@@ -177,9 +177,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CSV, and it and the capacity analyzer behind the cost report only count rows from the last 30 days, measured from the
   real clock. From 9 November 2026 the row fell outside the window, the script printed `{"sampleCount":0,"metrics":[]}` and
   the assertions failed. The cost test had kept passing because it accepted "Collecting baseline" whatever the sample
-  count; it now asserts that decision and that the one sample is counted, and the peaks test asserts the sample count and
+  count; it now asserts that decision and that the sample is counted, and the peaks test asserts the sample count and
   one metric's value and timestamp. The fixture is dated one day before the test runs. The scripts are unchanged.
-  Root bumped to `2.6.229`.
+  The counts are asserted as at least one sample rather than exactly one, because on a month-end day
+  `analyze-resource-peaks.sh` computes the previous month with `date -d "1 month ago"`, which lands in the current month
+  and reads the same CSV twice; that is tracked separately. Root bumped to `2.6.230`.
 - `health-check.sh` no longer sends a false "[CRITICAL] Frontend/API Error - HTTP" alert with an empty status for a
   healthy site (the Nov 12 10:16 UTC alerts). It passed `-w` to curl twice and curl keeps only the last, so the status
   code was never printed and the empty value never equalled `200`. It now reads the status and the time from one
