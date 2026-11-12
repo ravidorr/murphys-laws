@@ -327,6 +327,11 @@ jobs:
               exit 1
             fi
 
+            # npm ci can exit 0 and still leave a package without its entry file, which only shows up later
+            # as a crashing health check; stop before the migrations and the restart if one is unusable
+            echo "==> Verifying installed dependencies resolve"
+            node scripts/verify-installed-dependencies.mjs
+
             echo "==> Running migrations"
             npm run migrate
 
