@@ -14,6 +14,25 @@ function parseBoundedInt(value: unknown, { min, max, fallback }: { min: number; 
   return Math.max(min, Math.min(max, Math.trunc(parsed)));
 }
 
+// Longest a browser or shared cache may reuse the Law of the Day response. It carries live vote counts, so keep it short.
+const LAW_OF_DAY_MAX_AGE_SECONDS = 60;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * Cache-Control for a successful Law of the Day response: reusable for up to a minute, but never past the end of the
+ * UTC day the law was featured on (the next day's law is chosen at 00:00 UTC), so a cache cannot serve yesterday's law
+ * after midnight. The seconds left are rounded down, so in the last second of the day the value is `max-age=0`.
+ * There is deliberately no `stale-while-revalidate`: it would let a cache answer with yesterday's law right after
+ * midnight while it refetches.
+ */
+export function lawOfDayCacheControl(featuredDate: string, nowMs: number = Date.now()): string {
+  const dayEndMs = Date.parse(`${featuredDate}T00:00:00Z`) + MS_PER_DAY;
+  const secondsLeft = Math.floor((dayEndMs - nowMs) / 1000);
+  // A featured_date that does not parse (NaN) or is already over gets max-age=0: still cacheable, always revalidated.
+  const maxAge = Number.isFinite(secondsLeft) ? Math.max(0, Math.min(LAW_OF_DAY_MAX_AGE_SECONDS, secondsLeft)) : 0;
+  return `public, max-age=${maxAge}`;
+}
+
 export class LawController {
   lawService: any;
   emailService: any;
@@ -113,7 +132,12 @@ export class LawController {
     if (!result) {
       return sendJson(res, 404, { error: 'No published laws available' }, req);
     }
-    return sendJson(res, 200, result, req);
+    // Only the 200 carries Cache-Control: a 404 (no published laws yet) and errors must not be reused.
+    // Vary: Origin because the CORS origin echoed back depends on the request's Origin when ALLOWED_ORIGINS is a list.
+    return sendJson(res, 200, result, req, null, {
+      'Cache-Control': lawOfDayCacheControl(result.featured_date),
+      'Vary': 'Origin',
+    });
   }
 
   async suggestions(req: any, res: any, parsed: any) {

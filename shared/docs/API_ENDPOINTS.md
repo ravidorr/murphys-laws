@@ -237,6 +237,10 @@ Get the law of the day (daily rotating law selected by algorithm).
 }
 ```
 
+**Caching:** A successful response carries `Cache-Control: public, max-age=N` (N is the lesser of 60 and the seconds
+left in the UTC day, so it never outlives 00:00 UTC) and `Vary: Origin`. Vote counts can be up to N seconds old.
+Errors and the 404 send no `Cache-Control`.
+
 **Note:** The frontend wraps this in a format compatible with `fetchLaws()`:
 ```json
 {

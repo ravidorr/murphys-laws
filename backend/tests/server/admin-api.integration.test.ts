@@ -467,12 +467,29 @@ describe('admin API through the real server and migrated database', () => {
   it('keeps law of the day working after the featured law is rejected', async () => {
     await request('POST', `/api/v1/admin/laws/${lawId}`, { token: TOKEN, body: { status: 'published' } });
     db.prepare('INSERT INTO law_of_the_day_history (law_id, featured_date) VALUES (?, ?)').run(lawId, new Date().toISOString().split('T')[0]);
-    expect((await request('GET', '/api/v1/law-of-day')).json().law.id).toBe(lawId);
+    const first = await request('GET', '/api/v1/law-of-day');
+    expect(first.json().law.id).toBe(lawId);
+    // Through the real router: a short public max-age (at most 60 seconds, fewer near 00:00 UTC) and Vary: Origin.
+    expect(first.headers['Cache-Control']).toMatch(/^public, max-age=([0-9]|[1-5][0-9]|60)$/);
+    expect(first.headers['Vary']).toBe('Origin');
 
     await request('POST', `/api/v1/admin/laws/${lawId}`, { token: TOKEN, body: { status: 'rejected' } });
     const reply = await request('GET', '/api/v1/law-of-day');
     expect(reply.status).toBe(200);
     expect(reply.json().law.id).not.toBe(lawId);
+  });
+
+  it('sends no Cache-Control with the 500 when the law of the day lookup throws', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(db, 'prepare').mockImplementationOnce(() => {
+      throw new Error('database is locked');
+    });
+
+    const reply = await request('GET', '/api/v1/law-of-day');
+
+    expect(reply.status).toBe(500);
+    expect(reply.headers['Cache-Control']).toBeUndefined();
+    expect(reply.headers['Vary']).toBeUndefined();
   });
 
   it('throttles repeated wrong tokens per IP without blocking the real admin or other IPs', async () => {
