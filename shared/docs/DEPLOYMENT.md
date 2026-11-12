@@ -184,8 +184,10 @@ step (see "A rejected nginx configuration" above for what the deploy does then).
 
 ## Browser caching
 
-The static files nginx serves from `web/dist/` fall into four groups (the nested locations of `location /` in
-`nginx.conf`, first match wins; `web/tests/nginx-performance.test.ts` pins the table):
+The static files nginx serves from `web/dist/` are governed by four caching rules (the nested locations of `location /` in
+`nginx.conf`, first match wins; `web/tests/nginx-performance.test.ts` pins the table). Everything else sends no
+`Cache-Control` at all: the pages, `ads.txt`, `llms.txt`, `llms-full.txt`, `offline.html`, `.webp` images, unhashed `.woff2`
+fonts and source maps.
 
 | Files | `Cache-Control` |
 | --- | --- |
@@ -195,9 +197,11 @@ The static files nginx serves from `web/dist/` fall into four groups (the nested
 | Images (`.png`, `.jpg`, `.jpeg`, `.gif`, `.ico`, `.svg`) | `max-age=31536000` and `public, no-transform` (`expires 1y` plus `add_header`) |
 
 `no-cache` means the browser may store the file but must revalidate it before every use; nginx answers with a `304` from the
-`ETag` and `Last-Modified` it already sends. Anything that keeps its URL while its content changes belongs in the
-`no-cache` groups: a script or stylesheet without a hash that is added later lands there by default. Pages and the other
-text files (`ads.txt`, `llms.txt`) have no `Cache-Control` header. A `location` that sets its own `add_header` drops the
+`ETag` and `Last-Modified` it already sends. A script, stylesheet or data file that keeps its URL while its content changes
+belongs in the `no-cache` rows: a script or stylesheet without a hash that is added later lands there by default. Images are
+a deliberate exception: they rarely change and are not content-hashed, so they keep the one-year lifetime, and a changed
+image can stay stale in browsers for up to a year. The service worker precaches the unhashed scripts, stylesheets and the
+manifest with `cache: 'reload'`, so a new worker never takes an old copy from the browser's HTTP cache. A `location` that sets its own `add_header` drops the
 ones inherited from above, so give each location exactly one `add_header Cache-Control`. Do not add `expires` to it unless
 you want the second header on purpose, as the image rule does (`expires 1y` sends `max-age` and an `Expires` date).
 

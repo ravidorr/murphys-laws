@@ -88,6 +88,122 @@ describe("service worker generation", () => {
     );
   });
 
+  describe("precache requests", () => {
+    const urls = [
+      "/",
+      "/offline.html",
+      "/offline.js",
+      "/manifest.webmanifest",
+      "/styles/embed.css",
+      "/styles/partials/variables.css",
+      "/assets/index-DZClfRb6.js",
+      "/assets/style-BhqpAbOy.css",
+      "/assets/main.js",
+      "/assets/logo-AbCdEfGh.png",
+      "/assets/font-AbCdEfGh.woff2",
+      "/favicon.ico",
+      "/social/home.webp",
+    ];
+
+    // Runs the generated worker's install handler and returns the requests it hands to Cache.addAll.
+    async function installRequests(
+      hostname: string,
+      addAll: (requests: unknown[]) => Promise<void> = async () => undefined,
+    ): Promise<{ url: string; cache: string }[]> {
+      const source = renderServiceWorker({ revision: "test-revision", urls });
+      let installHandler: ((event: unknown) => void) | undefined;
+      const fakeSelf = {
+        location: { hostname, origin: `https://${hostname}` },
+        skipWaiting: () => Promise.resolve(),
+        addEventListener: (type: string, handler: (event: unknown) => void) => {
+          if (type === "install") installHandler = handler;
+        },
+      };
+      class FakeRequest {
+        cache: string;
+        constructor(
+          public url: string,
+          init: { cache?: string } = {},
+        ) {
+          this.cache = init.cache ?? "default";
+        }
+      }
+      const seen: { url: string; cache: string }[] = [];
+      const caches = {
+        open: async () => ({
+          addAll: (requests: FakeRequest[]) => {
+            seen.push(...requests.map(({ url, cache }) => ({ url, cache })));
+            return addAll(requests);
+          },
+        }),
+      };
+      new Function("self", "caches", "fetch", "Request", source)(
+        fakeSelf,
+        caches,
+        async () => new Response("ok"),
+        FakeRequest,
+      );
+      let installed: Promise<unknown> = Promise.resolve();
+      installHandler?.({ waitUntil: (promise: Promise<unknown>) => (installed = promise) });
+      await installed;
+      return seen;
+    }
+
+    it("bypasses the HTTP cache for the unhashed scripts, stylesheets and manifest", async () => {
+      // Returning visitors hold these in the HTTP cache with a one-year lifetime from before they sent no-cache.
+      const requests = await installRequests("murphys-laws.com");
+      const cacheOf = Object.fromEntries(requests.map(({ url, cache }) => [url, cache]));
+
+      for (const url of [
+        "/offline.js",
+        "/manifest.webmanifest",
+        "/styles/embed.css",
+        "/styles/partials/variables.css",
+        "/assets/main.js",
+      ]) {
+        expect(cacheOf[url], url).toBe("reload");
+      }
+    });
+
+    it("keeps the HTTP cache for hashed bundles, images, fonts and the two pages (network-first offline fallbacks)", async () => {
+      const requests = await installRequests("murphys-laws.com");
+      const cacheOf = Object.fromEntries(requests.map(({ url, cache }) => [url, cache]));
+
+      for (const url of [
+        "/",
+        "/offline.html",
+        "/assets/index-DZClfRb6.js",
+        "/assets/style-BhqpAbOy.css",
+        "/assets/logo-AbCdEfGh.png",
+        "/assets/font-AbCdEfGh.woff2",
+        "/favicon.ico",
+        "/social/home.webp",
+      ]) {
+        expect(cacheOf[url], url).toBe("default");
+      }
+    });
+
+    it("precaches exactly the listed URLs, in order, in one addAll call", async () => {
+      const calls: number[] = [];
+      const requests = await installRequests("murphys-laws.com", async (list) => {
+        calls.push(list.length);
+      });
+
+      expect(requests.map(({ url }) => url)).toEqual(urls);
+      expect(calls).toEqual([urls.length]);
+    });
+
+    it("still fails the install when a precache request fails", async () => {
+      await expect(
+        installRequests("murphys-laws.com", () => Promise.reject(new Error("offline"))),
+      ).rejects.toThrow("offline");
+    });
+
+    it("does not precache on other hosts", async () => {
+      expect(await installRequests("preview.example.com")).toEqual([]);
+    });
+  });
+
   it("bypasses cache storage for unlisted same-origin API routes", () => {
     const source = renderServiceWorker({
       revision: "test-revision",

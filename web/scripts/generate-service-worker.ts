@@ -121,6 +121,20 @@ const REVISION = ${JSON.stringify(revision)};
 const PRECACHE = \`murphys-precache-\${REVISION}\`;
 const RUNTIME = \`murphys-runtime-\${REVISION}\`;
 const PRECACHE_URLS = ${JSON.stringify(precacheUrls)};
+// Cache.addAll reads through the HTTP cache. Scripts, stylesheets and the manifest that keep their URL while their
+// content changes (/offline.js, /styles/*, /manifest.webmanifest) may sit in a returning visitor's HTTP cache from
+// before nginx sent no-cache for them (they had a one-year lifetime), so a new worker would precache the old copy
+// and the visitor would stay stale for up to a year. Those requests bypass the HTTP cache (cache: 'reload'), which
+// also refreshes the HTTP cache entry. Not everything gets it: hashed /assets/ bundles never change under their URL
+// and images keep their one-year lifetime, so re-downloading them on every worker install would only waste bandwidth.
+// The two precached pages ("/" and /offline.html) also stay on the HTTP cache: navigations are network-first, so the
+// precached copies are only offline fallbacks, and the server sends them no Cache-Control (short heuristic freshness).
+const HASHED_BUNDLE_PATTERN = /^\\/assets\\/.+-[A-Za-z0-9_-]{8}\\.(js|css)$/;
+const REVALIDATED_PATTERN = /\\.(js|css|webmanifest)$/;
+const precacheRequest = (url) =>
+  new Request(url, {
+    cache: REVALIDATED_PATTERN.test(url) && !HASHED_BUNDLE_PATTERN.test(url) ? 'reload' : 'default',
+  });
 const STATIC_FILE_PATTERN = /^\\/[^/]+\\.(txt|xml|json|rss|atom)(\\?.*)?$/;
 const IS_CANONICAL_HOST = self.location.hostname === 'murphys-laws.com';
 
@@ -183,7 +197,7 @@ self.addEventListener('install', (event) => {
   }
   event.waitUntil(
     caches.open(PRECACHE)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then((cache) => cache.addAll(PRECACHE_URLS.map(precacheRequest)))
   );
 });
 

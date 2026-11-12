@@ -15,13 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   could really stay stale were `/offline.js` and the stylesheets, which the service worker's precache also reads through
   the HTTP cache. They now send a single `Cache-Control: no-cache` (stored, but revalidated before each use; the `ETag`
   makes that a `304` with no body), as do `/manifest.webmanifest`, `/robots.txt`, `/sitemap.xml` and
-  `/image-sitemap.xml`. Any `.js` or `.css` file outside the hashed `/assets/` files gets this by default, so a future
-  unhashed script is safe. Hashed assets stay `immutable` and the images keep their one-year lifetime. Checked in an
+  `/image-sitemap.xml` (which sent no `Cache-Control` before). Any `.js` or `.css` file without a content hash gets this
+  by default, so a future unhashed script is safe. Hashed assets stay `immutable` and the images keep their one-year
+  lifetime (images rarely change; a changed one can stay stale in browsers for a long time). Checked in an
   nginx 1.24 container for every file class with `nginx -t` and `curl -I`;
   `web/tests/nginx-performance.test.ts` models the location precedence and pins the headers of each class, and
   `shared/docs/DEPLOYMENT.md` has the table and how to repeat the check. The manifest is still served as
-  `application/octet-stream` and the pages still send no `Cache-Control` (both in `TODO.md`). Web bumped to `3.4.113`;
-  root to `2.6.225`.
+  `application/octet-stream` and the pages still send no `Cache-Control` (both in `TODO.md`).
+  The service worker's precache now bypasses the HTTP cache (`cache: 'reload'`) for the unhashed scripts, stylesheets
+  and the manifest. Returning visitors already hold `/offline.js` and `/styles/*` in their HTTP cache with a one-year
+  lifetime from earlier fetches, and `Cache.addAll` reads through that cache, so a new worker would have precached the
+  old copies and kept them stale for up to a year. This is a one-time transition: those cached copies are refreshed at
+  the next service worker install, and from then on the `no-cache` header keeps them current. Hashed bundles and
+  images are still precached through the HTTP cache, so an install does not download them again. Web bumped to
+  `3.4.114`; root to `2.6.226`.
 - The deploy now stops when nginx rejects the new configuration. Its nginx step ran
   `sudo nginx -t && sudo systemctl reload nginx`, and under `set -e` a failure in an `&&` list that is not its last
   command does not stop the script, so a rejected `nginx.conf` stayed in `sites-available` while the deploy went on
