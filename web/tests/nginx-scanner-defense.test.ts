@@ -186,6 +186,33 @@ describe('nginx scanner defense', () => {
     '/language/en-GB/en-GB.xml',
     '/language/de-DE/install.xml?x=1',
     '/Language/en-gb/en-GB.xml',
+    // Rails, Django, Jenkins and Expo secrets and build files, swept from one spoofed-Googlebot address
+    '/Gemfile.lock',
+    '/Gemfile',
+    '/Jenkinsfile',
+    '/app.json',
+    '/config.py',
+    '/instance/config.py',
+    '/credentials.py',
+    '/secrets.py',
+    '/local.py',
+    '/local_settings.py',
+    '/database.yml',
+    '/yarn.lock',
+    '/config/credentials.yml.enc',
+    '/config/environment.rb',
+    '/config/master.key',
+    '/app/config/master.key?x=1',
+    '/env',
+    '/env.txt',
+    '/env?x=1',
+    // Microsoft Remote Desktop Web Access and the Metabase pre-auth setup-token probe
+    '/RDWeb',
+    '/RDWeb/Pages',
+    '/rdweb/pages/en-US/login.aspx',
+    '/api/session/properties',
+    '/api/session/properties/',
+    '/api/session/properties?x=1',
   ])('flags %s as a scanner path', (uri) => {
     expect(isScannerPath(uri)).toBe(true);
   });
@@ -250,6 +277,24 @@ describe('nginx scanner defense', () => {
     '/.well-known/security.txt',
     '/browse?q=team',
     '/browse?q=services',
+    // Names next to the new scanner rules that must stay reachable, and queries that merely mention them
+    '/ads.txt',
+    '/app-ads.txt',
+    '/api/session',
+    '/api/session/propertiesx',
+    '/environment',
+    '/envelope',
+    '/env-notes',
+    '/envcheck-8fd5d32d5a7b.html',
+    '/browse?q=config.py',
+    '/browse?q=Gemfile.lock',
+    '/browse?q=app.json',
+    '/browse?q=env.txt',
+    '/browse?q=config/master.key',
+    '/search?q=RDWeb',
+    '/search?q=api/session/properties',
+    '/law/config',
+    '/category/murphys-laws-of-the-environment',
     '/search?q=account/create',
     '/category/murphys-laws-of-team-work',
     '/api/v1/laws?q=vpn',
@@ -714,12 +759,25 @@ describe('nginx legacy URL redirects', () => {
     ['/apple-touch-icon-167x167-precomposed.png', '/apple-touch-icon.png'],
     ['/favicon-512x512.png', '/android-chrome-512x512.png'],
     ['/security.txt', '/.well-known/security.txt'],
+    // llms.txt lists these as markdown links, [Browse](https://murphys-laws.com/browse), and naive crawlers keep the ")"
+    ['/browse)', '/browse'],
+    ['/categories)', '/categories'],
   ])('redirects %s to %s', (from, to) => {
     const start = conf.indexOf(`location = ${from} {`);
     expect(start).toBeGreaterThan(-1);
     expect(conf.slice(start, conf.indexOf('}', start))).toContain(
       `return 301 https://murphys-laws.com${to};`,
     );
+  });
+
+  // [Browse](https://murphys-laws.com/browse) in llms.txt is correct markdown; the crawler that keeps the ")" is wrong,
+  // so the fix is the redirect, and the page it lands on must be one the site really builds.
+  it.each(['/browse', '/categories'])('redirects the markdown-captured %s) to a page the site builds', (route) => {
+    expect(readFileSync(resolve(root, 'web', 'scripts', 'ssg.ts'), 'utf-8')).toContain(`canonicalPath: '${route}'`);
+    expect(readFileSync(resolve(root, 'web', 'public', 'llms.txt'), 'utf-8')).toContain(`(https://murphys-laws.com${route})`);
+    // The scanner map must not catch the request first: a block would drop it instead of redirecting it
+    expect(isScannerPath(`${route})`)).toBe(false);
+    expect(isScannerPath(`${route}%29`)).toBe(false);
   });
 
   it('sends an old /murphy/ link home in two hops: the trailing-slash rewrite, then the exact redirect', () => {
