@@ -5,6 +5,7 @@ import { marked } from 'marked';
 import { CALCULATOR_META_DESCRIPTIONS, CRANES_LAW_PAGE } from '../src/utils/constants.ts';
 import { Home, renderHome } from '../src/views/home.ts';
 import { ARCHIVE_SEARCH_HTML } from '../src/views/home-archive-search.ts';
+import { API_BASE_PLACEHOLDER, injectEarlyApiBase, unreplacedEarlyApiBase } from '../scripts/early-api-base.ts';
 import {
   wrapFirstWordWithAccent,
   enhanceMarkdownHtml,
@@ -133,6 +134,36 @@ describe('SSG Utilities', () => {
     it('does not apply to pages that are not checked for contact details', () => {
       const html = metadataTemplate.replace('</body>', '<p>Write to contact@murphys-laws.com</p></body>');
       expect(validateGeneratedPage(html, { canonicalPath: '/' })).toEqual([]);
+    });
+  });
+
+  describe('early API base placeholder', () => {
+    const readIndexHtml = () => readFileSync(resolve(__dirname, '../index.html'), 'utf8');
+
+    it('fails a generated page that still has the placeholder, which means the early-api-base plugin did not run', () => {
+      const unbuilt = metadataTemplate.replace('</head>', `<script>var url = '${API_BASE_PLACEHOLDER}/api/v1/law-of-day';</script></head>`);
+
+      const failures = validateGeneratedPage(unbuilt, { canonicalPath: '/' });
+
+      expect(failures).toHaveLength(1);
+      expect(failures[0]).toContain(API_BASE_PLACEHOLDER);
+      expect(failures[0]).toContain('early-api-base plugin');
+      expect(validateGeneratedPage(unbuilt.replace(API_BASE_PLACEHOLDER, ''), { canonicalPath: '/' })).toEqual([]);
+    });
+
+    it('fails the 404 page that still has the placeholder', () => {
+      const shell = metadataTemplate.replace('</head>', `<script>var url = '${API_BASE_PLACEHOLDER}';</script></head>`);
+
+      expect(validateNotFoundPage(buildNotFoundPage(shell, [])).join(' ')).toContain(API_BASE_PLACEHOLDER);
+    });
+
+    it('catches the source index.html as it is before the build and passes it once built', () => {
+      const source = readIndexHtml();
+
+      expect(source).toContain(API_BASE_PLACEHOLDER);
+      expect(unreplacedEarlyApiBase(source)).toContain(API_BASE_PLACEHOLDER);
+      expect(unreplacedEarlyApiBase(injectEarlyApiBase(source, ''))).toBeNull();
+      expect(unreplacedEarlyApiBase(injectEarlyApiBase(source, 'https://api.example.com'))).toBeNull();
     });
   });
 

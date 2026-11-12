@@ -216,8 +216,8 @@ export function Home({ onNavigate, onSearch }: { onNavigate: OnNavigate; onSearc
         if (currentLawZone) {
           renderDailyLawZone(currentLawZone, null, onNavigate, 'error');
         }
-        clearExportContent();
-        triggerAdSense(el);
+        // No law: clears the export content and still signals the ad listener, like a law would
+        onDailyLawShown(null);
       });
   }
 

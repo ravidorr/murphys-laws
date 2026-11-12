@@ -3,6 +3,7 @@ import type { MockInstance } from 'vitest';
 
 // Mock Sentry
 vi.mock('@sentry/browser', () => ({
+  addBreadcrumb: vi.fn(),
   captureException: vi.fn(),
   captureMessage: vi.fn()
 }));
@@ -594,6 +595,7 @@ describe('API utilities', () => {
       const preVoteLaw = { id: 5, text: 'Pre-vote law.', upvotes: 3, downvotes: 0 };
       window.__earlyLawOfDay = {
         law: preVoteLaw,
+        error: null,
         url: '/api/v1/law-of-day',
         startedAt: Date.now() - 20_000,
         promise: Promise.resolve(preVoteLaw),
@@ -610,7 +612,7 @@ describe('API utilities', () => {
     });
 
     it('fetches fresh when the early request failed and the visitor voted a moment ago', async () => {
-      window.__earlyLawOfDay = { law: null, url: '/api/v1/law-of-day', startedAt: Date.now(), promise: Promise.resolve(null) };
+      window.__earlyLawOfDay = { law: null, url: '/api/v1/law-of-day', startedAt: Date.now(), error: null, promise: Promise.resolve(null) };
       localStorage.setItem(LAST_VOTE_AT_KEY, String(Date.now() - 5_000));
 
       const result = await fetchLawOfTheDay();
@@ -620,9 +622,21 @@ describe('API utilities', () => {
       expect(result.data[0]).toEqual(lawBody.law);
     });
 
+    it('keeps the cache bypass on the retry that gets only what is left of the shared 10 s', async () => {
+      const timeoutSignal = vi.spyOn(AbortSignal, 'timeout');
+      window.__earlyLawOfDay = { law: null, url: '/api/v1/law-of-day', error: '503', startedAt: Date.now() - 3_000, promise: Promise.resolve(null) };
+      localStorage.setItem(LAST_VOTE_AT_KEY, String(Date.now() - 5_000));
+
+      await fetchLawOfTheDay();
+
+      expect(fetchSpy.mock.calls[0]![1]).toMatchObject({ cache: 'no-cache' });
+      expect(timeoutSignal.mock.calls[0]![0]).toBeGreaterThan(6_000);
+      expect(timeoutSignal.mock.calls[0]![0]).toBeLessThanOrEqual(7_000);
+    });
+
     it('still adopts a fresh early result when localStorage cannot be read', () => {
       const law = { id: 5, text: 'Early law.', upvotes: 4, downvotes: 0 };
-      window.__earlyLawOfDay = { law, url: '/api/v1/law-of-day', startedAt: Date.now(), promise: Promise.resolve(law) };
+      window.__earlyLawOfDay = { law, url: '/api/v1/law-of-day', startedAt: Date.now(), error: null, promise: Promise.resolve(law) };
       vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('denied'); });
 
       expect(peekEarlyLawOfTheDay()).toBe(law);
@@ -631,7 +645,7 @@ describe('API utilities', () => {
     it('still adopts an early result that was fetched after the vote', async () => {
       localStorage.setItem(LAST_VOTE_AT_KEY, String(Date.now() - 5_000));
       const law = { id: 5, text: 'Post-vote law.', upvotes: 4, downvotes: 0 };
-      window.__earlyLawOfDay = { law, url: '/api/v1/law-of-day', startedAt: Date.now() - 1_000, promise: Promise.resolve(law) };
+      window.__earlyLawOfDay = { law, url: '/api/v1/law-of-day', startedAt: Date.now() - 1_000, error: null, promise: Promise.resolve(law) };
 
       expect(peekEarlyLawOfTheDay()).toBe(law);
       const result = await fetchLawOfTheDay();
@@ -645,7 +659,7 @@ describe('API utilities', () => {
     const law = { id: 5, text: 'Early law.', upvotes: 0, downvotes: 0 };
 
     function setEarly(overrides: Partial<EarlyLawOfDay> = {}): EarlyLawOfDay {
-      const early: EarlyLawOfDay = { law, url: '/api/v1/law-of-day', startedAt: Date.now(), promise: Promise.resolve(law), ...overrides };
+      const early: EarlyLawOfDay = { law, url: '/api/v1/law-of-day', startedAt: Date.now(), error: null, promise: Promise.resolve(law), ...overrides };
       window.__earlyLawOfDay = early;
       return early;
     }
@@ -770,6 +784,232 @@ describe('API utilities', () => {
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       expect(result.data[0]).toEqual({ id: 6, text: 'Retried.' });
+    });
+
+    describe('when the early request hangs or fails', () => {
+      const ownResponse = () => ({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ law: { id: 9, text: 'Fresh law.' } })
+      });
+
+      beforeEach(() => {
+        vi.mocked(Sentry.addBreadcrumb).mockClear();
+        vi.mocked(Sentry.captureMessage).mockClear();
+        fetchSpy.mockResolvedValue(ownResponse());
+      });
+
+      it('stops waiting when the early request has used its 10 s, and goes straight to the error state without a second try', async () => {
+        vi.useFakeTimers();
+        const early = setEarly({ law: null, startedAt: Date.now() - 6_000, promise: new Promise(() => {}) });
+
+        const pending = fetchLawOfTheDay();
+        const outcome = expect(pending).rejects.toMatchObject({ name: 'TimeoutError' });
+        await vi.advanceTimersByTimeAsync(3_999);
+        expect(fetchSpy).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(1);
+
+        await outcome;
+        // The wait never depended on the early promise: it is still pending
+        expect(early.law).toBeNull();
+        expect(fetchSpy).not.toHaveBeenCalled();
+        expect(vi.getTimerCount()).toBe(0);
+      });
+
+      it('does not wait at all, and does not ask again, when the early request is already past its 10 s', async () => {
+        vi.useFakeTimers();
+        setEarly({ law: null, startedAt: Date.now() - 30_000, promise: new Promise(() => {}) });
+
+        const pending = fetchLawOfTheDay();
+        const outcome = expect(pending).rejects.toMatchObject({ name: 'TimeoutError' });
+        await vi.advanceTimersByTimeAsync(0);
+
+        await outcome;
+        expect(fetchSpy).not.toHaveBeenCalled();
+      });
+
+      it('records a timeout as a breadcrumb only, like the other network failures', async () => {
+        vi.useFakeTimers();
+        setEarly({ law: null, startedAt: Date.now() - 20_000, promise: new Promise(() => {}) });
+
+        const pending = fetchLawOfTheDay();
+        const outcome = expect(pending).rejects.toMatchObject({ name: 'TimeoutError' });
+        await vi.advanceTimersByTimeAsync(0);
+        await outcome;
+
+        expect(Sentry.addBreadcrumb).toHaveBeenCalledWith(expect.objectContaining({
+          category: 'law-of-day',
+          message: 'Early Law of the Day failed: timeout'
+        }));
+        expect(Sentry.captureMessage).not.toHaveBeenCalled();
+      });
+
+      it('retries after a quick early failure with what is left of the 10 s, not a fresh 10 s', async () => {
+        vi.useFakeTimers();
+        const timeoutSignal = vi.spyOn(AbortSignal, 'timeout');
+        setEarly({ law: null, error: '503', startedAt: Date.now() - 3_000, promise: Promise.resolve(null) });
+
+        await expect(fetchLawOfTheDay()).resolves.toMatchObject({ data: [{ id: 9 }] });
+
+        expect(timeoutSignal).toHaveBeenCalledWith(7_000);
+        expect(fetchSpy).toHaveBeenCalledTimes(1);
+        expect(vi.getTimerCount()).toBe(0);
+      });
+
+      it('gives the retry the whole 10 s when the early request failed at once', async () => {
+        const timeoutSignal = vi.spyOn(AbortSignal, 'timeout');
+        setEarly({ law: null, error: 'network', promise: Promise.resolve(null) });
+
+        await fetchLawOfTheDay();
+
+        expect(timeoutSignal).toHaveBeenCalledWith(10_000);
+      });
+
+      it('makes its own request with the full 10 s when there is no early request at all', async () => {
+        const timeoutSignal = vi.spyOn(AbortSignal, 'timeout');
+
+        await expect(fetchLawOfTheDay()).resolves.toMatchObject({ data: [{ id: 9 }] });
+
+        expect(timeoutSignal).toHaveBeenCalledWith(10_000);
+        expect(Sentry.addBreadcrumb).not.toHaveBeenCalled();
+      });
+
+      it('ends a hung API after 10 s in total, even where the request cannot be aborted', async () => {
+        vi.useFakeTimers();
+        // A request that ignores its signal, as in a browser without AbortController
+        fetchSpy.mockReturnValue(new Promise(() => {}));
+        setEarly({ law: null, error: '503', startedAt: Date.now() - 4_000, promise: Promise.resolve(null) });
+
+        const pending = fetchLawOfTheDay();
+        const outcome = expect(pending).rejects.toMatchObject({ name: 'TimeoutError' });
+        await vi.advanceTimersByTimeAsync(5_999);
+        expect(fetchSpy).toHaveBeenCalledTimes(1);
+        await vi.advanceTimersByTimeAsync(1);
+
+        await outcome;
+        expect(vi.getTimerCount()).toBe(0);
+      });
+
+      it('ends a hung API after 10 s when there is no early request', async () => {
+        vi.useFakeTimers();
+        fetchSpy.mockReturnValue(new Promise(() => {}));
+
+        const pending = fetchLawOfTheDay();
+        const outcome = expect(pending).rejects.toMatchObject({ name: 'TimeoutError' });
+        await vi.advanceTimersByTimeAsync(9_999);
+        await vi.advanceTimersByTimeAsync(1);
+
+        await outcome;
+      });
+
+      it.each(['timeout', 'abort', 'network'])('does not send an event for a %s failure the script recorded', async (reason) => {
+        setEarly({ law: null, error: reason, promise: Promise.resolve(null) });
+
+        await fetchLawOfTheDay();
+
+        expect(Sentry.addBreadcrumb).toHaveBeenCalledWith(expect.objectContaining({ message: `Early Law of the Day failed: ${reason}` }));
+        expect(Sentry.captureMessage).not.toHaveBeenCalled();
+      });
+
+      it.each(['503', 'parse', 'shape'])('reports a %s failure the script recorded, once, when the app falls back', async (reason) => {
+        setEarly({ law: null, error: reason, promise: Promise.resolve(null) });
+
+        await fetchLawOfTheDay();
+
+        expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
+        expect(Sentry.captureMessage).toHaveBeenCalledWith(`Early Law of the Day failed: ${reason}`, { level: 'warning', extra: { reason } });
+        expect(fetchSpy).toHaveBeenCalledTimes(1);
+      });
+
+      it('reports a failed early paint when the app takes over the early law', () => {
+        const early = setEarly({ error: 'paint' });
+
+        expect(consumeEarlyLawOfTheDay()).toBe(early.promise);
+
+        expect(Sentry.captureMessage).toHaveBeenCalledWith('Early Law of the Day failed: paint', { level: 'warning', extra: { reason: 'paint' } });
+      });
+
+      it('still uses an early law that arrived long ago, without a second request or a report', async () => {
+        vi.useFakeTimers();
+        setEarly({ startedAt: Date.now() - 30_000 });
+
+        await expect(fetchLawOfTheDay()).resolves.toEqual({ data: [law], total: 1, limit: 1, offset: 0 });
+
+        expect(fetchSpy).not.toHaveBeenCalled();
+        expect(Sentry.addBreadcrumb).not.toHaveBeenCalled();
+      });
+
+      it('reports a failed early paint when fetchLawOfTheDay adopts the law', async () => {
+        setEarly({ error: 'paint' });
+
+        await expect(fetchLawOfTheDay()).resolves.toMatchObject({ data: [law] });
+
+        expect(fetchSpy).not.toHaveBeenCalled();
+        expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
+        expect(Sentry.captureMessage).toHaveBeenCalledWith('Early Law of the Day failed: paint', { level: 'warning', extra: { reason: 'paint' } });
+      });
+
+      it('falls back to its own request and reports it if the early promise rejects', async () => {
+        const early = setEarly({ law: null, promise: Promise.reject(new Error('boom')) });
+
+        await expect(fetchLawOfTheDay()).resolves.toMatchObject({ data: [{ id: 9 }] });
+
+        expect(early.error).toBe('error');
+        expect(fetchSpy).toHaveBeenCalledTimes(1);
+        expect(Sentry.captureMessage).toHaveBeenCalledWith('Early Law of the Day failed: error', { level: 'warning', extra: { reason: 'error' } });
+      });
+
+      it('reports an early result from another API than the app uses', async () => {
+        setEarly({ url: '/__API_BASE_URL__/api/v1/law-of-day' });
+
+        await fetchLawOfTheDay();
+
+        expect(Sentry.captureMessage).toHaveBeenCalledWith('Early Law of the Day failed: url-mismatch', {
+          level: 'warning',
+          extra: { reason: 'url-mismatch', url: '/__API_BASE_URL__/api/v1/law-of-day' }
+        });
+        expect(fetchSpy).toHaveBeenCalledTimes(1);
+      });
+
+      it('leaves a result that is too old as a breadcrumb only', async () => {
+        vi.useFakeTimers();
+        setEarly({ startedAt: Date.now() - 61_000 });
+
+        await fetchLawOfTheDay();
+
+        expect(Sentry.addBreadcrumb).toHaveBeenCalledWith(expect.objectContaining({ message: 'Early Law of the Day failed: stale' }));
+        expect(Sentry.captureMessage).not.toHaveBeenCalled();
+      });
+
+      it('leaves a result that was made obsolete by a vote as a breadcrumb only, and asks the network for the law', async () => {
+        localStorage.setItem(LAST_VOTE_AT_KEY, String(Date.now() - 1_000));
+        setEarly({ law: null, startedAt: Date.now() - 4_000, promise: new Promise(() => {}) });
+
+        await fetchLawOfTheDay();
+
+        expect(Sentry.addBreadcrumb).toHaveBeenCalledWith(expect.objectContaining({ message: 'Early Law of the Day failed: voted' }));
+        expect(Sentry.captureMessage).not.toHaveBeenCalled();
+        expect(fetchSpy.mock.calls[0]![1]).toMatchObject({ cache: 'no-cache' });
+        localStorage.clear();
+      });
+
+      it('never gives the retry more than the one window, even if the clock stepped backwards', async () => {
+        const timeoutSignal = vi.spyOn(AbortSignal, 'timeout');
+        setEarly({ law: null, error: '503', startedAt: Date.now() + 5_000, promise: Promise.resolve(null) });
+
+        await fetchLawOfTheDay();
+
+        expect(timeoutSignal).toHaveBeenCalledWith(10_000);
+      });
+
+      it('reports nothing when the early request succeeded', async () => {
+        setEarly();
+
+        await fetchLawOfTheDay();
+
+        expect(Sentry.addBreadcrumb).not.toHaveBeenCalled();
+        expect(Sentry.captureMessage).not.toHaveBeenCalled();
+      });
     });
   });
 

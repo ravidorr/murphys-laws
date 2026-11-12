@@ -412,6 +412,17 @@ max-width on desktop. The header uses a sticky translucent surface
 (`color-mix` over `bg`); the footer uses a lightly tinted surface
 (`color-mix` over `bg` at ~90%).
 
+The prerendered home page and the app's home page share one geometry. The static
+home skeleton written by `web/scripts/ssg.ts` must keep the same container, the
+same Search the Archive card (the shared `ARCHIVE_SEARCH_HTML` string) and the same
+Law of the Day zone (reserved height, title, card structure) as `views/home.ts`,
+because the Law of the Day is the page's largest contentful paint and an inline
+script paints it into the prerendered zone before the app loads. If the app's quote
+were larger or placed higher than the early one, the LCP would jump to the
+moment the app renders. A unit test compares the two skeletons and
+`web/e2e/prerender-law-of-day.spec.ts` checks the quote's box in both renderings;
+change the home layout in both places and keep those checks passing.
+
 ## Elevation & Depth
 
 Elevation is the combination of a `color-mix` surface tint and a
