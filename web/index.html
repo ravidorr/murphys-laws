@@ -110,12 +110,23 @@
         });
       }
 
-      // The promise never rejects: it resolves to null on any failure, so the bundle falls back to its own request
-      // and no unhandled rejection can reach the error banner before the bundle attaches a handler.
-      state.promise = fetch(url, {
+      // The API lets caches reuse the response for up to a minute. Within a minute of this browser's last vote, ask the
+      // network instead, so a reload does not show a count that omits the vote. Same key and window as utils/recent-vote.ts
+      // (abs: a stored time far from the clock, in either direction, must not bypass the cache).
+      var init = {
         headers: { Accept: 'application/json' },
         signal: controller ? controller.signal : undefined
-      }).then(function (response) {
+      };
+      try {
+        var votedAt = Number(localStorage.getItem('murphy_last_vote_at'));
+        if (votedAt > 0 && Math.abs(Date.now() - votedAt) < 60000) init.cache = 'no-cache';
+      } catch (e) {
+        // localStorage may be unavailable (private mode, etc.)
+      }
+
+      // The promise never rejects: it resolves to null on any failure, so the bundle falls back to its own request
+      // and no unhandled rejection can reach the error banner before the bundle attaches a handler.
+      state.promise = fetch(url, init).then(function (response) {
         if (!response.ok) throw new Error('law-of-day ' + response.status);
         return response.json();
       }).then(function (payload) {

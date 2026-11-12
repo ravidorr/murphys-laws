@@ -3,6 +3,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LawOfTheDay } from '../src/components/law-of-day.ts';
 import { API_BASE_PLACEHOLDER, injectEarlyApiBase } from '../scripts/early-api-base.ts';
+import { LAST_VOTE_AT_KEY } from '../src/utils/recent-vote.ts';
 import type { Law } from '../src/types/app.d.ts';
 
 const root = path.resolve(__dirname, '..');
@@ -102,6 +103,56 @@ describe('early Law of the Day script in index.html', () => {
     await expect(early.promise).resolves.toEqual(LAW);
     expect(early.law).toEqual(LAW);
     expect(early.startedAt).toBeLessThanOrEqual(Date.now());
+  });
+
+  describe('right after a vote', () => {
+    function requestInit(): RequestInit {
+      const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ law: LAW }));
+      vi.stubGlobal('fetch', fetchMock);
+      runSnippet();
+      return fetchMock.mock.calls[0]![1] as RequestInit;
+    }
+
+    beforeEach(() => localStorage.clear());
+    afterEach(() => localStorage.clear());
+
+    it('uses the HTTP cache when this browser has not voted', () => {
+      expect(requestInit().cache).toBeUndefined();
+    });
+
+    it('asks the network when the last vote was less than a minute ago, so a reload does not show a pre-vote count', () => {
+      localStorage.setItem(LAST_VOTE_AT_KEY, String(Date.now() - 59_000));
+
+      expect(requestInit().cache).toBe('no-cache');
+    });
+
+    it('uses the HTTP cache again once a minute has passed since the vote', () => {
+      localStorage.setItem(LAST_VOTE_AT_KEY, String(Date.now() - 60_000));
+
+      expect(requestInit().cache).toBeUndefined();
+    });
+
+    it.each(['', 'soon', '0', '-5'])('ignores an unusable stored time (%j)', (value) => {
+      localStorage.setItem(LAST_VOTE_AT_KEY, value);
+
+      expect(requestInit().cache).toBeUndefined();
+    });
+
+    it('does not bypass the cache for good because of a time far ahead of the clock', () => {
+      localStorage.setItem(LAST_VOTE_AT_KEY, String(Date.now() + 86_400_000));
+
+      expect(requestInit().cache).toBeUndefined();
+    });
+
+    it('still requests the law when localStorage throws', async () => {
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('denied'); });
+
+      const init = requestInit();
+
+      expect(init.cache).toBeUndefined();
+      await expect(window.__earlyLawOfDay!.promise).resolves.toEqual(LAW);
+      vi.restoreAllMocks();
+    });
   });
 
   it.each(['/browse', '/law/7', '/calculator/sods-law'])('does nothing on %s', (pathname) => {

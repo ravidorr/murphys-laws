@@ -2,6 +2,7 @@
 // Refactored to use generic API request helper (eliminates ~120 lines of duplicate code)
 
 import { apiPost, apiDelete } from './request.ts';
+import { markVoteCast } from './recent-vote.ts';
 import { showSuccess } from '../components/notification.ts';
 import { trackPendoEvent, getPagePath, getRequestErrorType } from './pendo.ts';
 import type { VoteType, VoteResponse } from '../types/app.d.ts';
@@ -54,6 +55,7 @@ export async function voteLaw(lawId: string | number, voteType: VoteType): Promi
   const votes = getVotesFromStorage();
   votes[lawId] = voteType;
   saveVotesToStorage(votes);
+  markVoteCast();
 
   return result;
 }
@@ -74,6 +76,7 @@ export async function unvoteLaw(lawId: string | number): Promise<VoteResponse> {
   const votes = getVotesFromStorage();
   delete votes[lawId];
   saveVotesToStorage(votes);
+  markVoteCast();
 
   return result;
 }
