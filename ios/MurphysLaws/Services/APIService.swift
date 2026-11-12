@@ -89,7 +89,8 @@ class APIService: ObservableObject {
         endpoint: String,
         method: String = "GET",
         body: Data? = nil,
-        headers: [String: String]? = nil
+        headers: [String: String]? = nil,
+        cachePolicy: URLRequest.CachePolicy = .useProtocolCachePolicy
     ) async throws -> T {
         guard let url = URL(string: "\(baseURL)\(endpoint)") else {
             throw APIError.invalidURL
@@ -97,6 +98,7 @@ class APIService: ObservableObject {
 
         var request = URLRequest(url: url)
         request.httpMethod = method
+        request.cachePolicy = cachePolicy
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(DeviceInfo.deviceID, forHTTPHeaderField: "X-Device-ID")
 
@@ -207,7 +209,9 @@ class APIService: ObservableObject {
     }
 
     func fetchLawOfDay() async throws -> LawOfDayResponse {
-        return try await request(endpoint: Constants.API.lawOfDay)
+        // The API lets caches reuse this response for up to 60 seconds. Skip URLSession's cache so a refresh right
+        // after a vote cannot show a count that omits it.
+        return try await request(endpoint: Constants.API.lawOfDay, cachePolicy: .reloadIgnoringLocalCacheData)
     }
 
     // MARK: - Voting Endpoints
