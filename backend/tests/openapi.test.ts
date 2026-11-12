@@ -250,6 +250,13 @@ describe('OpenAPI contract', () => {
       },
     });
   });
+  it('documents the cache headers of a successful law of the day response, and none on the 404', () => {
+    const lawOfDay = openApiPaths['/api/v1/law-of-day'].get as unknown as { responses: Record<string, { headers?: Record<string, { description: string }> }> };
+
+    expect(Object.keys(lawOfDay.responses['200'].headers ?? {})).toEqual(['Cache-Control', 'Vary']);
+    expect(lawOfDay.responses['200'].headers?.['Cache-Control'].description).toContain('max-age=N');
+    expect(lawOfDay.responses['404'].headers).toBeUndefined();
+  });
   it('documents corollaries on the law schema', () => {
     const schemas = (OPENAPI_SPEC.components as unknown as { schemas: Record<string, { properties: Record<string, Record<string, unknown>> }> }).schemas;
     const props = schemas.Law.properties;

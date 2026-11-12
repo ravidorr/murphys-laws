@@ -499,6 +499,15 @@ Get the Law of the Day. A new law is selected daily based on upvotes, avoiding r
 }
 ```
 
+**Response headers (200 only):**
+
+- `Cache-Control: public, max-age=N`, where N is the lesser of 60 and the whole seconds left in the current UTC day
+  (so `max-age=0` in the last second before 00:00 UTC, when the next law is chosen). A browser or shared cache can reuse
+  the response for that long but never into the next day. There is no `stale-while-revalidate`.
+- `Vary: Origin`.
+
+The vote counts in the response can be up to N seconds old. The 404 and error responses carry no `Cache-Control`.
+
 **Error Response (404):**
 
 ```json

@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { LawController } from '../../src/controllers/laws.controller.ts';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { LawController, lawOfDayCacheControl } from '../../src/controllers/laws.controller.ts';
 import * as httpHelpers from '../../src/utils/http-helpers.ts';
 
 // Mock rate limit middleware
@@ -390,6 +390,100 @@ describe('LawController', () => {
             lawService.getLawOfTheDay.mockResolvedValue(null);
             await lawController.getLawOfTheDay(req, res);
             expect(res.writeHead).toHaveBeenCalledWith(404, expect.any(Object));
+        });
+
+        describe('caching', () => {
+            const payload = { law: { id: 7, text: 'Anything that can go wrong will.', upvotes: 3, downvotes: 1 }, featured_date: '2026-11-12' };
+
+            afterEach(() => {
+                vi.useRealTimers();
+            });
+
+            it('sends a 60 second Cache-Control and Vary: Origin with the 200, and leaves the body unchanged', async () => {
+                vi.useFakeTimers();
+                vi.setSystemTime(new Date('2026-11-12T10:00:00Z'));
+                lawService.getLawOfTheDay.mockResolvedValue(payload);
+
+                await lawController.getLawOfTheDay(req, res);
+
+                const [status, headers] = res.writeHead.mock.calls[0];
+                expect(status).toBe(200);
+                expect(headers['Cache-Control']).toBe('public, max-age=60');
+                expect(headers['Vary']).toBe('Origin');
+                expect(JSON.parse(res.end.mock.calls[0][0])).toEqual(payload);
+            });
+
+            it('caps max-age at the seconds left before 00:00 UTC', async () => {
+                vi.useFakeTimers();
+                vi.setSystemTime(new Date('2026-11-12T23:59:40Z'));
+                lawService.getLawOfTheDay.mockResolvedValue(payload);
+
+                await lawController.getLawOfTheDay(req, res);
+
+                expect(res.writeHead.mock.calls[0][1]['Cache-Control']).toBe('public, max-age=20');
+            });
+
+            it('does not let the response outlive the day in its last second', async () => {
+                vi.useFakeTimers();
+                vi.setSystemTime(new Date('2026-11-12T23:59:59.500Z'));
+                lawService.getLawOfTheDay.mockResolvedValue(payload);
+
+                await lawController.getLawOfTheDay(req, res);
+
+                expect(res.writeHead.mock.calls[0][1]['Cache-Control']).toBe('public, max-age=0');
+            });
+
+            it('sends no Cache-Control or Vary with the 404 when there is no law yet', async () => {
+                lawService.getLawOfTheDay.mockResolvedValue(null);
+
+                await lawController.getLawOfTheDay(req, res);
+
+                const headers = res.writeHead.mock.calls[0][1];
+                expect(headers).not.toHaveProperty('Cache-Control');
+                expect(headers).not.toHaveProperty('Vary');
+            });
+
+            it('sends no Cache-Control when the service throws', async () => {
+                lawService.getLawOfTheDay.mockRejectedValue(new Error('db down'));
+
+                await expect(lawController.getLawOfTheDay(req, res)).rejects.toThrow('db down');
+
+                expect(res.writeHead).not.toHaveBeenCalled();
+            });
+        });
+    });
+
+    describe('lawOfDayCacheControl', () => {
+        const at = (iso: string) => Date.parse(iso);
+
+        it('is 60 seconds until the last minute of the featured day', () => {
+            expect(lawOfDayCacheControl('2026-11-12', at('2026-11-12T00:00:00Z'))).toBe('public, max-age=60');
+            expect(lawOfDayCacheControl('2026-11-12', at('2026-11-12T23:59:00Z'))).toBe('public, max-age=60');
+        });
+
+        it('counts down to 00:00 UTC and rounds down', () => {
+            expect(lawOfDayCacheControl('2026-11-12', at('2026-11-12T23:59:01Z'))).toBe('public, max-age=59');
+            expect(lawOfDayCacheControl('2026-11-12', at('2026-11-12T23:59:59Z'))).toBe('public, max-age=1');
+            expect(lawOfDayCacheControl('2026-11-12', at('2026-11-12T23:59:59.001Z'))).toBe('public, max-age=0');
+        });
+
+        it('is 0 once the featured day is over', () => {
+            expect(lawOfDayCacheControl('2026-11-12', at('2026-11-13T00:00:00Z'))).toBe('public, max-age=0');
+            expect(lawOfDayCacheControl('2026-11-12', at('2026-11-14T12:00:00Z'))).toBe('public, max-age=0');
+        });
+
+        it('is 0 when the featured date cannot be read', () => {
+            expect(lawOfDayCacheControl('not-a-date', at('2026-11-12T10:00:00Z'))).toBe('public, max-age=0');
+        });
+
+        it('reads the current time when none is given', () => {
+            vi.useFakeTimers();
+            vi.setSystemTime(new Date('2026-11-12T23:59:30Z'));
+            try {
+                expect(lawOfDayCacheControl('2026-11-12')).toBe('public, max-age=30');
+            } finally {
+                vi.useRealTimers();
+            }
         });
     });
 

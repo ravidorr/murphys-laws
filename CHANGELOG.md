@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- `GET /api/v1/law-of-day` now sends `Cache-Control: public, max-age=N` with a 200, so a browser or shared cache can
+  reuse the response and repeat visits and the early home page request cost less. N is the lesser of 60 and the whole
+  seconds left in the UTC day the law was featured on, so a cached response never outlives 00:00 UTC, when the next law
+  is chosen (the last second sends `max-age=0`). There is no `stale-while-revalidate`, which would let a cache serve
+  yesterday's law after midnight. The response also sends `Vary: Origin`, because the CORS origin it echoes depends on
+  the request's Origin when `ALLOWED_ORIGINS` is a list. The 404 and error responses send no `Cache-Control`. The vote
+  counts in the law can now be up to 60 seconds old, and a law rejected by a moderator can show for up to 60 seconds
+  more. The body is unchanged. The OpenAPI spec and API docs describe the headers. Backend bumped to `2.3.86`, root to
+  `2.6.222`.
 - The footer ad and Google Analytics (gtag) no longer start on the visitor's first click, key press or scroll (the slow
   "Email address" key press in Sentry's INP samples). The footer ad now loads once the page has loaded and the browser
   is idle (`requestIdleCallback` with a 3 s bound, a 3 s timer in Safari), and still also when the footer nears the

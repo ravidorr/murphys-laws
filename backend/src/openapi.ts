@@ -460,7 +460,17 @@ export const OPENAPI_SPEC = {
         summary: "Get today's featured law",
         responses: {
           '200': {
-            description: "Today's law of the day",
+            description: "Today's law of the day. Cacheable for up to 60 seconds, and never past 00:00 UTC, when the next law is chosen.",
+            headers: {
+              'Cache-Control': {
+                description: 'public, max-age=N where N is the lesser of 60 and the whole seconds left in the UTC day (0 in its last second). The vote counts in the law can be up to N seconds old. No stale-while-revalidate. Sent only with a 200.',
+                schema: { type: 'string', example: 'public, max-age=60' },
+              },
+              Vary: {
+                description: 'Origin: the CORS origin in the response depends on the request Origin when the server limits origins.',
+                schema: { type: 'string', example: 'Origin' },
+              },
+            },
             content: {
               'application/json': {
                 schema: {
