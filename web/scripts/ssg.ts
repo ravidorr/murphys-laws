@@ -15,6 +15,7 @@ import {
   renderInternalLinkList
 } from '../src/utils/internal-links.ts';
 import { ARCHIVE_SEARCH_HTML } from '../src/views/home-archive-search.ts';
+import { unreplacedEarlyApiBase } from './early-api-base.ts';
 import { renderNotFoundContent, renderNotFoundLaws } from '../src/utils/not-found-content.ts';
 import { externalLinkRenderer } from '../src/utils/markdown-links.ts';
 import { insertContentFigure } from '../src/utils/content-figures.ts';
@@ -884,6 +885,8 @@ function validateGeneratedPage(html: string, expectations: GeneratedPageExpectat
   const failures: string[] = [];
   const h1Count = (html.match(/<h1\b/gi) || []).length;
   if (h1Count !== 1) failures.push(`expected one h1, found ${h1Count}`);
+  const placeholder = unreplacedEarlyApiBase(html);
+  if (placeholder) failures.push(placeholder);
   if (expectations.forbidContactDetails) {
     // `mailto` without the colon catches a link cut in the middle (`[by Name](mailto`).
     if (/mailto/i.test(html)) failures.push('contains a public mailto link');
@@ -916,6 +919,8 @@ function validateNotFoundPage(html: string): string[] {
   if (!html.includes('<meta name="robots" content="noindex">')) failures.push('missing noindex');
   if (!html.includes('class="not-found-code"')) failures.push('missing 404 content');
   if ((html.match(/<h1\b/gi) || []).length !== 1) failures.push('expected one h1');
+  const placeholder = unreplacedEarlyApiBase(html);
+  if (placeholder) failures.push(placeholder);
   return failures;
 }
 
@@ -940,6 +945,10 @@ async function validateGeneratedOutput(): Promise<void> {
       });
     }
   }
+
+  // The home page carries the inline early Law of the Day script, so it is the page where the placeholder shows first
+  const homePlaceholder = unreplacedEarlyApiBase(await fs.readFile(path.join(DIST_DIR, 'index.html'), 'utf-8'));
+  if (homePlaceholder) throw new Error(`Invalid generated page index.html: ${homePlaceholder}`);
 
   const notFoundFailures = validateNotFoundPage(await fs.readFile(path.join(DIST_DIR, '404.html'), 'utf-8'));
   if (notFoundFailures.length > 0) throw new Error(`Invalid generated page 404.html: ${notFoundFailures.join('; ')}`);
@@ -1277,6 +1286,8 @@ function buildStaticHomeContent(featuredLaw?: Law): string {
     ? `${renderStaticLawCards([featuredLaw], '')}
           <p class="text-muted-fg small">A featured law from the archive; the daily rotating law loads with JavaScript. <a href="/browse">Browse the full archive</a> for more.</p>`
     : '<p>Today\'s rotating law could not be loaded. <a href="/browse">Browse the full archive</a> instead.</p>';
+  // data-prerendered marks the zone the inline script in index.html may paint the daily law into; the app's own render
+  // replaces the whole page and gives the zone data-daily-law-state instead, so the script never touches the app's DOM.
   return `
     <div class="container page pt-0 min-h-400">
       ${ARCHIVE_SEARCH_HTML.trim()}

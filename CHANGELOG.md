@@ -8,6 +8,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The early Law of the Day request is bounded to one shared 10 s window and its failures are reported. A dead or hung
+  API now reaches the error card about 10 s after the page started, not about 20 s. The early request and the app's own
+  request share one 10 s window that begins when the early request starts: the app waits for the early request only
+  until that window ends, even if its promise never settles, and its own fallback request gets what is left of it
+  (`max(0, 10 s - elapsed)`, never more than 10 s, passed to `fetchAPI` as `timeoutMs` and also enforced with a timer, so
+  it holds without `AbortController`). If the early request timed out, or ran out the clock, nothing is left and the app
+  goes straight to the error card with no second try; a request that failed quickly (503, network, parse or shape error)
+  leaves nearly the whole window, so the fallback request stays useful. The error card's button and a page without an
+  early request still get a full 10 s. Where a slow bundle arrives after the window has ended there is no fallback
+  request either, only the error card, whose button fetches again. The inline script also bounds its
+  request with its own timer, which covers browsers that have `fetch` but no `AbortController` (there it had no timeout
+  at all). A failure is no longer invisible: the script records why on
+  `window.__earlyLawOfDay.error` (the HTTP status, `timeout`, `abort`, `network` (including a connection lost while the
+  body is read), `parse`, `shape`, `error` (including a `fetch` that throws before any request is made) or `paint`)
+  while its promise still never rejects, so nothing reaches the unhandled-rejection banner: it resolves to `null`, or to
+  the law when only the paint failed. When the app falls back, adopts a law whose early paint failed, or drops an early
+  result (another API than the app uses, older than a minute, or started before the last vote), it adds a Sentry
+  breadcrumb and, except for the outcomes it already treats as noise (`timeout`, `abort`, `network`, `stale`, `voted`),
+  sends one warning message. A throwing paint (also inside the `readystatechange` listener, or while scheduling it) is
+  caught and recorded instead of reaching the error banner, and the law and the
+  promise are settled in one step, so they cannot disagree. The script is skipped on legacy `/#/...` hash routes, which
+  the router rewrites to another path (a bare `/#/` still runs it). The build now fails when `__API_BASE_URL__` survives in `dist/index.html`, in `404.html`
+  or in any generated page checked by the SSG (a missing `earlyApiBasePlugin`), and the prerender e2e spec asserts that the
+  page requests exactly `<origin>/api/v1/law-of-day` once, and the app makes no second request (its `**/api/**` mock used to
+  answer a wrong URL as well). New tests run the real inline script and then the app's `peekEarlyLawOfTheDay`,
+  `consumeEarlyLawOfTheDay` and `fetchLawOfTheDay` against it, for the same origin and for a configured
+  `VITE_API_URL`, and cover every failure reason, a hung body, a late answer after the timeout, and a failing paint. Comment
+  fixes: the index.html comment now cites the measured real-user P75 LCP of 13.4 s, the 60 s adoption window is documented
+  as a bound on staleness only (a result inside it is used even across midnight UTC), and `peekEarlyLawOfTheDay` documents
+  when it returns null. `web/DESIGN.md` records the layout contract between the prerendered home skeleton and the app's
+  Search the Archive card and Law of the Day zone, with the e2e guard that enforces it. The Law of the Day error path in
+  the home view now goes through the same `onDailyLawShown` helper as the success path. The fresh fetch for a minute
+  after a vote is unchanged: the early script and the app's own fallback request (with its shorter window) both still send
+  `cache: 'no-cache'` inside that minute, and `fetchAPI` takes the cache mode and the timeout as one options object.
+  Web bumped to `3.4.116`; root to `2.6.228`.
 - Scripts and stylesheets without a content hash are no longer cached for a year. `nginx.conf` applied its one-year rule
   (`Expires` in 2027 plus `Cache-Control: max-age=31536000` and `public, no-transform`) to every `.js`, `.css` and image
   file, so `/sw.js`, `/offline.js` and `/styles/*` (including `variables.css`, which every build regenerates) kept their
@@ -96,8 +131,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   never rejects, 10 s timeout, paints text as text) and check its markup against the component's for every attribution
   shape. Two guards keep the prerendered and app layouts together: a unit test compares the prerendered home skeleton
   with the app's, and a Playwright spec (`e2e/prerender-law-of-day.spec.ts`, run against the production build, which the
-  e2e CI job now builds first) checks at four phone and desktop sizes, for short, long, titled and multi-attribution
-  laws, that the early quote has the app quote's x, width and height, is never lower, and is the last LCP entry.
+  e2e CI job now builds first) checks at four phone and desktop sizes, for short, medium, long and titled
+  (multi-attribution) laws, that the early quote has the app quote's x, width and height, is never lower, and is the last LCP entry.
   Web bumped to `3.4.110`; root to `2.6.219`.
 - Both deploy paths (`npm run deploy` and the Deploy to Production workflow) now run
   `backend/scripts/verify-installed-dependencies.mjs` right after `npm ci`. It resolves every runtime dependency in

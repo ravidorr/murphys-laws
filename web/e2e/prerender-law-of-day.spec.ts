@@ -80,6 +80,15 @@ function serveDist(): Promise<http.Server> {
 
 interface Box { x: number; y: number; width: number; height: number }
 
+/** Every request the page makes to the daily law endpoint, wherever it points */
+function trackLawOfDayRequests(page: Playwright.Page): string[] {
+  const urls: string[] = [];
+  page.on('request', (request) => {
+    if (request.url().includes('law-of-day')) urls.push(request.url());
+  });
+  return urls;
+}
+
 function visibleArea(box: Box, viewportHeight: number): number {
   const visibleHeight = Math.max(0, Math.min(box.y + box.height, viewportHeight) - Math.max(box.y, 0));
   return box.width * visibleHeight;
@@ -119,6 +128,7 @@ test.describe('prerendered Law of the Day geometry', () => {
         // The prerendered page with the early paint, and no app bundle to replace it
         const staticContext = await browser.newContext({ viewport });
         const staticPage = await staticContext.newPage();
+        const staticRequests = trackLawOfDayRequests(staticPage);
         await mockApi(staticPage);
         await staticPage.route('**/assets/index-*.js', (route) => route.abort());
         await staticPage.goto(origin, { waitUntil: 'load' });
@@ -127,10 +137,14 @@ test.describe('prerendered Law of the Day geometry', () => {
         await expect(staticPage.locator('[data-daily-law-state]')).toHaveCount(0);
         const early: Box = await staticPage.locator('.lod-quote-large').evaluate((el) => el.getBoundingClientRect().toJSON());
         await staticContext.close();
+        // The route mock above answers any /api/ URL, so only the URL itself proves that the build wired the API base
+        // into the inline script (a missing early-api-base plugin would request /__API_BASE_URL__/api/v1/law-of-day)
+        expect(staticRequests, 'the inline script requests the daily law from this origin, once').toEqual([`${origin}/api/v1/law-of-day`]);
 
         // The real page: the app bundle arrives after the early paint and replaces the page
         const appContext = await browser.newContext({ viewport });
         const appPage = await appContext.newPage();
+        const appRequests = trackLawOfDayRequests(appPage);
         await mockApi(appPage);
         await appPage.route('**/assets/index-*.js', async (route) => {
           await new Promise((resolve) => setTimeout(resolve, 800));
@@ -157,6 +171,7 @@ test.describe('prerendered Law of the Day geometry', () => {
           return { lcp: w.__lcp, appAt: w.__appAt };
         });
         await appContext.close();
+        expect(appRequests, 'the app adopted the early request instead of making its own').toEqual([`${origin}/api/v1/law-of-day`]);
 
         // Same box, at the same position or higher: the early quote's visible area can only be as large or larger
         expect(app.x, 'quote x').toBeCloseTo(early.x, 1);

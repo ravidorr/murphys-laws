@@ -19,6 +19,17 @@ export function injectEarlyApiBase(html: string, apiBase: string): string {
   return html.split(API_BASE_PLACEHOLDER).join(escaped);
 }
 
+/**
+ * The failure to report for a built page that still has the placeholder, or null. A build without this plugin ships
+ * a script that requests `/__API_BASE_URL__/api/v1/law-of-day`, which fails on every visit and is only noticed as a
+ * missing speed-up, so the static site generator refuses to finish with one in the output.
+ */
+export function unreplacedEarlyApiBase(html: string): string | null {
+  return html.includes(API_BASE_PLACEHOLDER)
+    ? `still contains ${API_BASE_PLACEHOLDER} (the early-api-base plugin did not run on index.html)`
+    : null;
+}
+
 export function earlyApiBasePlugin(): Plugin {
   let apiBase = '';
   return {
@@ -28,6 +39,7 @@ export function earlyApiBasePlugin(): Plugin {
       apiBase = typeof value === 'string' ? value : '';
     },
     transformIndexHtml: {
+      // Runs before Vite's own HTML transforms, so the placeholder in the source index.html is replaced first
       order: 'pre',
       handler: (html) => injectEarlyApiBase(html, apiBase),
     },

@@ -32,13 +32,21 @@ interface PendoAgent {
 declare global {
   /**
    * Result of the early Law of the Day request that the inline script in index.html starts on the home page,
-   * before the app bundle loads. `law` is set once the response arrived; `promise` never rejects (null on failure).
+   * before the app bundle loads. `law` is set once the response arrived; `promise` never rejects (null on failure)
+   * and settles together with `law`.
    */
   interface EarlyLawOfDay {
     law: import('./app.d.ts').Law | null;
     /** URL the request went to; the app adopts the result only if it is the URL it would request itself */
     url: string;
+    /** Date.now() when the request started; the app ignores the result once a minute has passed since then */
     startedAt: number;
+    /**
+     * Why there is no law, or why the early paint failed: the HTTP status as text, 'timeout', 'abort', 'network'
+     * (including a connection lost while the body is read), 'parse', 'shape', 'error' or 'paint'. The inline script
+     * runs before Sentry exists, so the app reports it.
+     */
+    error: string | null;
     promise: Promise<import('./app.d.ts').Law | null>;
   }
 

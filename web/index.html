@@ -49,24 +49,32 @@
     content="Explore Murphy's Law corollaries and experiment with interactive calculators that quantify inevitable mishaps.">
   <meta property="twitter:image" content="https://murphys-laws.com/social/home.png">
 
-  <!-- Law of the Day early start (home page only). The daily law is the largest element on the page, so waiting for the
-       app bundle to download, run and then request it put the law on a 9-12 second LCP path. This starts the request
-       before the stylesheet and the bundle, and paints the law into the prerendered zone as soon as it arrives. The app
-       adopts the same result (see consumeEarlyLawOfTheDay in src/utils/api.ts) if it came from the API URL the app itself
-       would use, so there is no second request. The
-       markup built here must match src/components/law-of-day.ts (tests/early-law-of-day.test.ts enforces that).
-       Plain ES5 on purpose: it runs on the oldest browsers the legacy bundle supports and must never throw. -->
+  <!-- Law of the Day early start (home page only). The daily law is the largest element on the page, and waiting for the
+       app bundle to download, run and then request it made it the LCP, at a real-user P75 of 13.4 s. This starts the
+       request before the stylesheet and the bundle, and paints the law into the prerendered zone as soon as it
+       arrives. The app adopts the same result (see consumeEarlyLawOfTheDay in src/utils/api.ts) if it came from the
+       API URL the app itself would use, so there is no second request. The markup built here must match
+       src/components/law-of-day.ts (tests/early-law-of-day.test.ts enforces that). ES5 syntax on purpose: it runs on the
+       oldest browsers the legacy bundle supports, uses fetch and Promise only where they exist (it does nothing
+       otherwise) and must never throw. -->
   <script>
     (function () {
       var path = location.pathname;
-      if ((path !== '/' && path !== '/index.html') || typeof fetch !== 'function') return;
+      // A legacy hash route such as /#/law/7 is rewritten by the router to another path (/law/7), so the home page is
+      // not what ends up shown. A bare /#/ is rewritten to the home page itself and still starts the request.
+      if ((path !== '/' && path !== '/index.html') || (location.hash.indexOf('#/') === 0 && location.hash.length > 2)
+        || typeof fetch !== 'function' || typeof Promise !== 'function') return;
 
+      // The window for this request and for the app's own fallback request together (src/utils/api.ts uses the same 10 s)
+      var TIMEOUT_MS = 10000;
       // The API the app is built for (VITE_API_URL, empty for the same origin); the build replaces the placeholder.
       // The app adopts this answer only if it came from the URL it would request itself.
       var url = '__API_BASE_URL__/api/v1/law-of-day';
-      var state = { law: null, url: url, startedAt: Date.now(), promise: null };
-      var controller = typeof AbortController === 'function' ? new AbortController() : null;
-      var timer = controller ? setTimeout(function () { controller.abort(); }, 10000) : 0;
+      // law: the answer, once it arrived. error: why the request or the early paint failed ('timeout', 'abort',
+      // 'network', 'parse', 'shape', 'error', 'paint' or the HTTP status as text); the app reports it when it falls
+      // back, because Sentry is not running yet at this point. startedAt: the app ignores the result once a minute
+      // has passed since the request started.
+      var state = { law: null, url: url, startedAt: Date.now(), error: null, promise: null };
 
       function attribution(law) {
         var first = law.attributions && law.attributions.length ? law.attributions[0] : null;
@@ -76,24 +84,30 @@
         return 'Sent by ' + (name ? name + (note ? ' - ' + note : '') : note);
       }
 
+      // The early paint is an optimisation: when it fails the law is still good and the app renders it itself, so a
+      // failure is recorded and swallowed here. Letting it escape would end in the error banner.
       function paint(law) {
-        var body = document.querySelector('[data-home-zone="law-of-day"][data-prerendered] .section-body');
-        if (!body) return;
-        var link = document.createElement('a');
-        link.href = '/law/' + law.id;
-        link.className = 'lod-link';
-        link.setAttribute('data-law-id', String(law.id));
-        link.setAttribute('aria-label', 'Read full law details');
-        var quote = document.createElement('blockquote');
-        quote.className = 'lod-quote-large';
-        quote.textContent = (law.title ? law.title + ': ' : '') + law.text;
-        link.appendChild(quote);
-        var credit = document.createElement('p');
-        credit.className = 'lod-attrib';
-        credit.textContent = attribution(law);
-        body.textContent = '';
-        body.appendChild(link);
-        body.appendChild(credit);
+        try {
+          var body = document.querySelector('[data-home-zone="law-of-day"][data-prerendered] .section-body');
+          if (!body) return;
+          var link = document.createElement('a');
+          link.href = '/law/' + law.id;
+          link.className = 'lod-link';
+          link.setAttribute('data-law-id', String(law.id));
+          link.setAttribute('aria-label', 'Read full law details');
+          var quote = document.createElement('blockquote');
+          quote.className = 'lod-quote-large';
+          quote.textContent = (law.title ? law.title + ': ' : '') + law.text;
+          link.appendChild(quote);
+          var credit = document.createElement('p');
+          credit.className = 'lod-attrib';
+          credit.textContent = attribution(law);
+          body.textContent = '';
+          body.appendChild(link);
+          body.appendChild(credit);
+        } catch (error) {
+          state.error = 'paint';
+        }
       }
 
       // The zone exists once the page is parsed. Waiting for DOMContentLoaded would wait for the deferred app bundle,
@@ -113,33 +127,74 @@
       // The API lets caches reuse the response for up to a minute. Within a minute of this browser's last vote, ask the
       // network instead, so a reload does not show a count that omits the vote. Same key and window as utils/recent-vote.ts
       // (abs: a stored time far from the clock, in either direction, must not bypass the cache).
-      var init = {
-        headers: { Accept: 'application/json' },
-        signal: controller ? controller.signal : undefined
-      };
-      try {
-        var votedAt = Number(localStorage.getItem('murphy_last_vote_at'));
-        if (votedAt > 0 && Math.abs(Date.now() - votedAt) < 60000) init.cache = 'no-cache';
-      } catch (e) {
-        // localStorage may be unavailable (private mode, etc.)
+      function bypassesHttpCache() {
+        try {
+          var votedAt = Number(localStorage.getItem('murphy_last_vote_at'));
+          return votedAt > 0 && Math.abs(Date.now() - votedAt) < 60000;
+        } catch (e) {
+          // localStorage may be unavailable (private mode, etc.)
+          return false;
+        }
       }
 
-      // The promise never rejects: it resolves to null on any failure, so the bundle falls back to its own request
-      // and no unhandled rejection can reach the error banner before the bundle attaches a handler.
-      state.promise = fetch(url, init).then(function (response) {
-        if (!response.ok) throw new Error('law-of-day ' + response.status);
-        return response.json();
-      }).then(function (payload) {
-        var law = payload && payload.law;
-        if (!law || !law.id || typeof law.text !== 'string') return null;
-        state.law = law;
-        paintWhenParsed(law);
-        return law;
-      }).catch(function () {
-        return null;
-      }).then(function (law) {
-        clearTimeout(timer);
-        return law;
+      // The promise never rejects: every outcome settles it exactly once, with the law or with null, so the bundle falls
+      // back to its own request and no unhandled rejection can reach the error banner before the bundle attaches a
+      // handler. state.law is set in the same step as the settlement, so the two cannot disagree.
+      state.promise = new Promise(function (resolve) {
+        var settled = false;
+        var controller = typeof AbortController === 'function' ? new AbortController() : null;
+
+        function settle(law, error) {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          state.law = law;
+          state.error = law ? null : error;
+          resolve(law);
+          if (!law) return;
+          // The law is already settled; a failure to even schedule the paint must not turn into a failed request
+          try {
+            paintWhenParsed(law);
+          } catch (paintError) {
+            state.error = 'paint';
+          }
+        }
+
+        function failureOf(error, fallback) {
+          return error && error.name === 'AbortError' ? 'abort' : fallback;
+        }
+
+        // A timer settles the request, so a hung request is bounded even where fetch cannot be aborted
+        var timer = setTimeout(function () {
+          settle(null, 'timeout');
+          if (controller) controller.abort();
+        }, TIMEOUT_MS);
+
+        try {
+          var init = {
+            headers: { Accept: 'application/json' },
+            signal: controller ? controller.signal : undefined
+          };
+          if (bypassesHttpCache()) init.cache = 'no-cache';
+          fetch(url, init).then(function (response) {
+            if (!response.ok) return settle(null, String(response.status));
+            return response.json().then(function (payload) {
+              var law = payload && payload.law;
+              if (law && law.id && typeof law.text === 'string') settle(law, null);
+              else settle(null, 'shape');
+            }, function (error) {
+              // A body that is not JSON is a SyntaxError; anything else here is a connection lost while reading it
+              settle(null, error && error.name === 'SyntaxError' ? 'parse' : failureOf(error, 'network'));
+            });
+          }, function (error) {
+            settle(null, failureOf(error, 'network'));
+          }).then(null, function () {
+            settle(null, 'error');
+          });
+        } catch (error) {
+          // fetch threw before any request was made (for instance a malformed API URL): not a connection problem
+          settle(null, 'error');
+        }
       });
       window.__earlyLawOfDay = state;
     })();
