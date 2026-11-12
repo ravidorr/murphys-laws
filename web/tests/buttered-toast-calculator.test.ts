@@ -845,6 +845,43 @@ describe('ButteredToastCalculator view', () => {
       slider.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
+    it('reports calculator_viewed with the default result on load, before any slider moves', () => {
+      const el = ButteredToastCalculator() as HTMLElement & { cleanup?: () => void };
+      document.body.appendChild(el);
+
+      expect(track).toHaveBeenCalledTimes(1);
+      expect(track).toHaveBeenCalledWith('calculator_viewed', {
+        calculator: 'buttered-toast',
+        surface: 'calculator_page',
+        probability_percent: parseInt(el.querySelector('#toast-probability-value')!.textContent!, 10),
+        risk_level: expect.stringMatching(/^(low|elevated|high|critical)$/),
+        from_shared_link: false,
+      });
+
+      vi.advanceTimersByTime(1000);
+      el.cleanup!();
+      expect(track).toHaveBeenCalledTimes(1);
+      expect(track).not.toHaveBeenCalledWith('calculator_used', expect.anything());
+      document.body.removeChild(el);
+    });
+
+    it('reports calculator_viewed with the shared result when opened from a shared link', () => {
+      vi.stubGlobal('location', {
+        ...window.location,
+        search: '?h=200&o=20&b=2',
+        href: 'http://localhost:3000/calculator/buttered-toast?h=200&o=20&b=2'
+      });
+      const el = ButteredToastCalculator() as HTMLElement & { cleanup?: () => void };
+      document.body.appendChild(el);
+
+      expect(track).toHaveBeenCalledWith('calculator_viewed', expect.objectContaining({
+        probability_percent: parseInt(el.querySelector('#toast-probability-value')!.textContent!, 10),
+        from_shared_link: true,
+      }));
+      el.cleanup!();
+      document.body.removeChild(el);
+    });
+
     it('reports one calculator_used with the inputs and result once the sliders settle', () => {
       const el = ButteredToastCalculator() as HTMLElement & { cleanup?: () => void };
       document.body.appendChild(el);
@@ -853,8 +890,9 @@ describe('ButteredToastCalculator view', () => {
       slide(el, 'toast-butter', '1.5');
       vi.advanceTimersByTime(1000);
 
-      expect(track).toHaveBeenCalledTimes(1);
-      const [eventName, properties] = track.mock.calls[0]!;
+      expect(track).toHaveBeenCalledTimes(2);
+      expect(track.mock.calls[0]![0]).toBe('calculator_viewed');
+      const [eventName, properties] = track.mock.calls[1]!;
       expect(eventName).toBe('calculator_used');
       expect(properties).toEqual({
         calculator: 'buttered-toast',
