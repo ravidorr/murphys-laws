@@ -23,6 +23,10 @@ This document outlines additional tasks and potential improvements for the Murph
 - [ ] **Revalidate the prerendered pages:** send `Cache-Control: no-cache` for them, so a deploy shows up on the next visit (they send no
   `Cache-Control` today, so browsers decide how long to keep them), and decide the same for `ads.txt`, `llms.txt`, `llms-full.txt` and
   `social/home.webp`, which send none either.
+- [ ] **Revisit the web Sentry `tracesSampleRate` after the 2026-11-19 performance report:** `web/src/main.ts` samples 100% of
+  transactions (it was 10%) so the 2026-11-15 and 2026-11-19 reports have enough real-user samples. Lower it again if quota
+  or noise is a concern, and update `web/tests/sentry-sampling.test.ts` and the comment beside the option with it (the
+  backend's `initSentry` has its own rate, still 10%).
 
 ## Site data
 

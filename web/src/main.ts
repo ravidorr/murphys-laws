@@ -22,8 +22,10 @@ if (import.meta.env.VITE_SENTRY_DSN && isCanonicalTelemetryRuntime) {
     integrations: [
       Sentry.browserTracingIntegration(),
     ],
-    // Performance monitoring - sample 10% of transactions
-    tracesSampleRate: 0.1,
+    // Performance monitoring - temporarily sample every transaction (normally 10%) so the performance
+    // reports of 2026-11-15 and 2026-11-19 have enough real-user data. Lower it again after 2026-11-19;
+    // 100% is only acceptable at the current low traffic.
+    tracesSampleRate: 1.0,
     // Don't send errors in development
     enabled: import.meta.env.PROD,
     // Drop errors originating entirely in third-party scripts (ads, proxies)

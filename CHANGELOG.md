@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The web app now samples every Sentry transaction for the performance measurement window: `tracesSampleRate` in
+  `web/src/main.ts` goes from `0.1` to `1.0`. Only about 9 pageloads a day were being sampled, too few for the
+  scheduled performance reports of 2026-11-15 and 2026-11-19, and traffic is small, so the Sentry quota cost of 100% is
+  expected to be trivial. The rate applies to the pageload and navigation transactions the browser tracing integration
+  creates. A new test (`web/tests/sentry-sampling.test.ts`) pins the rate in the source of `main.ts`, which is the entry
+  point and cannot be imported in a unit test. The backend's `initSentry` is unchanged: its own rate stays `0.1`.
+  `TODO.md` gets an item to revisit the web rate after the 2026-11-19 report. Web bumped to `3.4.117`; root to `2.6.232`.
 - The early Law of the Day request is bounded to one shared 10 s window and its failures are reported. A dead or hung
   API now reaches the error card about 10 s after the page started, not about 20 s. The early request and the app's own
   request share one 10 s window that begins when the early request starts: the app waits for the early request only
