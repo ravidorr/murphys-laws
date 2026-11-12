@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The footer ad and Google Analytics (gtag) no longer start on the visitor's first click, key press or scroll (the slow
+  "Email address" key press in Sentry's INP samples). The footer ad now loads once the page has loaded and the browser
+  is idle (`requestIdleCallback` with a 3 s bound, a 3 s timer in Safari), and still also when the footer nears the
+  viewport. gtag, which already had an idle fallback, now loads on whichever comes first: `load` followed by an idle
+  moment (same 3 s bound), or a 5 s ceiling from the moment the app starts, so a visitor who leaves before a late `load`
+  is still counted. The existing guards stay (canonical host, Kindle, `hideAds`, minimum content re-checked when the idle
+  callback fires, `adslot:init`), and a callback that fires after navigation replaced the footer does nothing. The ad is
+  scheduled only on a first full page load, as before: on in-app navigations, and when the app renders after `load`, the
+  router has already cleared the page, so there is no `<main>` while the footer is built and it schedules nothing.
+  Trade-offs: the ad now loads for every visitor who finishes loading the page, including ones who never interact (bots,
+  bounces, Lighthouse), so ad requests can rise, the 50 ms `ensureAdsense` poll runs for all of them, and on hosts other
+  than `murphys-laws.com` the empty ad shell now appears after load without any interaction. The ad slot reserves no
+  space, so an idle-timed ad on a short page can count as layout shift, where a shift right after a click was excluded.
+  An idle callback with a timeout can still fire on a busy thread, and gtag already loaded on idle before, so the INP
+  benefit is unproven (the outlier was one session). Tests replace the interaction triggers with an idle queue and pin the
+  3 s and 5 s bounds.
+  Web bumped to `3.4.111`; root to `2.6.220`.
 - The home page no longer waits for the app bundle before it can show the Law of the Day, the element that was the
   largest contentful paint on `/` (real-user P75 LCP 13.4 s, always `a.lod-link`). A small inline script in `index.html`,
   placed before the stylesheet, requests `/api/v1/law-of-day` as soon as the HTML arrives and paints the law into the
