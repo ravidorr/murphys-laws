@@ -36,6 +36,8 @@ declare global {
    */
   interface EarlyLawOfDay {
     law: import('./app.d.ts').Law | null;
+    /** URL the request went to; the app adopts the result only if it is the URL it would request itself */
+    url: string;
     startedAt: number;
     promise: Promise<import('./app.d.ts').Law | null>;
   }

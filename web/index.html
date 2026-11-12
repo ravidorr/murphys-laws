@@ -52,7 +52,8 @@
   <!-- Law of the Day early start (home page only). The daily law is the largest element on the page, so waiting for the
        app bundle to download, run and then request it put the law on a 9-12 second LCP path. This starts the request
        before the stylesheet and the bundle, and paints the law into the prerendered zone as soon as it arrives. The app
-       adopts the same result (see consumeEarlyLawOfTheDay in src/utils/api.ts), so there is no second request. The
+       adopts the same result (see consumeEarlyLawOfTheDay in src/utils/api.ts) if it came from the API URL the app itself
+       would use, so there is no second request. The
        markup built here must match src/components/law-of-day.ts (tests/early-law-of-day.test.ts enforces that).
        Plain ES5 on purpose: it runs on the oldest browsers the legacy bundle supports and must never throw. -->
   <script>
@@ -60,7 +61,10 @@
       var path = location.pathname;
       if ((path !== '/' && path !== '/index.html') || typeof fetch !== 'function') return;
 
-      var state = { law: null, startedAt: Date.now(), promise: null };
+      // The API the app is built for (VITE_API_URL, empty for the same origin); the build replaces the placeholder.
+      // The app adopts this answer only if it came from the URL it would request itself.
+      var url = '__API_BASE_URL__/api/v1/law-of-day';
+      var state = { law: null, url: url, startedAt: Date.now(), promise: null };
       var controller = typeof AbortController === 'function' ? new AbortController() : null;
       var timer = controller ? setTimeout(function () { controller.abort(); }, 10000) : 0;
 
@@ -108,7 +112,7 @@
 
       // The promise never rejects: it resolves to null on any failure, so the bundle falls back to its own request
       // and no unhandled rejection can reach the error banner before the bundle attaches a handler.
-      state.promise = fetch('/api/v1/law-of-day', {
+      state.promise = fetch(url, {
         headers: { Accept: 'application/json' },
         signal: controller ? controller.signal : undefined
       }).then(function (response) {

@@ -204,7 +204,9 @@ const EARLY_LAW_MAX_AGE_MS = 60_000;
 
 function freshEarlyLawOfDay(): EarlyLawOfDay | null {
   const early = window.__earlyLawOfDay;
-  return early && Date.now() - early.startedAt <= EARLY_LAW_MAX_AGE_MS ? early : null;
+  // Only an answer from the API the app would ask itself, and a recent one
+  const usable = early && early.url === `${API_BASE_URL}/api/v1/law-of-day` && Date.now() - early.startedAt <= EARLY_LAW_MAX_AGE_MS;
+  return usable ? early : null;
 }
 
 /**

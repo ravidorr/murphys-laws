@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LawOfTheDay } from '../src/components/law-of-day.ts';
+import { API_BASE_PLACEHOLDER, injectEarlyApiBase } from '../scripts/early-api-base.ts';
 import type { Law } from '../src/types/app.d.ts';
 
 const root = path.resolve(__dirname, '..');
@@ -16,8 +17,9 @@ function readEarlySnippet(): string {
   return snippet;
 }
 
-function runSnippet(): void {
-  new Function(readEarlySnippet())();
+/** Runs the script as the build leaves it: with the API base the app is built for put in */
+function runSnippet(apiBase = ''): void {
+  new Function(injectEarlyApiBase(readEarlySnippet(), apiBase))();
 }
 
 function jsonResponse(body: unknown, ok = true) {
@@ -61,6 +63,24 @@ describe('early Law of the Day script in index.html', () => {
     expect(snippet).not.toMatch(/\b(?:const|let|class|async|await|import|export)\b|=>|`|\.\.\.|\?\.|\?\?/);
   });
 
+  it('carries the API base placeholder the build replaces, and has no placeholder left once built', () => {
+    const snippet = readEarlySnippet();
+
+    expect(snippet).toContain(`'${API_BASE_PLACEHOLDER}/api/v1/law-of-day'`);
+    expect(injectEarlyApiBase(snippet, '')).not.toContain(API_BASE_PLACEHOLDER);
+  });
+
+  it('requests the same URL the app does when the app is built for another API, and says so', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ law: LAW }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    runSnippet('https://api.example.com');
+
+    expect(fetchMock.mock.calls[0]![0]).toBe('https://api.example.com/api/v1/law-of-day');
+    expect(window.__earlyLawOfDay!.url).toBe('https://api.example.com/api/v1/law-of-day');
+    await window.__earlyLawOfDay!.promise;
+  });
+
   it('starts before the stylesheet so the request is not held back by it', () => {
     expect(html.indexOf('__earlyLawOfDay')).toBeGreaterThan(-1);
     expect(html.indexOf('__earlyLawOfDay')).toBeLessThan(html.indexOf('href="/styles/site.css"'));
@@ -75,6 +95,7 @@ describe('early Law of the Day script in index.html', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]![0]).toBe('/api/v1/law-of-day');
+    expect(window.__earlyLawOfDay!.url).toBe('/api/v1/law-of-day');
     expect(fetchMock.mock.calls[0]![1]).toMatchObject({ headers: { Accept: 'application/json' } });
     const early = window.__earlyLawOfDay!;
     expect(early.law).toBeNull();
