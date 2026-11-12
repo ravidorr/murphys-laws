@@ -1,3 +1,4 @@
+import { inboundFiltersIntegration } from '@sentry/browser';
 import { isSentryErrorIgnored, isInjectedScriptStackOverflow, SENTRY_DENIED_URLS, SENTRY_IGNORED_ERROR_PATTERNS } from '../src/utils/sentry-ignore-patterns.ts';
 
 describe('sentry-ignore-patterns', () => {
@@ -132,6 +133,39 @@ describe('sentry-ignore-patterns', () => {
       expect(isDenied('https://notstartpage.com/x.js')).toBe(false);
       expect(isDenied('https://startpage.com.evil.example/x.js')).toBe(false);
       expect(isDenied('https://murphys-laws.com/search?q=startpage.com/')).toBe(false);
+    });
+
+    describe('with the Sentry inbound filter', () => {
+      const startpageUrl = 'https://av-eu1.startpage.com/__av/AWrpspOp1zpUkObd87LbYfl4iQXaaHR0cHM6Ly93d3cuZ29vZ2xldGFnbWFuYWdlci5jb20vZ3RhZy9qcz9pZD1HLVhHN0c2S1JQMEU';
+      const filter = (frames: Array<{ filename: string; function: string }>) => {
+        const event = {
+          exception: {
+            values: [{ type: 'TypeError', value: 'Can only call Window.setInterval on instances of Window', stacktrace: { frames } }],
+          },
+        };
+        const client = { getOptions: () => ({ denyUrls: SENTRY_DENIED_URLS }) };
+        // Sentry's own inbound-filter integration, configured the way main.ts configures denyUrls.
+        const integration = inboundFiltersIntegration() as unknown as {
+          processEvent: (event: unknown, hint: unknown, client: unknown) => unknown;
+        };
+        return integration.processEvent(event, {}, client);
+      };
+
+      it('drops an event whose innermost non-native frame is the Startpage copy of gtag.js', () => {
+        // Sentry orders frames oldest first, so the native setInterval call that threw is last.
+        expect(filter([
+          { filename: startpageUrl, function: 'global code' },
+          { filename: startpageUrl, function: 'ld' },
+          { filename: '[native code]', function: 'setInterval' },
+        ])).toBeNull();
+      });
+
+      it('keeps an event thrown from our own bundle', () => {
+        expect(filter([
+          { filename: 'https://murphys-laws.com/assets/index-abc123.js', function: 'start' },
+          { filename: '[native code]', function: 'setInterval' },
+        ])).not.toBeNull();
+      });
     });
 
     it('still denies the ad script hosts', () => {
