@@ -23,6 +23,7 @@ export interface ArticleArchiveLinks {
 interface LawLinkContext {
   categorySlug?: string | null;
   categoryName?: string | null;
+  lawTitle?: string | null;
 }
 
 const HUB_LINKS: InternalLink[] = [
@@ -64,9 +65,23 @@ export function getHubLinks(): InternalLink[] {
   return [...HUB_LINKS];
 }
 
+// Laws that have a long-form article about them: the law page leads with a link to it.
+// Keyed by exact title because law ids differ between environments and the API does not return a law's slug.
+const LAW_ARTICLE_LINKS: Record<string, InternalLink> = {
+  "Crane's law": {
+    href: '/cranes-law',
+    label: "Crane's Law: No Free Lunch",
+    description: 'Where the name and the saying come from.',
+  },
+};
+
 export function getLawDetailInternalLinks(context: LawLinkContext): InternalLink[] {
+  const articleLink = context.lawTitle ? LAW_ARTICLE_LINKS[context.lawTitle] : undefined;
+  const lead = articleLink ? [articleLink] : [];
+
   if (!context.categorySlug) {
     return [
+      ...lead,
       { href: '/browse', label: 'Browse all laws', description: 'Search the complete archive.' },
       { href: '/categories', label: 'Browse categories', description: 'Find laws by topic.' },
       HUB_LINKS[0]!,
@@ -74,6 +89,7 @@ export function getLawDetailInternalLinks(context: LawLinkContext): InternalLink
   }
 
   return [
+    ...lead,
     {
       href: `/category/${context.categorySlug}`,
       label: context.categoryName || 'Same category',
@@ -134,6 +150,10 @@ const ARTICLE_ARCHIVE_LINKS: Partial<Record<ContentPage, ArticleArchiveLinks>> =
   'murphys-law-vs-sods-law': {
     featuredCategory: ORIGINAL_LAWS,
     links: [ORIGINAL_LAWS_LINK, OFFICE_LAWS_LINK, BROWSE_LINK],
+  },
+  'cranes-law': {
+    featuredCategory: ORIGINAL_LAWS,
+    links: [ORIGINAL_LAWS_LINK, BROWSE_LINK, SUBMIT_LINK],
   },
   'why-murphys-law-feels-true': {
     featuredCategory: OFFICE_LAWS,

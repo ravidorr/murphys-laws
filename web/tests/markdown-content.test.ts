@@ -96,6 +96,14 @@ describe('markdown-content.js', () => {
       expect(getPageContent('murphys-law-vs-sods-law')).toContain('Sod');
     });
 
+    it("returns the Crane's Law article, linked to its law page and its sources", () => {
+      const html = getPageContent('cranes-law');
+      expect(html).toContain('<h1');
+      expect(html).toContain('Free Lunch');
+      expect(html).toContain('href="/law/2406"');
+      expect(html).toContain('Arthur Bloch');
+    });
+
     it('uses fallback metadata when an optional content entry is absent', () => {
       const localThis: { originalDevelopers: typeof metadata.developers } = {
         originalDevelopers: metadata.developers,
@@ -118,6 +126,7 @@ describe('markdown-content.js', () => {
         'murphys-laws-about-work',
         'murphys-laws-about-technology',
         'murphys-law-vs-sods-law',
+        'cranes-law',
         'examples/work',
         'examples/travel',
         'examples/tech',

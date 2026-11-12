@@ -17,6 +17,7 @@ import funniestMurphysLawsMd from '../../../shared/content/funniest-murphys-laws
 import murphysLawsAboutWorkMd from '../../../shared/content/murphys-laws-about-work.md?raw';
 import murphysLawsAboutTechnologyMd from '../../../shared/content/murphys-laws-about-technology.md?raw';
 import murphysLawVsSodsLawMd from '../../../shared/content/murphys-law-vs-sods-law.md?raw';
+import cranesLawMd from '../../../shared/content/cranes-law.md?raw';
 import examplesWorkMd from '../../../shared/content/examples-work.md?raw';
 import examplesTravelMd from '../../../shared/content/examples-travel.md?raw';
 import examplesTechMd from '../../../shared/content/examples-tech.md?raw';
@@ -46,6 +47,7 @@ interface ContentMetadata {
   'murphys-laws-about-work'?: PageMeta;
   'murphys-laws-about-technology'?: PageMeta;
   'murphys-law-vs-sods-law'?: PageMeta;
+  'cranes-law'?: PageMeta;
   'examples/work'?: PageMeta;
   'examples/travel'?: PageMeta;
   'examples/tech'?: PageMeta;
@@ -54,7 +56,7 @@ interface ContentMetadata {
 }
 
 /** Valid page identifiers for content pages */
-export type ContentPage = 'about' | 'origin-story' | 'privacy' | 'terms' | 'contact' | 'examples' | 'why-murphys-law-feels-true' | 'murphys-law-project-management' | 'developers' | 'best-murphys-laws' | 'funniest-murphys-laws' | 'murphys-laws-about-work' | 'murphys-laws-about-technology' | 'murphys-law-vs-sods-law' | 'examples/work' | 'examples/travel' | 'examples/tech' | 'examples/everyday-life';
+export type ContentPage = 'about' | 'origin-story' | 'privacy' | 'terms' | 'contact' | 'examples' | 'why-murphys-law-feels-true' | 'murphys-law-project-management' | 'developers' | 'best-murphys-laws' | 'funniest-murphys-laws' | 'murphys-laws-about-work' | 'murphys-laws-about-technology' | 'murphys-law-vs-sods-law' | 'cranes-law' | 'examples/work' | 'examples/travel' | 'examples/tech' | 'examples/everyday-life';
 
 const typedMetadata = metadata as ContentMetadata;
 
@@ -215,6 +217,7 @@ export function getPageContent(page: ContentPage): string {
     'murphys-laws-about-work': { markdown: murphysLawsAboutWorkMd, meta: typedMetadata['murphys-laws-about-work'] || { version: '1.0.0', description: 'Murphy\'s Laws for work, offices, meetings, and projects.' } },
     'murphys-laws-about-technology': { markdown: murphysLawsAboutTechnologyMd, meta: typedMetadata['murphys-laws-about-technology'] || { version: '1.0.0', description: 'Murphy\'s Laws about technology, software, and systems.' } },
     'murphys-law-vs-sods-law': { markdown: murphysLawVsSodsLawMd, meta: typedMetadata['murphys-law-vs-sods-law'] || { version: '1.0.0', description: 'The difference between Murphy\'s Law and Sod\'s Law.' } },
+    'cranes-law': { markdown: cranesLawMd, meta: typedMetadata['cranes-law'] || { version: '1.0.0', description: 'Crane\'s Law: there\'s no such thing as a free lunch.' } },
     'examples/work': { markdown: examplesWorkMd, meta: typedMetadata['examples/work'] || { version: '1.0.0', description: 'Workplace Murphy\'s Law examples.' } },
     'examples/travel': { markdown: examplesTravelMd, meta: typedMetadata['examples/travel'] || { version: '1.0.0', description: 'Travel Murphy\'s Law examples.' } },
     'examples/tech': { markdown: examplesTechMd, meta: typedMetadata['examples/tech'] || { version: '1.0.0', description: 'Technology Murphy\'s Law examples.' } },
@@ -330,6 +333,7 @@ export function getRawMarkdownContent(page: ContentPage): string {
     'murphys-laws-about-work': murphysLawsAboutWorkMd,
     'murphys-laws-about-technology': murphysLawsAboutTechnologyMd,
     'murphys-law-vs-sods-law': murphysLawVsSodsLawMd,
+    'cranes-law': cranesLawMd,
     'examples/work': examplesWorkMd,
     'examples/travel': examplesTravelMd,
     'examples/tech': examplesTechMd,

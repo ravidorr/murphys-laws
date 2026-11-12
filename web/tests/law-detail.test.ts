@@ -139,6 +139,25 @@ describe('LawDetail view', () => {
     expect(el.querySelector('[data-law-internal-links]')?.innerHTML).toContain('/examples/tech');
   });
 
+  it("leads Crane's law's related links with its article, and no other law's", async () => {
+    const crane = {
+      id: '2406',
+      title: "Crane's law",
+      text: 'There is no such thing as a free lunch.',
+      score: 1,
+      category_slug: 'murphys-laws',
+      category_name: "Murphy's Laws"
+    };
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => crane });
+    const el = LawDetail({ lawId: '2406', onNavigate: () => { } });
+    await vi.waitFor(() => expect(el.querySelector('[data-law-internal-links] a')?.getAttribute('href')).toBe('/cranes-law'), { timeout: 500 });
+
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ...crane, id: '1', title: 'Some other law' }) });
+    const other = LawDetail({ lawId: '1', onNavigate: () => { } });
+    await vi.waitFor(() => expect(other.querySelector('[data-law-internal-links] a')).toBeTruthy(), { timeout: 500 });
+    expect(other.querySelector('[data-law-internal-links]')?.innerHTML).not.toContain('/cranes-law');
+  });
+
   it('L207 B1: breadcrumbContainer exists so breadcrumb rendered', async () => {
     const law = { id: '1', title: 'T', text: 'T', score: 0 };
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => law });

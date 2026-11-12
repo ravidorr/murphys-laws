@@ -58,6 +58,14 @@ export const CALCULATOR_META_DESCRIPTIONS = {
   sodsLaw: "Rate urgency, complexity, importance, skill, and frequency to get an instant Sod's Law risk score for any task. Free, no signup needed, and results in seconds.",
   butteredToast: "Adjust fall height, gravity, overhang, butter, friction, and inertia to see the odds your buttered toast lands butter-side down. Free, instant simulator."
 } as const;
+/**
+ * Head title and meta description of the Crane's Law article. The prerendered page (ssg.ts) and the app (main.ts)
+ * both read them, because the app replaces the prerendered description once it runs and Google indexes that.
+ */
+export const CRANES_LAW_PAGE = {
+  title: "Crane's Law: No Free Lunch",
+  description: "Crane's Law means there is no such thing as a free lunch. Where the name comes from, the saloon origin of the saying, and its link to Murphy's Law."
+} as const;
 export const SITE_DEFAULT_SOCIAL_IMAGE = `${SITE_URL}/social/home.png`;
 export const SOCIAL_IMAGE_SOD = `${SITE_URL}/social/sods-calculator.png`;
 export const SOCIAL_IMAGE_TOAST = `${SITE_URL}/social/buttered-toast-calculator.png`;
