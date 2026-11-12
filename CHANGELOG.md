@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Scripts and stylesheets without a content hash are no longer cached for a year. `nginx.conf` applied its one-year rule
+  (`Expires` in 2027 plus `Cache-Control: max-age=31536000` and `public, no-transform`) to every `.js`, `.css` and image
+  file, so `/sw.js`, `/offline.js` and `/styles/*` (including `variables.css`, which every build regenerates) kept their
+  URL while their content changed. Browsers already skip the HTTP cache when they check `/sw.js` itself, so the files that
+  could really stay stale were `/offline.js` and the stylesheets, which the service worker's precache also reads through
+  the HTTP cache. They now send a single `Cache-Control: no-cache` (stored, but revalidated before each use; the `ETag`
+  makes that a `304` with no body), as do `/manifest.webmanifest`, `/robots.txt`, `/sitemap.xml` and
+  `/image-sitemap.xml`. Any `.js` or `.css` file outside the hashed `/assets/` files gets this by default, so a future
+  unhashed script is safe. Hashed assets stay `immutable` and the images keep their one-year lifetime. Checked in an
+  nginx 1.24 container for every file class with `nginx -t` and `curl -I`;
+  `web/tests/nginx-performance.test.ts` models the location precedence and pins the headers of each class, and
+  `shared/docs/DEPLOYMENT.md` has the table and how to repeat the check. The manifest is still served as
+  `application/octet-stream` and the pages still send no `Cache-Control` (both in `TODO.md`). Web bumped to `3.4.113`;
+  root to `2.6.225`.
 - The deploy now stops when nginx rejects the new configuration. Its nginx step ran
   `sudo nginx -t && sudo systemctl reload nginx`, and under `set -e` a failure in an `&&` list that is not its last
   command does not stop the script, so a rejected `nginx.conf` stayed in `sites-available` while the deploy went on

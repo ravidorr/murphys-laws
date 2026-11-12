@@ -182,6 +182,33 @@ step (see "A rejected nginx configuration" above for what the deploy does then).
 
 ---
 
+## Browser caching
+
+The static files nginx serves from `web/dist/` fall into four groups (the nested locations of `location /` in
+`nginx.conf`, first match wins; `web/tests/nginx-performance.test.ts` pins the table):
+
+| Files | `Cache-Control` |
+| --- | --- |
+| Content-hashed files under `/assets/` (`index-DZClfRb6.js`) | `public, max-age=31536000, immutable` |
+| Other `.js` and `.css`, including `/sw.js`, `/offline.js` and `/styles/*` | `no-cache` |
+| `/manifest.webmanifest`, `/robots.txt`, `/sitemap.xml`, `/image-sitemap.xml` | `no-cache` |
+| Images (`.png`, `.jpg`, `.jpeg`, `.gif`, `.ico`, `.svg`) | `max-age=31536000` and `public, no-transform` (`expires 1y` plus `add_header`) |
+
+`no-cache` means the browser may store the file but must revalidate it before every use; nginx answers with a `304` from the
+`ETag` and `Last-Modified` it already sends. Anything that keeps its URL while its content changes belongs in the
+`no-cache` groups: a script or stylesheet without a hash that is added later lands there by default. Pages and the other
+text files (`ads.txt`, `llms.txt`) have no `Cache-Control` header. A `location` that sets its own `add_header` drops the
+ones inherited from above, so give each location exactly one `add_header Cache-Control`. Do not add `expires` to it unless
+you want the second header on purpose, as the image rule does (`expires 1y` sends `max-age` and an `Expires` date).
+
+To check a change against a real nginx 1.24 without touching the server, run the `nginx:1.24` image with `nginx.conf`
+mounted as `/etc/nginx/conf.d/site.conf` (an empty file over `default.conf`), a built `web/dist` mounted at
+`/root/murphys-laws/web/dist` (run `chmod 755 /root` in the container so the worker can read it), and a throwaway
+self-signed certificate plus the `options-ssl-nginx.conf` and `ssl-dhparams.pem` paths the file includes under
+`/etc/letsencrypt/`. Then `nginx -t` and `curl -skI --resolve murphys-laws.com:<port>:127.0.0.1 https://murphys-laws.com:<port>/sw.js`.
+
+---
+
 ## Monitoring
 
 ### Check Service Status

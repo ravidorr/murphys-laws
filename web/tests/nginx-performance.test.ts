@@ -56,6 +56,34 @@ describe('nginx compression', () => {
   });
 });
 
+// The static-file locations nested in `location /`, in file order. nginx tests the regex locations of one block in
+// that order and uses the first match, so the order of this list is the precedence. The pattern is either quoted
+// (when it holds a brace) or a single word.
+const staticLocations = [
+  ...apex.matchAll(/^ {8}location ~\* (?:"([^"]+)"|(\S+)) \{\n([\s\S]*?)\n {8}\}$/gm),
+].map((match) => ({
+  pattern: new RegExp(match[1] ?? match[2] ?? '(?!)', 'i'),
+  body: match[3] ?? '',
+}));
+
+type CacheClass = 'immutable' | 'revalidate' | 'one-year' | 'unset';
+
+// What nginx sends for a file served through `location /`: the nested location a URI lands in decides it.
+function cacheFor(uri: string): { cacheClass: CacheClass; headers: string[]; expires: boolean } {
+  // nginx matches a location against the path without its query string.
+  const path = uri.split('?')[0] ?? uri;
+  const location = staticLocations.find(({ pattern }) => pattern.test(path));
+  const headers = [...(location?.body.matchAll(/add_header Cache-Control "([^"]+)"/g) ?? [])].map((m) => m[1] ?? '');
+  const expires = /^\s*expires /m.test(location?.body ?? '');
+  if (headers.some((header) => header.includes('immutable'))) {
+    return { cacheClass: 'immutable', headers, expires };
+  }
+  if (headers.includes('no-cache')) {
+    return { cacheClass: 'revalidate', headers, expires };
+  }
+  return { cacheClass: expires ? 'one-year' : 'unset', headers, expires };
+}
+
 describe('nginx hashed asset caching', () => {
   // The pattern is quoted: an unquoted { ends the location line for nginx, and nginx -t then reports an unknown directive.
   const opening = 'location ~* "^/assets/';
@@ -106,20 +134,99 @@ describe('nginx hashed asset caching', () => {
     expect(viteConfig).not.toMatch(/assetFileNames|chunkFileNames|entryFileNames/);
   });
 
-  it('comes before the generic static-file rule so that it wins', () => {
-    const generic = apex.indexOf('location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg)$');
-    expect(generic).toBeGreaterThan(-1);
-    expect(apex.indexOf(opening)).toBeLessThan(generic);
+  it('comes before every other static-file rule so that it wins', () => {
+    expect(staticLocations.length).toBeGreaterThan(1);
+    expect(staticLocations[0]?.body).toContain('immutable');
   });
 
   it('leaves the other static files without immutable, since their names do not change', () => {
-    const generic = locationBody('location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg)$');
-    expect(generic).not.toContain('immutable');
+    for (const location of staticLocations.slice(1)) {
+      expect(location.body, location.pattern.source).not.toContain('immutable');
+    }
   });
 
   it('does not set add_header above the nested locations, which would be lost there', () => {
     const beforeNested = apex.slice(0, apex.indexOf('location / {'));
     expect(beforeNested).not.toMatch(/^\s*add_header\s/m);
+  });
+});
+
+describe('nginx caching of the files that are not hashed', () => {
+  // File names from web/dist (the build in web/package.json) and the paths the pages link to.
+  it.each([
+    '/sw.js',
+    '/offline.js',
+    '/styles/embed.css',
+    '/styles/fallback-pages.css',
+    '/styles/subscription-pages.css',
+    '/styles/partials/variables.css',
+    '/assets/main.js',
+    '/some-future-script.js',
+    '/sw.js?v=2',
+    '/styles/embed.css?x=1',
+    '/manifest.webmanifest',
+    '/robots.txt',
+    '/sitemap.xml',
+    '/image-sitemap.xml',
+  ])('makes the browser revalidate %s with one no-cache header and no expires', (uri) => {
+    expect(cacheFor(uri)).toEqual({ cacheClass: 'revalidate', headers: ['no-cache'], expires: false });
+  });
+
+  it.each([
+    '/favicon.ico',
+    '/favicon-16x16.png',
+    '/favicon-32x32.png',
+    '/apple-touch-icon.png',
+    '/android-chrome-192x192.png',
+    '/android-chrome-512x512.png',
+    '/social/home.png',
+    '/social/sods-calculator.png',
+    '/img/pvtmurphy.gif',
+    '/img/sledtrk.jpg',
+    '/some/logo.svg',
+    '/assets/logo.png',
+  ])('keeps the one-year lifetime of the image %s', (uri) => {
+    expect(cacheFor(uri)).toEqual({ cacheClass: 'one-year', headers: ['public, no-transform'], expires: true });
+  });
+
+  it.each(['/assets/index-DZClfRb6.js', '/assets/style-BhqpAbOy.css', '/assets/logo-AbCdEfGh.png'])(
+    'still caches the hashed %s for good',
+    (uri) => {
+      expect(cacheFor(uri).cacheClass).toBe('immutable');
+    },
+  );
+
+  it.each([
+    '/',
+    '/about',
+    '/offline.html',
+    '/404.html',
+    '/ads.txt',
+    '/llms.txt',
+    '/social/home.webp',
+    '/assets/index-DZClfRb6.js.map',
+    '/assets/font.woff2',
+  ])('adds no cache rule to %s', (uri) => {
+    expect(cacheFor(uri)).toEqual({ cacheClass: 'unset', headers: [], expires: false });
+  });
+
+  it('is not blind to a nested location of another kind, which would take precedence in nginx', () => {
+    // The parser only reads `location ~* pattern`; an exact (=), prefix (^~) or case-sensitive (~) location
+    // nested in `location /` would win over these and be invisible to cacheFor, so there must be none.
+    const nestedOpenings = apex.match(/^ {8}location /gm) ?? [];
+    expect(nestedOpenings).toHaveLength(staticLocations.length);
+  });
+
+  it('matches file names without regard to case, like the ~* locations do', () => {
+    for (const { pattern } of staticLocations) {
+      expect(pattern.flags).toContain('i');
+    }
+  });
+
+  it('has exactly one add_header Cache-Control in every static-file location', () => {
+    for (const { body, pattern } of staticLocations) {
+      expect(body.match(/add_header Cache-Control /g), pattern.source).toHaveLength(1);
+    }
   });
 });
 
