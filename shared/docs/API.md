@@ -367,7 +367,7 @@ Get a single law by ID.
 
 #### GET /api/v1/laws/:id/related
 
-Get related laws from the same category(ies) as the specified law, sorted by score. Corollaries of published laws are not returned. Laws with equal scores are ordered by a fixed pattern that depends on the law's id, so each law gets its own mix and repeated requests return the same one.
+Get related laws from the same category(ies) as the specified law, sorted by score, then upvotes. Corollaries of published laws are not returned. Laws with the same score and the same number of upvotes are ordered by a fixed pattern that depends on the law's id, so each law gets its own mix. The mix stays the same until votes or the published laws change.
 
 **Path Parameters:**
 
@@ -412,6 +412,7 @@ Get related laws from the same category(ies) as the specified law, sorted by sco
 - Returns laws from the same category(ies) as the specified law
 - Excludes the specified law from results
 - Only returns published laws
+- Does not return corollaries of published laws. A corollary of an unpublished law counts as an ordinary law
 - Returns empty array if the law has no categories or no related laws exist
 
 **Error Responses:**

@@ -33,6 +33,7 @@ import {
   categorySitemapPaths,
   pickRelatedLaws,
   pickRelatedStandaloneLaws,
+  relatedLawsForPage,
   renderLawLinkList,
   buildCorollaryIndex
 } from '@scripts/ssg';
@@ -819,10 +820,10 @@ describe('SSG SEO output', () => {
       }
     });
 
-    it('picks the same laws as the plain ring over the standalone laws', () => {
-      for (const law of standalone) {
-        expect(pickRelatedStandaloneLaws(law, category)).toEqual(pickRelatedLaws(law, standalone));
-      }
+    it('walks the ring over the standalone laws only', () => {
+      // 32 standalone laws, so a stride of 6 through the list 1, 2, 3, 4, 6, 7, 8, 9, 11, ...
+      expect(pickRelatedStandaloneLaws(category[0]!, category).map((r) => r.id)).toEqual([2, 8, 16]);
+      expect(pickRelatedStandaloneLaws(category[38]!, category).map((r) => r.id)).toEqual([1, 7, 14]);
     });
 
     it('links every standalone law from exactly three other standalone laws', () => {
@@ -834,30 +835,62 @@ describe('SSG SEO output', () => {
       expect([...inbound.values()].every((count) => count === 3)).toBe(true);
     });
 
+    it('starts a corollary page at the place its id would take among the standalone laws', () => {
+      // Corollary 5 sits between standalone laws 4 and 6, so the walk starts with 6
+      expect(pickRelatedStandaloneLaws(category[4]!, category).map((r) => r.id)).toEqual([6, 12, 19]);
+      // Corollary 40 is after every standalone law, so the walk wraps around to the first one
+      expect(pickRelatedStandaloneLaws(category[39]!, category).map((r) => r.id)).toEqual([1, 7, 14]);
+    });
+
     it('gives a corollary three standalone laws, not itself', () => {
       for (const law of category.filter((candidate) => candidate.corollary_of_id != null)) {
         const related = pickRelatedStandaloneLaws(law, category);
         expect(related).toHaveLength(3);
         expect(related.every((r) => r.corollary_of_id == null)).toBe(true);
+        expect(related.map((r) => r.id)).not.toContain(law.id);
       }
     });
 
-    it('does not mix up corollaries with each other: different corollaries get different laws', () => {
+    it('gives different corollaries different related laws', () => {
       const [first, second] = category.filter((candidate) => candidate.corollary_of_id != null);
       expect(pickRelatedStandaloneLaws(first!, category).map((r) => r.id)).not.toEqual(pickRelatedStandaloneLaws(second!, category).map((r) => r.id));
     });
 
-    it('treats a corollary of an unpublished law (no corollary_of_id) as an ordinary law', () => {
-      const orphan: TestLaw = { id: 5, corollary_of_id: null };
-      const laws = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, orphan];
-      expect(pickRelatedStandaloneLaws({ id: 1 }, laws).map((r) => r.id)).toEqual([2, 3, 5]);
-      expect(pickRelatedStandaloneLaws({ id: 4 }, laws).map((r) => r.id)).toContain(5);
+    it('counts a law with a null or missing corollary_of_id as standalone', () => {
+      const laws: TestLaw[] = [{ id: 1 }, { id: 2, corollary_of_id: null }, { id: 3, corollary_of_id: 1 }];
+      expect(pickRelatedStandaloneLaws(laws[0]!, laws).map((r) => r.id)).toEqual([2]);
+      expect(pickRelatedStandaloneLaws(laws[1]!, laws).map((r) => r.id)).toEqual([1]);
     });
 
-    it('returns nothing when a category has no other standalone law', () => {
+    it('returns nothing for a lone standalone law whose category only has corollaries besides it', () => {
       const lonely: TestLaw[] = [{ id: 1 }, { id: 2, corollary_of_id: 1 }];
       expect(pickRelatedStandaloneLaws(lonely[0]!, lonely)).toEqual([]);
+    });
+
+    it('gives a corollary the standalone law of its category', () => {
+      const lonely: TestLaw[] = [{ id: 1 }, { id: 2, corollary_of_id: 1 }];
       expect(pickRelatedStandaloneLaws(lonely[1]!, lonely).map((r) => r.id)).toEqual([1]);
+    });
+  });
+
+  describe('relatedLawsForPage', () => {
+    type PageLaw = { id: number; category_slug?: string; corollary_of_id?: number | null };
+    const laws: PageLaw[] = [
+      { id: 1, category_slug: 'tech' },
+      { id: 2, category_slug: 'tech', corollary_of_id: 1 },
+      { id: 3, category_slug: 'tech' },
+      { id: 4 }
+    ];
+    const byCategory = new Map<string, PageLaw[]>([['tech', laws.slice(0, 3)]]);
+
+    it('links standalone laws of the same category and leaves corollaries out', () => {
+      expect(relatedLawsForPage(laws[0]!, byCategory).map((r) => r.id)).toEqual([3]);
+      expect(relatedLawsForPage(laws[1]!, byCategory).map((r) => r.id)).toEqual([3, 1]);
+    });
+
+    it('has no related laws for a law without a category, or whose category has no laws listed', () => {
+      expect(relatedLawsForPage(laws[3]!, byCategory)).toEqual([]);
+      expect(relatedLawsForPage({ id: 9, category_slug: 'humor' }, byCategory)).toEqual([]);
     });
   });
 
