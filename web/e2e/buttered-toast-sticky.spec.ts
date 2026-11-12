@@ -13,8 +13,9 @@ test.describe('Buttered Toast sticky result bar', () => {
     const result = page.locator(RESULT);
     await expect(result).toBeVisible();
 
-    // At the top of the page the natural position is far below the fold, yet the bar sits at the bottom edge
-    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    // A sticky bar cannot leave its card, so it only reaches the bottom edge once the sliders are in view; how
+    // soon that happens depends on the height of the header above them, which varies with the fonts available
+    await page.locator('#toast-height').scrollIntoViewIfNeeded();
     await expect(result).toHaveCSS('position', 'sticky');
     const pinned = await result.boundingBox();
     const viewportHeight = await page.evaluate(() => window.innerHeight);
@@ -36,6 +37,8 @@ test.describe('Buttered Toast sticky result bar', () => {
     const bar = page.locator(RESULT);
     const hint = page.locator('#toast-adjust-hint');
     await expect(hint).toBeVisible();
+    // Bring the sliders into view first: the bar is only pinned to the bottom edge while they are on screen
+    await page.locator('#toast-height').scrollIntoViewIfNeeded();
 
     const barBox = await bar.boundingBox();
     const hintBox = await hint.boundingBox();

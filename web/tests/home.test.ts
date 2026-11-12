@@ -210,6 +210,19 @@ describe('Home view', () => {
     expect(onSearch).toHaveBeenCalledWith({ q: 'technology failure' }, 'home');
   });
 
+  it('opens browse for a homepage query when no shared search flow is provided', () => {
+    const el = document.createElement('div');
+    const onNavigate = vi.fn<OnNavigate>() as Mock<OnNavigate>;
+    renderHome(el, null, [], onNavigate);
+    const form = el.querySelector('form[role="search"]') as HTMLFormElement;
+    const input = form.querySelector('input[type="search"]') as HTMLInputElement;
+    input.value = 'technology failure';
+
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    expect(onNavigate).toHaveBeenCalledWith('browse');
+  });
+
   it('opens browse when the homepage search is submitted blank', () => {
     const trackSpy = vi.spyOn(metrics, 'trackProductEvent');
     const el = document.createElement('div');
