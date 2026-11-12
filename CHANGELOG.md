@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The deploy now stops when nginx rejects the new configuration. Its nginx step ran
+  `sudo nginx -t && sudo systemctl reload nginx`, and under `set -e` a failure in an `&&` list that is not its last
+  command does not stop the script, so a rejected `nginx.conf` stayed in `sites-available` while the deploy went on
+  (migrations, PM2 restart) and reported success, and the next reload or restart could not load the file. The step
+  now keeps the previous site file (or notes that there was none), installs the new one and runs `nginx -t` in one
+  condition, restores the previous file when either fails, does not reload, and fails the deploy; a backup or restore
+  that cannot be made fails it loudly instead of being ignored. A test runs that part of the deploy script with
+  stand-ins for `sudo`, `nginx`, `systemctl`, `cp` and `mktemp` (accepted configuration, rejected one with and without
+  a previous file, a backup that cannot be made, an install that fails). `backend/scripts/deploy.ts`
+  (`npm run deploy`) has the same `&&` pattern: it fails there too but leaves the rejected file in place, and is
+  unchanged. `shared/docs/DEPLOYMENT.md` describes the behavior.
+  Root bumped to `2.6.224`.
 - `GET /api/v1/law-of-day` now sends `Cache-Control: public, max-age=N` with a 200, so a browser or shared cache can
   reuse the response and repeat visits and the early home page request cost less. N is the lesser of 60 and the whole
   seconds left in the UTC day the law was featured on, so a cached response never outlives 00:00 UTC, when the next law

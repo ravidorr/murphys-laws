@@ -305,3 +305,123 @@ test('the build step runs the OpenAPI export and the web build, and a failure fa
   assert.notEqual(failed.status, 0);
   assert.equal(failed.commands.length, 1, 'nothing runs after the first failure');
 });
+
+// ---------------------------------------------------------------------------------------------------------------
+// The nginx part of the "Deploy and restart services" step, run with stand-ins for sudo, nginx and systemctl
+
+const deployScript = String(deploySteps[indexOfStep('Deploy and restart services')]?.with?.script ?? '');
+const nginxBlockStart = deployScript.indexOf('echo "==> Deploy: testing nginx and reloading"');
+const nginxBlockEnd = deployScript.indexOf('sudo --preserve-env=GITHUB_SHA');
+const nginxBlock = deployScript.slice(nginxBlockStart, nginxBlockEnd);
+const liveSite = '/etc/nginx/sites-available/murphys-laws';
+// Without the live path the sandbox would not redirect the block, and it would run against the real /etc/nginx.
+assert.ok(nginxBlock.includes(liveSite), 'the nginx block of the deploy step names the live site file');
+
+type NginxSandbox = { directory: string; site: string; temp: string; calls: string };
+
+function createNginxSandbox(previous: string | null): NginxSandbox {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'deploy-nginx-'));
+  const bin = path.join(directory, 'bin');
+  const temp = path.join(directory, 'tmp');
+  const site = path.join(directory, 'murphys-laws');
+  const calls = path.join(directory, 'calls.log');
+  mkdirSync(bin);
+  mkdirSync(temp);
+  mkdirSync(path.join(directory, 'target'));
+  writeFileSync(path.join(directory, 'target', 'nginx.conf'), 'new config\n');
+  if (previous !== null) writeFileSync(site, previous);
+  // sudo just runs the command; nginx -t answers according to STUB_NGINX_TEST and records which file it read.
+  writeFileSync(path.join(bin, 'sudo'), '#!/bin/sh\nexec "$@"\n');
+  writeFileSync(
+    path.join(bin, 'nginx'),
+    `#!/bin/sh\necho "nginx $* [site: $(cat "${site}")]" >> "${calls}"\n` +
+      `[ "$STUB_NGINX_TEST" = fail ] && echo 'nginx: [emerg] unknown directive "module_directive"' >&2\n` +
+      `[ "$STUB_NGINX_TEST" = fail ] && exit 1\nexit 0\n`,
+  );
+  writeFileSync(path.join(bin, 'systemctl'), `#!/bin/sh\necho "systemctl $*" >> "${calls}"\n`);
+  // macOS mktemp ignores TMPDIR when it has no template, GNU mktemp honors it: always create under TMPDIR.
+  writeFileSync(path.join(bin, 'mktemp'), '#!/bin/sh\nexec /usr/bin/mktemp "$TMPDIR/nginx-site.XXXXXX"\n');
+  // cp fails for the backup (cp -p) when STUB_CP_FAIL=backup, and for the copy of the new file when it is "install".
+  writeFileSync(
+    path.join(bin, 'cp'),
+    `#!/bin/sh\ncase "$STUB_CP_FAIL:$1" in\n  backup:-p) [ "$STUB_CP_COUNT" = 1 ] && exit 1 ;;\n  install:*nginx.conf) exit 1 ;;\nesac\nexec /bin/cp "$@"\n`,
+  );
+  for (const name of ['sudo', 'nginx', 'systemctl', 'mktemp', 'cp']) chmodSync(path.join(bin, name), 0o755);
+  return { directory, site, temp, calls };
+}
+
+function runNginxBlock(sandbox: NginxSandbox, nginxTest: 'pass' | 'fail', after = '', cpFails = '') {
+  const script = `${nginxBlock.replaceAll(liveSite, sandbox.site)}\n${after}`;
+  return spawnSync('bash', ['-e', '-c', script], {
+    env: {
+      PATH: `${path.join(sandbox.directory, 'bin')}:${process.env.PATH}`,
+      TMPDIR: sandbox.temp,
+      TARGET_DIR: path.join(sandbox.directory, 'target'),
+      STUB_NGINX_TEST: nginxTest,
+      STUB_CP_FAIL: cpFails,
+      STUB_CP_COUNT: '1',
+    },
+    encoding: 'utf8',
+  });
+}
+
+const callsOf = (sandbox: NginxSandbox): string[] =>
+  existsSync(sandbox.calls) ? readFileSync(sandbox.calls, 'utf8').trim().split('\n') : [];
+
+test('the nginx part of the deploy step is found where the tests expect it', () => {
+  assert.ok(nginxBlockStart > -1 && nginxBlockEnd > nginxBlockStart, 'the block sits before the sudo bash <<INNER section');
+  assert.ok(nginxBlock.includes(liveSite), 'it installs the live site file');
+  assert.ok(nginxBlock.includes('sudo nginx -t'), 'it tests the configuration');
+  assert.ok(nginxBlock.includes('sudo systemctl reload nginx'), 'it reloads, never restarts, nginx');
+  assert.doesNotMatch(nginxBlock, /systemctl restart/);
+});
+
+test('a configuration that nginx accepts is installed, tested and then reloaded', () => {
+  const sandbox = createNginxSandbox('old config\n');
+  const result = runNginxBlock(sandbox, 'pass');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(readFileSync(sandbox.site, 'utf8'), 'new config\n');
+  assert.deepEqual(callsOf(sandbox), ['nginx -t [site: new config]', 'systemctl reload nginx']);
+  assert.deepEqual(readdirSync(sandbox.temp), [], 'the backup of the previous file is removed');
+});
+
+test('a configuration that nginx rejects (a module is missing) restores the previous file, fails the deploy and reloads nothing', () => {
+  const sandbox = createNginxSandbox('old config\n');
+  const result = runNginxBlock(sandbox, 'fail', 'echo AFTER_NGINX');
+  assert.notEqual(result.status, 0, 'set -e alone does not stop on a failed "nginx -t &&" list');
+  assert.doesNotMatch(result.stdout, /AFTER_NGINX/, 'nothing after the block runs');
+  assert.match(result.stderr, /unknown directive "module_directive"/);
+  assert.match(result.stderr, /nginx\.conf could not be installed or nginx rejected it; restoring the previous site file/);
+  assert.equal(readFileSync(sandbox.site, 'utf8'), 'old config\n', 'sites-available never keeps the rejected file');
+  assert.deepEqual(callsOf(sandbox), ['nginx -t [site: new config]'], 'nginx was not reloaded');
+  assert.deepEqual(readdirSync(sandbox.temp), [], 'the backup of the previous file is removed');
+});
+
+test('a rejected configuration on a server with no site file yet leaves none behind', () => {
+  const sandbox = createNginxSandbox(null);
+  const result = runNginxBlock(sandbox, 'fail');
+  assert.notEqual(result.status, 0);
+  assert.ok(!existsSync(sandbox.site), 'the rejected file is removed');
+  assert.deepEqual(callsOf(sandbox), ['nginx -t [site: new config]']);
+  assert.deepEqual(readdirSync(sandbox.temp), []);
+});
+
+test('a site file that cannot be backed up fails the deploy before it is touched and is never deleted', () => {
+  const sandbox = createNginxSandbox('old config\n');
+  const result = runNginxBlock(sandbox, 'fail', 'echo AFTER_NGINX', 'backup');
+  assert.notEqual(result.status, 0);
+  assert.doesNotMatch(result.stdout, /AFTER_NGINX/);
+  assert.equal(readFileSync(sandbox.site, 'utf8'), 'old config\n', 'the live file is neither replaced nor removed');
+  assert.deepEqual(callsOf(sandbox), [], 'nginx was neither tested nor reloaded');
+});
+
+test('a new file that cannot be installed restores the previous one and fails the deploy', () => {
+  const sandbox = createNginxSandbox('old config\n');
+  const result = runNginxBlock(sandbox, 'pass', 'echo AFTER_NGINX', 'install');
+  assert.notEqual(result.status, 0);
+  assert.doesNotMatch(result.stdout, /AFTER_NGINX/);
+  assert.match(result.stderr, /could not be installed or nginx rejected it/);
+  assert.equal(readFileSync(sandbox.site, 'utf8'), 'old config\n');
+  assert.deepEqual(callsOf(sandbox), [], 'nginx was not reloaded');
+  assert.deepEqual(readdirSync(sandbox.temp), []);
+});
