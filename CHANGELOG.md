@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The Web CI e2e job no longer hangs or fails on a slow apt mirror. It has a 15-minute limit, installs only chromium
+  (the one browser the suite uses) with up to three attempts for the system packages and the download, caches the browser
+  by Playwright version, and uploads the screenshots and videos of failed tests. A newer push to a pull request now
+  cancels the older Web CI run; runs on main always finish. A contract test covers these settings. Root bumped to `2.6.206`.
 - Advanced Search no longer changes the page when a category is picked; choose a category and press Search.
 - Removed the category helper text under the Category dropdown.
 
