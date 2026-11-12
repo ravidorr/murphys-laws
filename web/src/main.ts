@@ -1,6 +1,6 @@
 // Initialize Sentry first to capture all errors on the production origin only.
 import * as Sentry from '@sentry/browser';
-import { isSentryErrorIgnored, isInjectedScriptStackOverflow } from './utils/sentry-ignore-patterns.ts';
+import { isSentryErrorIgnored, isInjectedScriptStackOverflow, SENTRY_DENIED_URLS } from './utils/sentry-ignore-patterns.ts';
 import { isOpaqueScriptError, isServiceWorkerTransientError } from './utils/error-handler.ts';
 import { initializeNovusAgent, isCanonicalRuntime } from './utils/novus-agent.ts';
 import { installLegacyPolyfills } from './utils/legacy-polyfills.ts';
@@ -26,12 +26,8 @@ if (import.meta.env.VITE_SENTRY_DSN && isCanonicalTelemetryRuntime) {
     tracesSampleRate: 0.1,
     // Don't send errors in development
     enabled: import.meta.env.PROD,
-    // Drop errors originating entirely in third-party ad scripts
-    denyUrls: [
-      /googlesyndication\.com/i,
-      /doubleclick\.net/i,
-      /googleadservices\.com/i,
-    ],
+    // Drop errors originating entirely in third-party scripts (ads, proxies)
+    denyUrls: SENTRY_DENIED_URLS,
     // Filter out errors that aren't application bugs
     beforeSend(event) {
       const errorMessage = event.exception?.values?.[0]?.value || '';

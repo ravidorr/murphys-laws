@@ -1,4 +1,5 @@
-import { isSentryErrorIgnored, isInjectedScriptStackOverflow, SENTRY_IGNORED_ERROR_PATTERNS } from '../src/utils/sentry-ignore-patterns.ts';
+import { inboundFiltersIntegration } from '@sentry/browser';
+import { isSentryErrorIgnored, isInjectedScriptStackOverflow, SENTRY_DENIED_URLS, SENTRY_IGNORED_ERROR_PATTERNS } from '../src/utils/sentry-ignore-patterns.ts';
 
 describe('sentry-ignore-patterns', () => {
   describe('isSentryErrorIgnored', () => {
@@ -114,6 +115,63 @@ describe('sentry-ignore-patterns', () => {
 
     it('returns false for other errors', () => {
       expect(isInjectedScriptStackOverflow('Cannot read properties of undefined', documentFrames, documents)).toBe(false);
+    });
+  });
+
+  describe('SENTRY_DENIED_URLS', () => {
+    const isDenied = (url: string): boolean => SENTRY_DENIED_URLS.some((pattern) => pattern.test(url));
+
+    it('denies the Startpage proxy copy of gtag.js that threw JAVASCRIPT-1B', () => {
+      expect(isDenied('https://av-eu1.startpage.com/__av/AWrpspOp1zpUkObd87LbYfl4iQXaaHR0cHM6Ly93d3cuZ29vZ2xldGFnbWFuYWdlci5jb20vZ3RhZy9qcz9pZD1HLVhHN0c2S1JQMEU')).toBe(true);
+      expect(isDenied('https://startpage.com/__av/x')).toBe(true);
+      expect(isDenied('http://www.startpage.com/script.js')).toBe(true);
+    });
+
+    it('keeps our own scripts and look-alike hosts', () => {
+      expect(isDenied('https://murphys-laws.com/assets/index-abc123.js')).toBe(false);
+      expect(isDenied('https://www.googletagmanager.com/gtag/js?id=G-XG7G6KRP0E')).toBe(false);
+      expect(isDenied('https://notstartpage.com/x.js')).toBe(false);
+      expect(isDenied('https://startpage.com.evil.example/x.js')).toBe(false);
+      expect(isDenied('https://murphys-laws.com/search?q=startpage.com/')).toBe(false);
+    });
+
+    describe('with the Sentry inbound filter', () => {
+      const startpageUrl = 'https://av-eu1.startpage.com/__av/AWrpspOp1zpUkObd87LbYfl4iQXaaHR0cHM6Ly93d3cuZ29vZ2xldGFnbWFuYWdlci5jb20vZ3RhZy9qcz9pZD1HLVhHN0c2S1JQMEU';
+      const filter = (frames: Array<{ filename: string; function: string }>) => {
+        const event = {
+          exception: {
+            values: [{ type: 'TypeError', value: 'Can only call Window.setInterval on instances of Window', stacktrace: { frames } }],
+          },
+        };
+        const client = { getOptions: () => ({ denyUrls: SENTRY_DENIED_URLS }) };
+        // Sentry's own inbound-filter integration, configured the way main.ts configures denyUrls.
+        const integration = inboundFiltersIntegration() as unknown as {
+          processEvent: (event: unknown, hint: unknown, client: unknown) => unknown;
+        };
+        return integration.processEvent(event, {}, client);
+      };
+
+      it('drops an event whose innermost non-native frame is the Startpage copy of gtag.js', () => {
+        // Sentry orders frames oldest first, so the native setInterval call that threw is last.
+        expect(filter([
+          { filename: startpageUrl, function: 'global code' },
+          { filename: startpageUrl, function: 'ld' },
+          { filename: '[native code]', function: 'setInterval' },
+        ])).toBeNull();
+      });
+
+      it('keeps an event thrown from our own bundle', () => {
+        expect(filter([
+          { filename: 'https://murphys-laws.com/assets/index-abc123.js', function: 'start' },
+          { filename: '[native code]', function: 'setInterval' },
+        ])).not.toBeNull();
+      });
+    });
+
+    it('still denies the ad script hosts', () => {
+      expect(isDenied('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js')).toBe(true);
+      expect(isDenied('https://securepubads.g.doubleclick.net/tag/js/gpt.js')).toBe(true);
+      expect(isDenied('https://www.googleadservices.com/pagead/conversion.js')).toBe(true);
     });
   });
 
