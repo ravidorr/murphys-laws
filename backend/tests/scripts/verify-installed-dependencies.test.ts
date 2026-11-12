@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -75,6 +75,31 @@ describe('verify-installed-dependencies.mjs', () => {
     expect(result.stderr).toContain('- nodemailer: ');
     expect(result.stderr).not.toContain('- good: ');
     expect(result.status).toBe(1);
+  });
+
+  it('fails when the entry file named by an exports map is missing, using the package.json of the real nodemailer', () => {
+    const backend = fakeBackend({ nodemailer: '10.2.1' });
+    const nodemailer = path.resolve(__dirname, '../../../node_modules/nodemailer/package.json');
+    const manifest = existsSync(nodemailer) ? readFileSync(nodemailer, 'utf8') : readFileSync(path.resolve(__dirname, '../../node_modules/nodemailer/package.json'), 'utf8');
+    install(backend, 'nodemailer', { 'package.json': manifest });
+
+    const result = run(backend);
+
+    expect(JSON.parse(manifest).exports['.']).toHaveProperty('import');
+    expect(result.stderr).toContain('- nodemailer: resolves to ');
+    expect(result.stderr).toContain('which does not exist');
+    expect(result.status).toBe(1);
+  });
+
+  it('fails for an exports map whose target file is missing, and passes once the file exists', () => {
+    const backend = fakeBackend({ mapped: '1.0.0' });
+    install(backend, 'mapped', { 'package.json': '{"name":"mapped","exports":{".":{"import":"./dist/esm/main.js"}}}' });
+
+    expect(run(backend).status).toBe(1);
+
+    install(backend, 'mapped', { 'dist/esm/main.js': '' });
+
+    expect(run(backend).status).toBe(0);
   });
 
   it('fails and names every package that is missing from node_modules', () => {

@@ -6,13 +6,15 @@
  * no entry file made the health check crash on Nov 8 and Nov 11, 2026). This resolves every package in
  * package.json "dependencies" the way an ESM `import` does, without running any of their code, and
  * exits 1 naming each one that cannot be found, so a deploy stops instead of the monitoring breaking.
+ * It also checks that the file the import resolves to exists: for a package with an "exports" map,
+ * `import.meta.resolve` returns the target's URL without looking for the file.
  *
  * Plain JavaScript on purpose: it must not need tsx, which is itself one of the packages it checks.
  *
  * Usage: node backend/scripts/verify-installed-dependencies.mjs
  */
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,7 +24,10 @@ const { dependencies = {} } = JSON.parse(readFileSync(resolve(backendRoot, 'pack
 const broken = [];
 for (const name of Object.keys(dependencies)) {
   try {
-    import.meta.resolve(name);
+    const url = import.meta.resolve(name);
+    if (url.startsWith('file:') && !existsSync(fileURLToPath(url))) {
+      broken.push(`${name}: resolves to ${fileURLToPath(url)}, which does not exist`);
+    }
   } catch (error) {
     broken.push(`${name}: ${error.message.split('\n')[0]}`);
   }

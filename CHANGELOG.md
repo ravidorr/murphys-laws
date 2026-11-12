@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Both deploy paths (`npm run deploy` and the Deploy to Production workflow) now run
   `backend/scripts/verify-installed-dependencies.mjs` right after `npm ci`. It resolves every runtime dependency in
-  `backend/package.json` the way an ESM `import` does and stops the deploy, naming each package it cannot find, before
+  `backend/package.json` the way an ESM `import` does, checks that the file it resolves to exists (an `exports` map
+  makes `import.meta.resolve` return a URL without looking for the file), and stops the deploy, naming each package it cannot find, before
   the migrations and the restart. An install that exits 0 but leaves a package without its entry file (the broken
   `nodemailer` that crashed the health check on Nov 8 and Nov 11) now fails the deploy instead of the monitoring.
   Tests run the script against good, missing and entry-less packages and pin its place in both deploy paths (a renamed
