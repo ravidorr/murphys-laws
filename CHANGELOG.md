@@ -25,6 +25,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed the category helper text under the Category dropdown.
 
 ### Fixed
+- `health-check.sh` no longer sends a false "[CRITICAL] Frontend/API Error - HTTP" alert with an empty status for a
+  healthy site (the Nov 12 10:16 UTC alerts). It passed `-w` to curl twice and curl keeps only the last, so the status
+  code was never printed and the empty value never equalled `200`. It now reads the status and the time from one
+  `-w`, and takes curl's own exit status (it read the status of `local`, always 0, so a real connection failure was
+  never reported as "Down"). The "Down" log line and alert now include curl's error text (`-S`), a failing `bc` is
+  logged instead of reported as a 0 ms response, and a response under a millisecond no longer breaks the
+  slow-response comparison. Tests run `check_http_endpoint` with a curl that, like the real one, honors only the last
+  `-w`, for 200, an error status, a failed connection, a slow response, a sub-millisecond one and a failing `bc`.
+  Root bumped to `2.6.213`; backend to `2.3.81`.
 - Select dropdown carets are now inset from the border in every dropdown.
   Web bumped to `3.4.50`; root to `2.6.136`.
 

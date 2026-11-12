@@ -599,6 +599,94 @@ describe('health-monitor.sh as cron runs it', () => {
   });
 });
 
+describe('health-check.sh check_http_endpoint', () => {
+  // A curl that behaves like the real one where it matters here: only the LAST -w format is used, so a
+  // script that passes two never sees the first. The status, timing and exit code come from the environment.
+  const FAKE_CURL = [
+    '#!/bin/bash',
+    'format=""',
+    'while [ $# -gt 0 ]; do',
+    '  if [ "$1" = "-w" ]; then format="$2"; shift; fi',
+    '  shift',
+    'done',
+    '[ -n "$FAKE_ERR" ] && echo "$FAKE_ERR" >&2',
+    'printf "%s" "$format" | sed -e "s/%{http_code}/$FAKE_CODE/" -e "s/%{time_total}/$FAKE_TIME/"',
+    'exit "${FAKE_EXIT:-0}"',
+    '',
+  ].join('\n');
+
+  const check = (fake: { code: string; time: string; exit?: number; err?: string; brokenBc?: boolean }) => {
+    const box = sandbox();
+    writeFileSync(path.join(box.bin, 'curl'), FAKE_CURL);
+    chmodSync(path.join(box.bin, 'curl'), 0o755);
+    if (fake.brokenBc) {
+      writeFileSync(path.join(box.bin, 'bc'), '#!/bin/bash\ncat >/dev/null\nexit 1\n');
+      chmodSync(path.join(box.bin, 'bc'), 0o755);
+    }
+    const driver = 'check_http_endpoint "https://example.test" Frontend\necho "RC=$?"\n';
+    const file = install(box, 'health-check.sh', throughFunction('health-check.sh', 'check_http_endpoint') + driver);
+    const result = runFile(file, [], box, {
+      EMAIL_TO: 'admin@example.com',
+      FAKE_CODE: fake.code,
+      FAKE_TIME: fake.time,
+      FAKE_EXIT: String(fake.exit ?? 0),
+      FAKE_ERR: fake.err ?? '',
+    });
+    return { result, mail: readLog(box.mailLog) };
+  };
+
+  it('treats a 200 as healthy and reports the response time, without sending anything', () => {
+    const { result, mail } = check({ code: '200', time: '0.148' });
+    expect(result.stdout).toContain('Frontend OK - 148ms (HTTP 200)');
+    expect(result.stdout).toContain('RC=0');
+    expect(mail).toBe('');
+  });
+
+  it('reads a response faster than a millisecond as 0 ms instead of failing the time comparison', () => {
+    const { result, mail } = check({ code: '200', time: '0.0004' });
+    expect(result.stdout).toContain('Frontend OK - 0ms (HTTP 200)');
+    expect(result.stderr).not.toContain('integer expression expected');
+    expect(mail).toBe('');
+  });
+
+  it('alerts with the real status code and response time when the endpoint answers with an error', () => {
+    const { result, mail } = check({ code: '503', time: '0.078' });
+    expect(result.stdout).toContain('RC=1');
+    expect(mail).toContain('[CRITICAL] Frontend Error - HTTP 503');
+    expect(mail).toContain('HTTP Status: 503');
+    expect(mail).toContain('Response Time: 78ms');
+  });
+
+  it('alerts that the endpoint is down, with curl\'s exit code, when curl cannot connect', () => {
+    const { result, mail } = check({ code: '000', time: '0.000', exit: 7 });
+    expect(result.stdout).toContain('RC=1');
+    expect(mail).toContain('[CRITICAL] Frontend Down');
+    expect(mail).toContain('Error: curl exit code 7');
+    expect(mail).not.toContain('Error - HTTP');
+  });
+
+  it('says why curl failed, in the log and in the alert, instead of only its exit code', () => {
+    const err = 'curl: (6) Could not resolve host: example.test';
+    const { result, mail } = check({ code: '000', time: '0.000', exit: 6, err });
+    expect(result.stdout).toContain(`FAILED - curl error code: 6 (${err})`);
+    expect(mail).toContain(`Error: curl exit code 6 (${err})`);
+  });
+
+  it('logs that the response time could not be measured when bc fails, rather than reporting a fast response', () => {
+    const { result, mail } = check({ code: '200', time: '0.148', brokenBc: true });
+    expect(result.stdout).toContain("Frontend: could not measure the response time (bc failed on '0.148')");
+    expect(result.stdout).toContain('RC=0');
+    expect(mail).toBe('');
+  });
+
+  it('warns, but still succeeds, when a healthy endpoint is slower than the threshold', () => {
+    const { result, mail } = check({ code: '200', time: '6.200' });
+    expect(result.stdout).toContain('RC=0');
+    expect(mail).toContain('[WARNING] Frontend Slow Response');
+    expect(mail).toContain('Response Time: 6200ms');
+  });
+});
+
 describe('scripts run end to end with a fake mail', () => {
   it('cost-optimization-report.sh (set -euo pipefail) emails the report, and says so when there is no recipient or mail fails', () => {
     const run = (box: Sandbox, args: string[], env: Record<string, string> = {}) => {

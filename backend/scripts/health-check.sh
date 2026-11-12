@@ -88,38 +88,42 @@ check_http_endpoint() {
 
     log "Checking $name: $url"
 
-    # Use curl with timing information
-    local temp_file=$(mktemp)
-    local http_code=$(curl -o /dev/null -s -w "%{http_code}" \
-        -w "time_total:%{time_total}\n" \
-        --max-time 30 \
-        "$url" 2>"$temp_file" | tee -a "$temp_file")
+    # One -w only: curl keeps just the last one, so a separate -w for the status code is never printed.
+    # The exit status is read from the command itself; after `local x=$(...)` it would be local's (always 0).
+    # -S keeps curl's error text (-s alone hides it), which goes into the log and the alert.
+    local result http_code time_total curl_error err_file
+    local curl_exit=0
+    err_file=$(mktemp)
+    result=$(curl -o /dev/null -sS -w "%{http_code} %{time_total}" --max-time 30 "$url" 2>"$err_file") || curl_exit=$?
+    curl_error=$(head -c 300 "$err_file" | tr '\n' ' ')
+    curl_error="${curl_error% }"
+    rm -f "$err_file"
+    read -r http_code time_total <<< "$result"
 
-    local curl_exit=$?
-    local response=$(cat "$temp_file")
-    rm -f "$temp_file"
-
-    # Extract response time (in seconds)
-    local time_total=$(echo "$response" | grep "time_total:" | cut -d: -f2)
-    local time_ms=$(echo "$time_total * 1000" | bc | cut -d. -f1)
+    # Response time in milliseconds. bc drops the leading zero below 1 ms (".4000"), which truncates to 0;
+    # no output at all means bc failed, which is logged instead of being reported as a fast response.
+    local time_ms_raw time_ms
+    time_ms_raw=$(echo "${time_total:-0} * 1000" | bc 2>/dev/null)
+    if [ -z "$time_ms_raw" ]; then
+        log "$name: could not measure the response time (bc failed on '$time_total')"
+    fi
+    time_ms="${time_ms_raw%%.*}"
+    time_ms="${time_ms:-0}"
 
     if [ $curl_exit -ne 0 ]; then
-        log "$name FAILED - curl error code: $curl_exit"
+        log "$name FAILED - curl error code: $curl_exit${curl_error:+ ($curl_error)}"
         send_alert \
             "[CRITICAL] $name Down" \
             "The $name endpoint is not responding.
 
 URL: $url
-Error: curl exit code $curl_exit
+Error: curl exit code $curl_exit${curl_error:+ ($curl_error)}
 Time: $(date)
 
 This requires immediate attention." \
             "${name}_down"
         return 1
     fi
-
-    # Extract HTTP code from response
-    http_code=$(echo "$response" | grep -o "^[0-9]\{3\}")
 
     if [ "$http_code" != "200" ]; then
         log "$name returned HTTP $http_code (expected 200)"
