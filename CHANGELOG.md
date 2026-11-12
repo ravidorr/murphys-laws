@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `backend/package.json` the way an ESM `import` does and stops the deploy, naming each package it cannot find, before
   the migrations and the restart. An install that exits 0 but leaves a package without its entry file (the broken
   `nodemailer` that crashed the health check on Nov 8 and Nov 11) now fails the deploy instead of the monitoring.
-  Tests run the script against good, missing and entry-less packages and pin its place in both deploy paths.
+  Tests run the script against good, missing and entry-less packages and pin its place in both deploy paths (a renamed
+  or removed anchor line fails them instead of passing the ordering check).
   Root bumped to `2.6.211`.
 - The Web CI e2e job no longer hangs or fails on a slow apt mirror. It has a 20-minute limit, installs only chromium
   (the one browser the suite uses) with up to three attempts for the system packages and the download, caches the browser

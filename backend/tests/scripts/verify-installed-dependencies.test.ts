@@ -97,7 +97,12 @@ describe('verify-installed-dependencies.mjs', () => {
 });
 
 describe('verify-installed-dependencies wiring', () => {
-  const lineOf = (text: string, needle: string) => text.split('\n').findIndex((line) => line.includes(needle));
+  // A line that is not there fails here, instead of passing an ordering check as -1
+  const lineOf = (text: string, needle: string) => {
+    const index = text.split('\n').findIndex((line) => line.includes(needle));
+    expect(index, `"${needle}" is present`).toBeGreaterThan(-1);
+    return index;
+  };
 
   it('npm run deploy verifies the install after npm ci and before migrations and the restart', () => {
     const text = readFileSync(path.join(scriptsDir, 'deploy.ts'), 'utf8');
