@@ -220,6 +220,27 @@ describe("Calculator view", () => {
     expect(el!.querySelector('#result-display')!.classList.contains('calc-dark')).toBe(true);
   });
 
+  it('keeps the result pinned near the sliders after the risk band changes', () => {
+    const resultDisplay = el!.querySelector('#result-display')!;
+    expect(resultDisplay.classList.contains('calc-result-display--sticky')).toBe(true);
+
+    (el!.querySelector('#skill') as HTMLInputElement)!.value = '1';
+    (el!.querySelector('#skill') as HTMLInputElement)!.dispatchEvent(new Event('input'));
+
+    expect(resultDisplay.classList.contains('calc-result-display--sticky')).toBe(true);
+    expect(resultDisplay.classList.contains('calc-orange')).toBe(false);
+  });
+
+  it('names the pinned score group after the heading above it', () => {
+    const resultDisplay = el!.querySelector('#result-display')!;
+    const heading = el!.querySelector('#score-heading')!;
+
+    expect(heading.tagName).toBe('H2');
+    expect(heading.textContent).toBe('Probability of Things Going Wrong:');
+    expect(resultDisplay.getAttribute('role')).toBe('group');
+    expect(resultDisplay.getAttribute('aria-labelledby')).toBe('score-heading');
+  });
+
   it('updates slider value displays on input', () => {
     (el!.querySelector('#urgency') as HTMLInputElement)!.value = '7';
     (el!.querySelector('#urgency') as HTMLInputElement)!.dispatchEvent(new Event('input'));

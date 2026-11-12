@@ -85,6 +85,38 @@ test.describe('QA regressions', () => {
     });
   }
 
+  test('sods law score is pinned to the bottom of the screen on a phone while the sliders are in view', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto('/calculator/sods-law');
+
+    const result = page.locator('#result-display');
+    await expect(result).toBeVisible();
+    // The sliders start below the first screen of a 667px phone, so bring them into view first
+    await page.locator('#urgency').scrollIntoViewIfNeeded();
+    await expect(result).toHaveCSS('position', 'sticky');
+    // The sample note stays out of the compact pinned bar
+    await expect(page.locator('#score-sample-hint')).toBeHidden();
+    const viewportHeight = await page.evaluate(() => window.innerHeight);
+    const box = await result.boundingBox();
+    if (box === null) throw new Error('The score did not produce a bounding box.');
+    expect(Math.abs(box.y + box.height - viewportHeight)).toBeLessThan(1);
+
+    // A slider that takes focus stays clear of the pinned score
+    await page.locator('#frequency').focus();
+    await expect.poll(async () => {
+      const slider = await page.locator('#frequency').boundingBox();
+      const bar = await result.boundingBox();
+      return slider !== null && bar !== null && slider.y + slider.height <= bar.y;
+    }).toBe(true);
+  });
+
+  test('sods law score stays in the page from 600px wide', async ({ page }) => {
+    await page.setViewportSize({ width: 600, height: 667 });
+    await page.goto('/calculator/sods-law');
+
+    await expect(page.locator('#result-display')).toHaveCSS('position', 'static');
+  });
+
   test('homepage search keeps the query in the URL, form, and results', async ({ page }) => {
     await page.goto('/');
     const homeSearch = page.locator('[data-home-zone="archive-search"] input[type="search"]');

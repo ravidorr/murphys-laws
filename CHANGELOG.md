@@ -41,6 +41,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- On screens narrower than 600px, the Sod's Law Calculator keeps a compact score pinned to the bottom of the screen
+  while the sliders are in view, so visitors see the score change as they move a slider instead of scrolling down to
+  it. The pinned score is a labelled group (named after the "Probability of Things Going Wrong:" heading), a slider that
+  takes focus scrolls into view above it instead of under it, it keeps clear of the home indicator on phones with
+  one, and in high-contrast mode it gets a solid top edge and no shadow. The compact 30px score now also applies while
+  the score sits in the page on a phone, not only while it is pinned. The "sample score" note stays out of the pinned bar
+  on a phone, and the slider scroll margins are scoped to each calculator so the Buttered Toast rule no longer overrides
+  the taller Sod's Law one. Also restores the 100% web coverage gate and the Buttered Toast phone tests, which were red on
+  main: a test now covers a home search submitted without the shared search flow, and the toast pinned-bar tests scroll
+  the sliders into view first, since a sticky bar only reaches the bottom edge once its card is on screen. Web bumped to
+  `3.4.101`; root to `2.6.205`.
 - The Sod's Law calculator's share buttons now sit directly under the score, headed "Share This Score", instead of in a
   separate "Share Your Results" card below it, so sharing stays next to each new result. The heading uses the shared `section-title` style, and the gap below the
   share buttons is wider so the "Copied!" message no longer touches the Related Scenarios card. Web bumped to `3.4.98`;

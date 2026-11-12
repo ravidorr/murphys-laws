@@ -160,6 +160,53 @@
   display: block;
 }
 
+/* On narrow screens the sliders stack in one column above the result, so keep a compact
+   score pinned to the bottom of the viewport while they are on screen. It returns to its
+   normal place once the visitor scrolls down to it. The end padding keeps the text clear
+   of the floating Back to top button. */
+@media (width < 600px) {
+  .calc-result-display--sticky {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    padding: var(--space-2) calc(var(--component-control-min-size) + var(--space-4)) var(--space-2) var(--space-4);
+    box-shadow: 0 -4px 12px var(--shadow-light);
+  }
+
+  .calc-result-display--sticky .calc-score {
+    font-size: var(--text-3xl);
+  }
+
+  .calc-result-display--sticky .calc-interpretation {
+    margin: var(--space-1) 0 0;
+  }
+
+  /* The sample note would grow the bar past the height the slider scroll margin below allows for */
+  .calc-result-display--sticky .calc-sample-hint {
+    display: none;
+  }
+
+  /* A slider that takes focus scrolls into view above the pinned score, never under it (WCAG 2.4.11).
+     The pinned score is about 96px tall; this leaves a 16px gap. Scoped to the card that has this bar so the
+     Buttered Toast rule further down, which has the same specificity, does not override it. */
+  .card:has(.calc-result-display--sticky) .calc-slider-group input[type="range"] {
+    scroll-margin-block-end: calc(var(--space-16) + var(--space-12));
+  }
+}
+
+/* Keep the pinned score clear of home indicators. Gated so browsers without env() keep the plain offsets above. */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  @media (width < 600px) {
+    .calc-result-display--sticky {
+      padding-bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+    }
+
+    .card:has(.calc-result-display--sticky) .calc-slider-group input[type="range"] {
+      scroll-margin-block-end: calc(var(--space-16) + var(--space-12) + env(safe-area-inset-bottom, 0px));
+    }
+  }
+}
+
 /* Note under the score that marks the first-load result as a sample from the default settings;
    it inherits the result's text color so it keeps its contrast on every score background */
 .calc-sample-hint {
@@ -205,7 +252,7 @@
   }
 
   /* WCAG 2.2 2.4.11: keep a focused slider clear of the pinned bar when the browser scrolls it into view */
-  .calc-slider-group input[type="range"] {
+  .card:has(.calc-result-sticky) .calc-slider-group input[type="range"] {
     scroll-margin-block-end: calc(var(--space-16) + var(--space-4));
   }
 
@@ -222,6 +269,21 @@
       border-top: 2px solid CanvasText;
       box-shadow: none;
     }
+  }
+}
+
+/* High contrast: a solid edge above the pinned score and no reliance on the shadow. */
+@media (width < 600px) and (prefers-contrast: more) {
+  .calc-result-display--sticky {
+    border-top: 2px solid var(--fg);
+    box-shadow: none;
+  }
+}
+
+@media (width < 600px) {
+  :root[data-contrast="more"] .calc-result-display--sticky {
+    border-top: 2px solid var(--fg);
+    box-shadow: none;
   }
 }
 
