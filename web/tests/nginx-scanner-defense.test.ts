@@ -473,7 +473,7 @@ describe('plain HTTP sent to a TLS port', () => {
       'return 444;\\s+\\}',
   );
   const serverBlocks = conf.split(/^server \{$/m).slice(1);
-  const tlsBlocks = serverBlocks.filter((block) => /^\s*listen 443 ssl;/m.test(block));
+  const tlsBlocks = serverBlocks.filter((block) => /^\s*listen 443 ssl\b/m.test(block));
 
   it('drops it, logged to scanner.log only, in every server block that listens for TLS', () => {
     // A new TLS server block that forgets the rule would make this count differ.
@@ -496,12 +496,15 @@ describe('plain HTTP sent to a TLS port', () => {
     const filter = readFileSync(resolve(root, 'config', 'fail2ban', 'filter.d-nginx-scanner.conf'), 'utf8');
     const failregex = (/^failregex = (.*)$/m.exec(filter)?.[1] ?? '').replace('<HOST>', '(?<host>\\S+)');
     const agent = '"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:65.0) Gecko/20100101 Firefox/65.0"';
-    const line = (status: number, bytes: number) =>
-      `194.187.176.248 - - [07/Nov/2026:01:11:41 +0000] "GET /favicon.ico HTTP/1.1" ${status} ${bytes} "-" ${agent}`;
+    const line = (status: number, bytes: number, protocol = 'HTTP/1.1') =>
+      `194.187.176.248 - - [07/Nov/2026:01:11:41 +0000] "GET /favicon.ico ${protocol}" ${status} ${bytes} "-" ${agent}`;
 
     expect(new RegExp(failregex).exec(line(444, 0))?.groups?.host).toBe('194.187.176.248');
     // The 400 that nginx logged before this rule is not counted.
     expect(new RegExp(failregex).test(line(400, 264))).toBe(false);
+    // nginx logs the request line of an HTTP/2 stream as HTTP/2.0; that strike counts too.
+    expect(new RegExp(failregex).exec(line(444, 0, 'HTTP/2.0'))?.groups?.host).toBe('194.187.176.248');
+    expect(new RegExp(failregex).test(line(400, 157, 'HTTP/2.0'))).toBe(false);
   });
 });
 

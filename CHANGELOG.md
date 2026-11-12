@@ -23,6 +23,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cancels the older Web CI run; runs on main always finish. A contract test covers these settings. Root bumped to `2.6.207`.
 - Advanced Search no longer changes the page when a category is picked; choose a category and press Search.
 - Removed the category helper text under the Category dropdown.
+- Compression and HTTP/2 (nginx 1.24 on the droplet). nginx now compresses CSS, JavaScript, JSON, XML, SVG and plain
+  text (`gzip_types` was at its default, text/html only, so the 559 KB main bundle and the 119 KB stylesheet went out
+  uncompressed even to clients that asked for gzip) and sends `Vary: Accept-Encoding`. `npm run build` now ends with
+  `web/scripts/precompress-assets.ts`, which writes `.gz` (level 9) and `.br` (quality 11) copies of the JS, CSS and SVG files under
+  `web/dist/assets/`; nginx serves the `.gz` copies with `gzip_static`, so the 1 vCPU server compresses nothing for
+  them (measured on the real files: 559 KB to 173 KB gzip and 144 KB brotli, 119 KB to 18 KB gzip and 15 KB brotli).
+  Brotli is not enabled yet: its nginx module is not installed on the server and an unknown directive would fail
+  `nginx -t` during the deploy; the `.br` files are ready, and `shared/docs/DEPLOYMENT.md` has the install, enable,
+  verify and rollback steps. Content-hashed files under `/assets/` now carry one
+  `Cache-Control: public, max-age=31536000, immutable` header instead of two (`max-age=31536000` from `expires` plus
+  `public, no-transform`) and no longer an `Expires` header; the other static files keep their current headers. Both TLS server blocks now
+  `listen 443 ssl http2;`. Checked against nginx 1.24.0 with a self-signed certificate: ALPN selects h2, `return 444`
+  ends that request without a response and logs `"GET /x HTTP/2.0" 444` to scanner.log, which the
+  `nginx-scanner` fail2ban filter (checked with `fail2ban-regex` 1.0.2) still counts, and plain HTTP sent to the
+  TLS port still ends in a 444 logged to scanner.log. Tests pin the compression, caching and HTTP/2 directives.
+  Root bumped to `2.6.218` and web to `3.4.109`.
+- A second access log, `/var/log/nginx/access_timed.log`, written beside the unchanged combined access log with
+  `$request_time`, `$upstream_response_time`, `$upstream_connect_time` and the protocol (`rt=`, `urt=`, `uct=`,
+  `proto=`). Until now server time could not be read from the logs. Nothing parses it, and the existing
+  `/var/log/nginx/*.log` logrotate rule covers it.
 
 ### Fixed
 - `health-check.sh` no longer sends a false "[CRITICAL] Frontend/API Error - HTTP" alert with an empty status for a
