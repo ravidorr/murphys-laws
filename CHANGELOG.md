@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Sod's Law calculator's share buttons now sit directly under the score, headed "Share This Score", instead of in a
+  separate "Share Your Results" card below it, so sharing stays next to each new result. The heading uses the shared `section-title` style, and the gap below the
+  share buttons is wider so the "Copied!" message no longer touches the Related Scenarios card. Web bumped to `3.4.98`;
+  root to `2.6.202`.
 - The Sod's Law Calculator now labels the score shown on first load as a sample from the default settings and asks
   visitors to move the sliders to score their own task. The note hides after the first slider move and does not show
   when the page opens from a shared link that carries at least one valid setting (a link with only invalid values keeps

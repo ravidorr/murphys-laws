@@ -324,6 +324,24 @@ describe("Calculator view", () => {
     expect(el!.querySelector('[data-action="copy-link"]')).toBeTruthy();
   });
 
+  it('puts the share section directly under the score, outside any card', () => {
+    const resultDisplay = el!.querySelector('#result-display')!;
+    const shareSection = resultDisplay.nextElementSibling as HTMLElement;
+    expect(shareSection.tagName).toBe('SECTION');
+    expect(shareSection.getAttribute('aria-labelledby')).toBe('calculator-share-heading');
+
+    const heading = el!.querySelector('#calculator-share-heading')!;
+    expect(shareSection.contains(heading)).toBe(true);
+    expect(heading.textContent).toBe('Share This Score');
+    expect(heading.classList.contains('section-title')).toBe(true);
+
+    const shareContainer = el!.querySelector('#calculator-share-container')!;
+    expect(shareSection.contains(shareContainer)).toBe(true);
+    // The calculator itself sits in a page card; the share buttons add no card of their own inside it
+    expect(shareContainer.closest('.card, .section-card')).toBe(resultDisplay.closest('.card, .section-card'));
+    expect(shareSection.matches('.card, .section-card')).toBe(false);
+  });
+
   it('inline share buttons are always visible (no toggle needed)', () => {
     const shareButtons = el!.querySelector('.share-buttons-inline');
     expect(shareButtons).toBeTruthy();
