@@ -40,7 +40,7 @@ test('the e2e job installs only chromium and retries the installs that depend on
   assert.match(browser, /npx playwright install chromium/);
   for (const script of [dependencies, browser]) {
     assert.match(script, /for attempt in 1 2 3; do/);
-    assert.match(script, /timeout 300 /);
+    assert.match(script, /timeout 120 /);
     assert.doesNotMatch(script, /--with-deps/);
   }
   assert.ok(
@@ -72,6 +72,6 @@ test('the install steps run before the tests, and failures upload what the tests
   assert.ok(index('Install Playwright chromium') < index('Run E2E tests'));
 
   const upload = step('Upload Playwright results');
-  assert.equal(upload.if, 'failure()');
+  assert.equal(upload.if, 'always()');
   assert.match(String(upload.with?.path), /web\/test-results\//);
 });

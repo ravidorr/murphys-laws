@@ -125,7 +125,7 @@ jobs:
     runs-on: ubuntu-latest
     # A healthy run takes about three minutes. Without a limit, a hung apt mirror or browser download
     # holds the runner for the 6-hour default and leaves the pull request waiting on web-ci-gate.
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v7
@@ -166,7 +166,7 @@ jobs:
       - name: Install Playwright system dependencies
         run: |
           for attempt in 1 2 3; do
-            if timeout 300 npx playwright install-deps chromium; then
+            if timeout 120 npx playwright install-deps chromium; then
               exit 0
             fi
             echo "::warning::playwright install-deps failed (attempt ${attempt} of 3)"
@@ -182,7 +182,7 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: |
           for attempt in 1 2 3; do
-            if timeout 300 npx playwright install chromium; then
+            if timeout 120 npx playwright install chromium; then
               exit 0
             fi
             echo "::warning::playwright install failed (attempt ${attempt} of 3)"
@@ -201,7 +201,7 @@ jobs:
       # The list reporter writes no HTML report; screenshots and videos of failed tests land in test-results.
       - name: Upload Playwright results
         uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
         with:
           name: playwright-results
           path: |
