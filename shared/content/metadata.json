@@ -69,6 +69,11 @@
     "lastUpdated": "2026-10-12",
     "description": "The difference between Murphy's Law and Sod's Law"
   },
+  "cranes-law": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-11-12",
+    "description": "Crane's Law: there's no such thing as a free lunch - meaning, name and history"
+  },
   "examples/work": {
     "version": "1.0.0",
     "lastUpdated": "2026-10-12",

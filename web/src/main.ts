@@ -88,7 +88,7 @@ import { defineRoute, navigate, startRouter, forceRender, currentRoute } from '.
 import { Header } from './components/header.ts';
 import { Footer } from './components/footer.ts';
 import { initBackToTop } from './components/back-to-top.ts';
-import { SITE_DEFAULT_SOCIAL_IMAGE, SOCIAL_IMAGE_SOD, SOCIAL_IMAGE_TOAST } from './utils/constants.ts';
+import { CRANES_LAW_PAGE, SITE_DEFAULT_SOCIAL_IMAGE, SOCIAL_IMAGE_SOD, SOCIAL_IMAGE_TOAST } from './utils/constants.ts';
 import { updatePageMetadata } from './utils/dom.ts';
 import { Home } from './views/home.ts';
 import { Browse } from './views/browse.ts';
@@ -415,6 +415,11 @@ const routesMap = {
     trackPageView();
     setContentBreadcrumbStructuredData([{ name: "Murphy's Law vs Sod's Law", path: '/murphys-law-vs-sods-law' }]);
     return layout(ContentPageView({ page: 'murphys-law-vs-sods-law', title: "Murphy's Law vs Sod's Law", description: "The difference between Murphy's Law and Sod's Law.", onNavigate }));
+  },
+  'cranes-law': () => {
+    trackPageView();
+    setContentBreadcrumbStructuredData([{ name: CRANES_LAW_PAGE.title, path: '/cranes-law' }]);
+    return layout(ContentPageView({ page: 'cranes-law', title: CRANES_LAW_PAGE.title, description: CRANES_LAW_PAGE.description, onNavigate }));
   },
 };
 

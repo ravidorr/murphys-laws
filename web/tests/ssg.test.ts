@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { marked } from 'marked';
-import { CALCULATOR_META_DESCRIPTIONS } from '../src/utils/constants.ts';
+import { CALCULATOR_META_DESCRIPTIONS, CRANES_LAW_PAGE } from '../src/utils/constants.ts';
 import { Home, renderHome } from '../src/views/home.ts';
 import { ARCHIVE_SEARCH_HTML } from '../src/views/home-archive-search.ts';
 import {
@@ -354,8 +354,17 @@ describe('SSG Static Route Content', () => {
       'funniest-murphys-laws',
       'murphys-laws-about-work',
       'murphys-laws-about-technology',
-      'murphys-law-vs-sods-law'
+      'murphys-law-vs-sods-law',
+      'cranes-law'
     ]));
+  });
+
+  it("gives the Crane's Law page a head title and description that fit in search results", () => {
+    const page = CONTENT_PAGES.find((entry) => entry.slug === 'cranes-law')!;
+    expect(page).toMatchObject(CRANES_LAW_PAGE);
+    expect(page.title.startsWith("Crane's Law")).toBe(true);
+    expect(`${page.title} - Murphy's Law Archive`.length).toBeLessThanOrEqual(60);
+    expect(page.description.length).toBeLessThanOrEqual(160);
   });
 
   it('includes examples subpages as generated content pages', () => {
@@ -733,6 +742,14 @@ describe('SSG SEO output', () => {
       expect(html).toContain('<li><a href="/law/10">&lt;b&gt;x&lt;/b&gt;</a></li>');
       expect(html).toContain('<span class="parent-banner-title">&lt;b&gt;x&lt;/b&gt;</span>');
       expect(html).not.toContain('<b>x');
+    });
+
+    it("leads the prerendered Crane's law page's related links with its article, and no other law's", () => {
+      const html = buildStaticLawDetailContent({ id: 2406, title: "Crane's law", text: 'There is no such thing as a free lunch.', category_slug: 'murphys-laws', category_name: "Murphy's Laws" });
+      const links = html.slice(html.indexOf('internal-link-list'));
+      expect(links.indexOf('href="/cranes-law"')).toBeGreaterThan(-1);
+      expect(links.indexOf('href="/cranes-law"')).toBeLessThan(links.indexOf('href="/category/murphys-laws"'));
+      expect(buildStaticLawDetailContent({ id: 1, title: 'Other law', text: 'Some text.' })).not.toContain('/cranes-law');
     });
 
     it('renders no corollary markup for a law without any', () => {

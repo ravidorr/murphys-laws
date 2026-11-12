@@ -177,6 +177,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A "Crane's Law: No Free Lunch" article at `/cranes-law`, for readers who search for Crane's law. Crane's law is the name
+  Arthur Bloch's 1977 Murphy's Law collection gives to "there is no such thing as a free lunch", and the archive already
+  had it as a bare law page. The article explains the saying, the saloon free lunch behind it and how it spread, and
+  gives the history of the name as far as its sources go: it was in print as "Crane's Law" by 1969, but none of the
+  sources say who Crane was, so the page says that instead of guessing. Where Wikipedia and Quote Investigator disagree
+  about the first appearance of the saying, the page says so. It is prerendered and in the sitemap like the other
+  articles, with one shared title and meta description for the prerendered page and the app, links into Murphy's
+  original laws, and the law page for Crane's law now leads its links with the article. Web bumped to `3.4.115`, iOS to
+  `1.2.14` (build 30), Android to `1.2.14` (code 21), root to `2.6.227`.
+
 ### Changed
 
 - The "Related Laws" list on a law page no longer shows the same three newest laws on every page of a category, or

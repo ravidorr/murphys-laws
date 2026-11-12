@@ -524,6 +524,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData, prerendered }: 
       internalLinksEl.innerHTML = renderInternalLinkList(getLawDetailInternalLinks({
         categorySlug: law.category_slug,
         categoryName: law.category_name,
+        lawTitle: law.title,
       }));
     }
 

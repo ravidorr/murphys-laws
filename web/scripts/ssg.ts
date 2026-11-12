@@ -18,7 +18,7 @@ import { ARCHIVE_SEARCH_HTML } from '../src/views/home-archive-search.ts';
 import { renderNotFoundContent, renderNotFoundLaws } from '../src/utils/not-found-content.ts';
 import { externalLinkRenderer } from '../src/utils/markdown-links.ts';
 import { insertContentFigure } from '../src/utils/content-figures.ts';
-import { CALCULATOR_META_DESCRIPTIONS, SITE_URL, WIDGET_CARD_COUNT } from '../src/utils/constants.ts';
+import { CALCULATOR_META_DESCRIPTIONS, CRANES_LAW_PAGE, SITE_URL, WIDGET_CARD_COUNT } from '../src/utils/constants.ts';
 import { renderCorollarySection, renderParentBanner, corollaryDisplayTitle } from '../src/utils/corollaries.ts';
 import type { Corollary, CorollaryParent } from '../src/types/app.d.ts';
 import { buildBreadcrumbList, buildCanonicalUrl, buildUniqueLawSeo, buildLawSeo, truncateTitle } from '../src/utils/seo.ts';
@@ -210,6 +210,12 @@ const CONTENT_PAGES: ContentPageMeta[] = [
     file: 'murphys-law-vs-sods-law.md',
     title: 'Murphy\'s Law vs Sod\'s Law',
     description: 'The difference between Murphy\'s Law and Sod\'s Law.'
+  },
+  {
+    slug: 'cranes-law',
+    file: 'cranes-law.md',
+    title: CRANES_LAW_PAGE.title,
+    description: CRANES_LAW_PAGE.description
   },
   {
     slug: 'examples/work',
@@ -756,7 +762,7 @@ function buildStaticLawDetailContent(law: Law, relatedLaws: Law[] = [], corollar
         <div class="section-body">
           <p>Keep exploring laws from this topic or browse the full archive for neighboring ideas.</p>
           ${relatedLaws.length > 0 ? `<div class="related-laws-list">${renderStaticLawCards(relatedLaws, '')}</div>` : ''}
-          ${renderInternalLinkList(getLawDetailInternalLinks({ categorySlug, categoryName }))}
+          ${renderInternalLinkList(getLawDetailInternalLinks({ categorySlug, categoryName, lawTitle: law.title }))}
           <div class="not-found-actions">
             ${categorySlug ? `<a href="/category/${escapeHtml(categorySlug)}" class="btn">See this category</a>` : ''}
             <a href="/browse" class="btn outline">Browse all laws</a>

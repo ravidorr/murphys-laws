@@ -35,6 +35,21 @@ describe('internal links', () => {
     ]);
   });
 
+  it("leads Crane's law with its article, with or without a category", () => {
+    expect(getLawDetailInternalLinks({ lawTitle: "Crane's law" }).map((link) => link.href)).toEqual([
+      '/cranes-law',
+      '/browse',
+      '/categories',
+      '/best-murphys-laws'
+    ]);
+    expect(getLawDetailInternalLinks({ lawTitle: "Crane's law", categorySlug: 'murphys-laws', categoryName: "Murphy's Laws" }).map((link) => link.href))
+      .toEqual(['/cranes-law', '/category/murphys-laws']);
+  });
+
+  it('adds no article link to other laws', () => {
+    expect(getLawDetailInternalLinks({ lawTitle: 'Some other law' }).map((link) => link.href)).not.toContain('/cranes-law');
+  });
+
   it('uses a generic label when category name is missing', () => {
     const links = getLawDetailInternalLinks({ categorySlug: 'uncategorized' });
 
@@ -119,7 +134,7 @@ describe('internal links', () => {
 
   it('only sends article readers into the archive with canonical category slugs', () => {
     const pages: ContentPage[] = [
-      'origin-story', 'examples', 'murphys-law-vs-sods-law', 'why-murphys-law-feels-true',
+      'origin-story', 'examples', 'murphys-law-vs-sods-law', 'cranes-law', 'why-murphys-law-feels-true',
       'murphys-law-project-management', 'murphys-laws-about-work',
       'examples/work', 'examples/travel', 'examples/tech', 'examples/everyday-life'
     ];
