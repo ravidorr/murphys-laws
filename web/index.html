@@ -219,13 +219,24 @@
       var started = false;
       var timer = 0;
 
+      // The bundle URL named by the placeholder, or '' when the element is not the placeholder the SSG wrote: a script
+      // of type text/plain whose data-src is a file of /assets/ (a name, never a path, so no scheme, host or '..'). Any
+      // other element with that id (injected markup, DOM clobbering) is not trusted as a script source.
+      function entrySource(entry) {
+        if (entry.tagName !== 'SCRIPT' || entry.getAttribute('type') !== 'text/plain') return '';
+        var src = entry.getAttribute('data-src');
+        return typeof src === 'string' && /^\/assets\/[\w.-]+\.js$/.test(src) ? src : '';
+      }
+
       function inject() {
         var entry = document.getElementById('app-entry');
         if (started || !entry) return;
+        var src = entrySource(entry);
+        if (!src) return;
         var script = document.createElement('script');
         script.type = 'module';
         script.crossOrigin = 'anonymous';
-        script.src = entry.getAttribute('data-src');
+        script.src = src;
         document.head.appendChild(script);
         // Only once the script is in the page: a failure above leaves the later trigger (the timer or the parser) a retry
         started = true;

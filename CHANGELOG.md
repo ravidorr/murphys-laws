@@ -27,8 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pages the SSG builds from the shell, the 404 page and the nomodule legacy entry are unchanged, and the app still
   adopts the early answer (`consumeEarlyLawOfTheDay`), with the cache bypass after a vote untouched. The build fails if
   the shell has not exactly one such module script, and `validateHomePage` fails it when the home page lacks the
-  placeholder or the loader, keeps an ordinary entry script, or preloads an asset with a `modulepreload` link (which
-  would fetch chunks while the bundle is held back; there is none today). `scripts/check-web-budgets.mjs` reads the
+  placeholder (in the form the loader accepts) or the loader, keeps an ordinary entry script, or preloads an asset with
+  a `modulepreload` link (which would fetch chunks while the bundle is held back; there is none today); its tag
+  patterns read case and whitespace as a browser does, and the loader is taken only from an inline script (no `src`, no
+  `type`). The loader trusts the element with the id `app-entry` as a script source only if it is a `script` of type
+  `text/plain` whose `data-src` is a file name in `/assets/` ending in `.js` (no scheme, host, `..` or subdirectory), so
+  injected markup that takes the id cannot make the page load a script from somewhere else. `scripts/check-web-budgets.mjs` reads the
   bundle from the placeholder. Trade-off, measured on the real network (about 142 ms RTT to production) with 4x CPU
   throttling and cold loads, comparing production's page with and without the change (medians of 14 runs per arm,
   repeated with 8 runs after the change was rebased): largest contentful paint 1112 ms to 664 ms (450 ms earlier;
@@ -37,11 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   later, by 185 to 245 ms with no cap and 135 to 175 ms at 1.6 Mbps, because the bundle is requested after the answer
   instead of with it. The prerendered page is readable and its links work in that window, but search, votes and the
   calculators need the bundle. Tests: `web/tests/app-entry-loader.test.ts` runs the real loader (every path above, the
-  parser ordering, a throwing promise, a failing add) and then together with the real early script (the answer, a
+  parser ordering, a throwing promise, a failing add, each kind of untrusted placeholder) and then together with the real early script (the answer, a
   failure, a hung request, other paths, a hash route, no `fetch`, one request with the vote cache bypass);
   `web/tests/ssg.test.ts` covers `holdAppEntry` and `validateHomePage`. The e2e suite covers the answer, a failed request, a 503, a hung API, an API
-  slower than the cap, a route without a page of its own and an untouched other page. Web bumped to `3.4.119`; root to
-  `2.6.239`.
+  slower than the cap, a route without a page of its own and an untouched other page. Web bumped to `3.4.120`; root to
+  `2.6.240`.
 - Built web assets no longer pile up on the server. The deploy uploads `web/dist/` into a persistent staging
   directory with no delete and mirrors that directory into the web root with `rsync --delete`, so every release left
   its hashed bundles behind (1,185 files and about 650 MB in `assets/` after nine months), and the `.gz` and `.br`
