@@ -213,6 +213,57 @@ describe('nginx scanner defense', () => {
     '/api/session/properties',
     '/api/session/properties/',
     '/api/session/properties?x=1',
+    // Daily 404 report of 13 November 2026: framework debug probes, a secret and key-file sweep, Nmap, DoH and DevTools probes
+    '/GoogleService-Info.plist',
+    '/Vagrantfile',
+    '/_debugbar/open',
+    '/_ignition/health-check',
+    '/debug/default/toolbar',
+    '/telescope/requests',
+    '/elmah.axd',
+    '/trace.axd',
+    '/app/etc/local.xml',
+    '/ssmtp.conf',
+    '/error_log',
+    '/key.pem',
+    '/private.key',
+    '/privkey.pem',
+    '/server.key',
+    '/id_rsa',
+    '/id_ed25519.pub',
+    '/api-keys.txt',
+    '/tokens.txt',
+    '/credentials.csv',
+    '/aws.yml',
+    '/aws.json',
+    '/auth.json',
+    '/env.json',
+    '/now.json',
+    '/s3.json',
+    '/parameters.json',
+    '/runtimeconfig.json',
+    '/firebase.json',
+    '/firebase-adminsdk.json',
+    '/gcp-key.json',
+    '/google-services.json',
+    '/client_secret.json',
+    '/serviceAccountKey.json',
+    '/application_default_credentials.json',
+    '/config/email.yml',
+    '/config/mongoid.yml',
+    '/config/initializers/secret_token.rb',
+    '/metrics',
+    '/nginx_status',
+    '/json/version',
+    '/HNAP1',
+    '/nmaplowercheck1794530687',
+    '/evox/about',
+    '/dns-query',
+    '/dns-query?dns=OxQBAAABAAAAAAAAA2RvaAhvdmVyc2VhcwMxNjcCOTkCNTMCOTAIMjAyNjExMTIEdGVzdAl3aGl0ZWNodW4Ec2hvcAAAAQAB',
+    '/doh',
+    '/doh?dns=YRsBAAABAAAAAAAAA2RvaAhvdmVyc2VhcwMxNjcCOTkCNTMCOTAIMjAyNjExMTIEdGVzdAl3aGl0ZWNodW4Ec2hvcAAAAQAB',
+    '/resolve',
+    '/resolve?dns=YAsBAAABAAAAAAAAA2RvaAhvdmVyc2VhcwMxNjcCOTkCNTMCOTAIMjAyNjExMTIEdGVzdAl3aGl0ZWNodW4Ec2hvcAAAAQAB',
   ])('flags %s as a scanner path', (uri) => {
     expect(isScannerPath(uri)).toBe(true);
   });
@@ -376,6 +427,62 @@ describe('nginx scanner defense', () => {
     '/core/modules',
     '/browse?q=language/en-GB/en-GB.xml',
     '/law/language',
+    // Daily 404 report of 13 November 2026. Good-faith crawlers and our own deploy smoke test must still get a real
+    // 404, not a 444: AgentDrivesAgent asks for these, and scripts/smoke-production.mjs expects a 404 for the first.
+    '/definitely-not-a-real-page',
+    '/auth.md',
+    '/SKILL.md',
+    '/mcp',
+    '/mcp.json',
+    '/signup',
+    '/sign-up',
+    '/register',
+    '/join',
+    '/pricing',
+    '/subscription',
+    '/subscription/confirm?token=abc',
+    '/.well-known/agent-card.json',
+    '/.well-known/agent.json',
+    '/.well-known/agent-skills/index.json',
+    '/.well-known/skills/index.json',
+    '/.well-known/oauth-protected-resource',
+    '/.well-known/oauth-authorization-server',
+    '/s44ahuya1z6cs',
+    '/write-for-us',
+    '/contribute',
+    '/law',
+    '/law/',
+    '/browse',
+    '/categories',
+    '/submit',
+    '/api/v1/laws?limit=1',
+    '/api/v1/laws/1719',
+    // The new root-anchored names only match as a whole root path, never deeper or inside a query string
+    '/api/v1/metrics',
+    '/law/metrics',
+    '/category/resolve',
+    '/browse?q=metrics',
+    '/browse?q=dns-query',
+    '/browse?q=doh',
+    '/search?q=resolve',
+    '/search?q=key.pem',
+    '/search?q=Vagrantfile',
+    '/search?q=aws.json',
+    '/search?q=_debugbar',
+    '/browse?q=telescope/requests',
+    '/browse?q=elmah.axd',
+    '/telescopes',
+    '/metrics-guide',
+    '/resolved',
+    '/dohs',
+    '/auth',
+    '/authors',
+    '/aws',
+    '/keys',
+    '/key',
+    '/now',
+    '/env-notes',
+    '/laws/key.pemx',
   ])('lets %s through', (uri) => {
     expect(isScannerPath(uri)).toBe(false);
   });
@@ -384,6 +491,12 @@ describe('nginx scanner defense', () => {
     expect(isScannerAgent('libredtail-http')).toBe(true);
     expect(isScannerAgent('sqlmap/1.7')).toBe(true);
     expect(isScannerAgent('rawgrab')).toBe(true);
+    expect(isScannerAgent('Mozilla/5.0 (compatible; Nmap Scripting Engine; https://nmap.org/book/nse.html)')).toBe(true);
+    // Ordinary browsers, our own checks (node fetch in the deploy smoke test, curl in the health check) and good-faith bots pass
+    expect(isScannerAgent('node')).toBe(false);
+    expect(isScannerAgent('curl/8.4.0')).toBe(false);
+    expect(isScannerAgent('AgentDrivesAgent/1.0 (+https://agent.agentdrives.com/bot)')).toBe(false);
+    expect(isScannerAgent('Mozilla/5.0 (compatible; CensysInspect/1.1; +https://about.censys.io/)')).toBe(false);
     expect(isScannerAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15')).toBe(false);
     expect(isScannerAgent('Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)')).toBe(false);
   });
@@ -765,6 +878,8 @@ describe('nginx legacy URL redirects', () => {
     // llms.txt lists these as markdown links, [Browse](https://murphys-laws.com/browse), and naive crawlers keep the ")"
     ['/browse)', '/browse'],
     ['/categories)', '/categories'],
+    // /law is the parent of /law/N: the law breadcrumb is Home > Browse > Category > Law
+    ['/law', '/browse'],
   ])('redirects %s to %s', (from, to) => {
     const start = conf.indexOf(`location = ${from} {`);
     expect(start).toBeGreaterThan(-1);
@@ -781,6 +896,14 @@ describe('nginx legacy URL redirects', () => {
     // The scanner map must not catch the request first: a block would drop it instead of redirecting it
     expect(isScannerPath(`${route})`)).toBe(false);
     expect(isScannerPath(`${route}%29`)).toBe(false);
+  });
+
+  it('redirects /law to the Browse page the site builds, and leaves /law/N to its own location', () => {
+    expect(readFileSync(resolve(root, 'web', 'scripts', 'ssg.ts'), 'utf-8')).toContain("canonicalPath: '/browse'");
+    // The exact match is for /law only: /law/123 still reaches the law location, and /law/ gets there through the trailing-slash rewrite
+    expect(conf).toContain('location = /law {');
+    expect(conf).toContain('location ~ ^/law/\\d+$ {');
+    expect(isScannerPath('/law')).toBe(false);
   });
 
   it('sends an old /murphy/ link home in two hops: the trailing-slash rewrite, then the exact redirect', () => {

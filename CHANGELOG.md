@@ -955,6 +955,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Daily 404 report of 13 November 2026 (99 requests from midnight to about 05:00 UTC): more scanner probes are dropped
+  and `/law` is redirected. Dropped (`444`, logged to `scanner.log`): the Nmap Scripting Engine (by user agent: it asked
+  for `/nmaplowercheck…`, `/HNAP1`, `/evox/about` and `POST /sdk`, and `/sdk` itself is not blocked), a sweep of
+  framework debug and secret files from `34.79.37.102` and others (`/_debugbar/open`, `/_ignition/health-check`,
+  `/debug/default/toolbar`, `/telescope/requests`, `/elmah.axd`, `/trace.axd`, `/app/etc/local.xml`, `/Vagrantfile`,
+  `/GoogleService-Info.plist`, `/metrics`, `/nginx_status`, `/json/version`, about 30 key, token and cloud-credential
+  files such as `/key.pem`, `/id_rsa`, `/aws.json`, `/firebase.json`, `/serviceAccountKey.json`, `/config/mongoid.yml`),
+  and DNS-over-HTTPS resolver probes from `43.173.75.80` (`/dns-query`, `/doh`, `/resolve`). The names that are generic
+  (`/metrics`, `/auth.json`, `/now.json`, `/resolve` and the like) match only as a whole root path, so `/api/v1/metrics`,
+  `/auth.md` and a search such as `/browse?q=metrics` still pass; the extension list gains `axd|pem|key|conf|plist`.
+  `/law` now redirects to `/browse` (Tor exits, Googlebot and a domain-list bot asked for it; the breadcrumb puts
+  Browse above a law). Left alone on purpose: our own post-deploy smoke test (`/definitely-not-a-real-page`, 7
+  requests from `node`, expected to be a 404), the AgentDrivesAgent readiness crawler (`/auth.md`, `/SKILL.md`, `/mcp`,
+  `/signup`, `/pricing`, `/.well-known/agent-card.json`, the OAuth and skills discovery files; no MCP, agent or OAuth
+  endpoint exists, and the test keeps them out of the scanner map so they stay plain 404s), CensysInspect's random-token canaries, `/write-for-us` and
+  `/contribute`, and a single `/subscription`. Not fixed here: `/api/v1/laws/1719` and `/848` return 404 because those
+  laws are not published, but their old prerendered pages (9 November) are still served with 200 from the deploy
+  staging copy, which the deploy never prunes.
+  Web bumped to `3.4.127`; root to `2.6.257`.
 - Sentry no longer reports `Can only call Window.setInterval on instances of Window` (JAVASCRIPT-1B), seen once from
   Mobile Safari on an iPad. Every frame was in `av-eu1.startpage.com/__av/...`, Startpage's anonymous-view proxy, which
   re-serves our Google tag script from its own origin with a rewritten `window`; the error is thrown by that copy, not by
