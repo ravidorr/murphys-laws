@@ -824,6 +824,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- An email alert when a nightly cron job fails, and a flag in the daily report when one never ran (issues #348, #371 and
+  #372). What was wrong: a failing Law of the Day, daily email or daily push job only wrote to a log file nobody reads,
+  and a job that never started (cron down, the file ignored, a wrong path after a deploy) left no trace at all.
+  `backend/scripts/run-cron-job.sh JOB_NAME COMMAND...` now starts every job: it runs the command from `backend/`,
+  appends the output to `backend/logs/JOB_NAME.log`, stops it after `CRON_JOB_TIMEOUT` seconds (default 1800) when
+  `timeout` exists, and records each run (start, end, exit status, last success, failures in a row) in
+  `backend/logs/cron-state/JOB_NAME.state`. On a non-zero exit it mails an alert through `alert-email.sh` with the job
+  name, the exit status and the last 20 log lines, on the 1st, 2nd, 4th, 8th... failure in a row so a persistent failure
+  does not mail daily. The daily report has a `NIGHTLY CRON JOBS` section (`render-daily-report.ts`): the last run of
+  each job, flagged critical when there is no successful run in the last 26 hours and as a warning when no run was ever
+  recorded, with an at-a-glance line. The daily email and push schedule is now the repository file
+  `backend/config/cron.d/murphys-laws-daily-notifications`, which the deploy installs (it was installed by hand on
+  2026-11-13): `install-law-of-day-cron.sh` installs every `murphys-laws-*` file, all or nothing, and checks that each
+  job runs a script of the release through `run-cron-job.sh`. The deploy warning (`deploy.yml` and `npm run deploy`) now
+  says the cron schedules (Law of the Day, daily email and daily push) were not installed, one line each; the deploy script
+  length test still passes. Tests: `run-cron-job.test.ts`, the installer and daily report tests, and
+  `scripts/deploy-workflow.test.ts`; `DEPLOYMENT.md` and `DEPLOY-MONITORING.md` describe the alerting. Backend bumped to
+  `2.3.103`, root to `2.6.269`.
+
 ### Fixed
 
 - The backend no longer sends Sentry events from local development or tests (issue #359). What was wrong: `initSentry`

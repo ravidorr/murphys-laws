@@ -384,20 +384,22 @@ ssh root@167.99.53.90 "namei -l /root/murphys-laws/web/dist/index.html"
 
 ### Law of the Day Selection
 
-A daily job picks the day's Law of the Day at midnight UTC, so it is chosen on a schedule and not by the first visitor of the day. **The deploy installs it; do not add it to a crontab by hand.** The schedule is the repository file `backend/config/cron.d/murphys-laws-law-of-day`, and both `deploy.yml` and `npm run deploy` run `backend/scripts/install-law-of-day-cron.sh` after the dependencies are installed and the migrations ran, on every deploy (it is safe to repeat). It:
-- stops with an error, before changing anything, when the job could not start: the schedule file, `backend/scripts/select-law-of-day.ts`, `backend/node_modules/tsx`, `.nvmrc` or `crontab` is missing, or the node that the job runs is missing, cannot report its version, is not the major Node version of `.nvmrc` or cannot load `better-sqlite3` (that node is the one the deploy itself runs with, the nvm node of `.nvmrc`, which `better-sqlite3` was built for: both deploy paths pass it as `LAW_OF_DAY_NODE_BIN` and the installer writes its absolute path into the job, so the next deploy follows a Node upgrade; if the variable is not set at all the installer uses `/usr/bin/node`, which should then be a symlink to the nvm node, see `PREVENTING-502-ERRORS.md`; on the production server it is a symlink to nvm `v22.20.0` while the deploy's node is `v22.16.0`, see "Verified server facts" below)
-- replaces `/etc/cron.d/murphys-laws-law-of-day` in one step (a temporary file in `/etc/cron.d`, then a rename), mode 644 and owned by root, as cron requires; cron ignores a file there whose name contains a dot, so the name has none, and any edit made on the server is overwritten
+A daily job picks the day's Law of the Day at midnight UTC, so it is chosen on a schedule and not by the first visitor of the day. **The deploy installs it; do not add it to a crontab by hand.** The schedule is the repository file `backend/config/cron.d/murphys-laws-law-of-day`, and both `deploy.yml` and `npm run deploy` run `backend/scripts/install-law-of-day-cron.sh` after the dependencies are installed and the migrations ran, on every deploy (it is safe to repeat). Despite its name it installs every `backend/config/cron.d/murphys-laws-*` file (the Law of the Day pick and the daily email and push, below), all or nothing: when one file fails its checks none is installed and the ones already installed stay as they were. It:
+- stops with an error, before changing anything, when the job could not start: a schedule file, `backend/scripts/run-cron-job.sh` (which must be executable) or the script a job runs, `backend/node_modules/tsx`, `.nvmrc` or `crontab` is missing, or the node that the job runs is missing, cannot report its version, is not the major Node version of `.nvmrc` or cannot load `better-sqlite3` (that node is the one the deploy itself runs with, the nvm node of `.nvmrc`, which `better-sqlite3` was built for: both deploy paths pass it as `LAW_OF_DAY_NODE_BIN` and the installer writes its absolute path into the job, so the next deploy follows a Node upgrade; if the variable is not set at all the installer uses `/usr/bin/node`, which should then be a symlink to the nvm node, see `PREVENTING-502-ERRORS.md`; on the production server it is a symlink to nvm `v22.20.0` while the deploy's node is `v22.16.0`, see "Verified server facts" below)
+- replaces each `/etc/cron.d/murphys-laws-*` file (`murphys-laws-law-of-day` and `murphys-laws-daily-notifications`) in one step (a temporary file in `/etc/cron.d`, then a rename), mode 644 and owned by root, as cron requires; cron ignores a file there whose name contains a dot, so the name has none, and any edit made on the server is overwritten
 - creates `backend/logs`, which the job's log is in (the deploy's cleanup of old root-level files removes `/root/murphys-laws/logs`, not this one)
 - removes the old `select-law-of-day.mjs` line from root's crontab, so the job does not run twice, and then the old `.mjs` script, only after the new job is installed and the old line is gone (the deploys' `rsync --delete` leaves that one script alone, so a refused install, or an old line that could not be removed, leaves the line and its file as they were). The crontab is read into a variable and written back only from a successful read, only when that line was there and only when something other than blank lines remains: root's crontab is never emptied, and when the old line is its only entry it stays and the deploy prints a warning
 - warns when the server's time zone is not UTC: the Debian and Ubuntu `cron` package, which the production server runs, ignores the `CRON_TZ=UTC` line of the file (its `crontab(5)` documents only `TZ`, which sets the job's environment and not its schedule, and its Debian changelog carries a `No-multiple-timezones.patch`), so the job runs in the server's own time zone, at 00:00 local time. The production server is `Etc/UTC`, so there that is 00:00 UTC; the warning covers a server in another zone (it is printed at deploy time only, does not stop the deploy, compares the current UTC offset and does not detect which cron package is installed), and the `CRON_TZ=UTC` line is kept only because it is harmless there and cronie honors it. On a server east of UTC the job runs before 00:00 UTC, so it only finds the day before already picked and the first visitor picks again. The pick is for the current UTC day whenever it runs, so it is still the right law
 
-A failure of the installer is only a warning in the deploy (`WARNING: the Law of the Day schedule was not installed ...`) and never holds back a release, because the API picks the law on the first request of the day when the job is not installed. Until a deploy installs it nothing picks the law at midnight; the job installed by an earlier deploy stays, and fails in its log if the node path in it has gone, until the next deploy replaces it. Look for that line in the deploy log when the pick time (below) is late.
+A failure of the installer is only a warning in the deploy (`WARNING: the cron schedules (Law of the Day, daily email and daily push) were not installed ...`) and never holds back a release, because the API picks the law on the first request of the day when the job is not installed. Until a deploy installs them nothing picks the law at midnight, nothing sends the daily email or push, and no failure alert is mailed; the job installed by an earlier deploy stays, and fails in its log if the node path in it has gone, until the next deploy replaces it. Look for that line in the deploy log when the pick time (below) is late.
 
 The job is (the repository file; the installer replaces `/usr/bin/node` with the absolute path of the deploy's node, for example `/root/.nvm/versions/node/v22.16.0/bin/node`):
 
 ```cron
-0 0 * * * root { cd /root/murphys-laws/backend && /usr/bin/node node_modules/tsx/dist/cli.mjs scripts/select-law-of-day.ts; } >> /root/murphys-laws/backend/logs/law-of-day.log 2>&1
+0 0 * * * root /root/murphys-laws/backend/scripts/run-cron-job.sh law-of-day /usr/bin/node node_modules/tsx/dist/cli.mjs scripts/select-law-of-day.ts
 ```
+
+`run-cron-job.sh` is how every nightly job starts; see "Failure alerts and the did-not-run check" below.
 
 **What it does:**
 - Runs daily at 00:00 UTC and picks today's (UTC) law
@@ -406,7 +408,7 @@ The job is (the repository file; the installer replaces `/usr/bin/node` with the
 - Stores selection in `law_of_the_day_history` table, through the same `LawService.selectLawOfTheDay` the API uses
 - Keeps one live pick per UTC day, however often it runs and even when it meets a request at midnight: the check and the insert are one `BEGIN IMMEDIATE` transaction, so the second to arrive finds the first one's pick. (A replacement pick is added for the same date only when the law picked was unpublished since.) The API still picks on a request if the job did not run
 - Logs a timestamped line to `backend/logs/law-of-day.log` (`Picked law ...`, `Already picked ...`, or an error and a non-zero exit), after the untimestamped `Database connected` line of the database service
-- Nothing alerts when the job fails or does not run, because the API quietly picks instead: look at the log and at `created_at` (below) now and then; a pick made after about 00:05 UTC means the job did not do it
+- A failure of the job is mailed (see "Failure alerts and the did-not-run check" below) and the daily report flags a job that did not run; the API quietly picks instead, so check `created_at` (below) too: a pick made after about 00:05 UTC means the job did not do it
 
 **Verification:**
 ```bash
@@ -429,10 +431,10 @@ To stop the schedule, delete `/etc/cron.d/murphys-laws-law-of-day` and the repos
 
 ### Daily Law of the Day Email
 
-Subscribers who confirmed their address get the day's law by email. Run this after the selection job (SMTP must be configured in the backend `.env`):
+Subscribers who confirmed their address get the day's law by email at 06:15 UTC, after the selection job (SMTP must be configured in the backend `.env`). **The deploy installs it** with the Law of the Day job, from `backend/config/cron.d/murphys-laws-daily-notifications`; do not add it to a crontab by hand. The repository file runs it through `run-cron-job.sh` (the installer writes the deploy's node in place of `/usr/bin/node`), logging to `backend/logs/daily-email.log`:
 
 ```cron
-15 6 * * * cd /root/murphys-laws/backend && /usr/bin/npm run email:daily >> logs/daily-email.log 2>&1
+15 6 * * * root /root/murphys-laws/backend/scripts/run-cron-job.sh daily-email /usr/bin/node node_modules/tsx/dist/cli.mjs scripts/send-daily-law-email.ts
 ```
 
 **What it does:**
@@ -448,10 +450,10 @@ Browsers subscribed to the notification get the day's law as a push message. Gen
 cd /root/murphys-laws/backend && npx web-push generate-vapid-keys
 ```
 
-Keep the pair: changing it drops every existing browser subscription. Then schedule the send after the selection job:
+Keep the pair: changing it drops every existing browser subscription. The send is scheduled at 06:20 UTC, after the selection job, in the same repository file as the email (`murphys-laws-daily-notifications`, installed by the deploy), logging to `backend/logs/daily-push.log`:
 
 ```cron
-20 6 * * * cd /root/murphys-laws/backend && /usr/bin/npm run push:daily >> logs/daily-push.log 2>&1
+20 6 * * * root /root/murphys-laws/backend/scripts/run-cron-job.sh daily-push /usr/bin/node node_modules/tsx/dist/cli.mjs scripts/send-daily-law-push.ts
 ```
 
 **What it does:**
@@ -459,6 +461,24 @@ Keep the pair: changing it drops every existing browser subscription. Then sched
 - Deletes subscriptions the push service reports as gone (404 or 410)
 - Does nothing (and says so in the log) until all three VAPID variables are set
 - Exits non-zero if any send failed; the next run retries those subscriptions
+
+### Failure alerts and the did-not-run check
+
+Every file in `backend/config/cron.d` starts its job through `backend/scripts/run-cron-job.sh JOB_NAME COMMAND...` (issues #348 and #371). The wrapper:
+- runs the command from `backend/` and appends its output, with a start and an end line, to `backend/logs/JOB_NAME.log` (`law-of-day`, `daily-email`, `daily-push`)
+- stops it after `CRON_JOB_TIMEOUT` seconds (default 1800; exit status 124) when `timeout` exists
+- records each run in `backend/logs/cron-state/JOB_NAME.state` (`last_start`, `last_end`, `last_status`, `last_success`, `failures`)
+- on a non-zero exit, mails an alert through `alert-email.sh` (the recipient is `ALERT_EMAIL`, then `EMAIL_TO`; see `DEPLOY-MONITORING.md`) with the job name, the exit status and the last 20 log lines. It mails on the 1st, 2nd, 4th, 8th... failure in a row, so a job that keeps failing does not mail every day; a success resets the count and mails nothing
+
+A job that never starts (cron down, the file ignored, a wrong path) sends no failure mail, so the daily status report has a `NIGHTLY CRON JOBS` section: the last run of each job, and a flag (also in the at-a-glance summary) when a job has no successful run in the last 26 hours, or no recorded run at all (a new server shows this until the first run after the deploy). The check reads the state files, so it needs the wrapper; a job run by hand without it is not recorded.
+
+```bash
+# What the wrapper recorded for each job
+sudo head /root/murphys-laws/backend/logs/cron-state/*.state
+# Force a failure to see one alert (the job name is only a label for the state and log files)
+sudo /root/murphys-laws/backend/scripts/run-cron-job.sh alert-test false
+sudo rm /root/murphys-laws/backend/logs/cron-state/alert-test.state /root/murphys-laws/backend/logs/alert-test.log
+```
 
 ---
 

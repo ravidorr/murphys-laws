@@ -1181,6 +1181,86 @@ export function offsiteBackupItem(logPath: string, now: Date = new Date()): Repo
   return found.status.startsWith('ok') ? { label: 'Off-site copy', value } : { label: 'Off-site copy', value, tone: 'warning' };
 }
 
+/** The nightly cron jobs started through run-cron-job.sh (backend/config/cron.d). `name` is the name of their state file. */
+export const CRON_JOBS = [
+  { name: 'law-of-day', label: 'Law of the Day (00:00 UTC)' },
+  { name: 'daily-email', label: 'Daily email (06:15 UTC)' },
+  { name: 'daily-push', label: 'Daily push (06:20 UTC)' },
+] as const;
+/** A daily job is flagged when it has no successful run in this many hours: a day plus two hours of slack. */
+export const CRON_STALE_HOURS = 26;
+
+/** What run-cron-job.sh records for a job, in epoch seconds; null where it has no value yet. */
+export interface CronJobState {
+  lastStart: number | null;
+  lastEnd: number | null;
+  lastStatus: number | null;
+  lastSuccess: number | null;
+  failures: number;
+}
+
+/** Parses a `KEY=VALUE` state file of run-cron-job.sh. A line that is not a whole number is ignored. */
+export function parseCronJobState(text: string): CronJobState {
+  const values = new Map<string, number>();
+  for (const line of text.split('\n')) {
+    const match = /^(last_start|last_end|last_status|last_success|failures)=(\d+)$/.exec(line.trim());
+    if (match) {
+      values.set(match[1], Number(match[2]));
+    }
+  }
+  return {
+    lastStart: values.get('last_start') ?? null,
+    lastEnd: values.get('last_end') ?? null,
+    lastStatus: values.get('last_status') ?? null,
+    lastSuccess: values.get('last_success') ?? null,
+    failures: values.get('failures') ?? 0,
+  };
+}
+
+const formatEpoch = (seconds: number): string => `${new Date(seconds * 1000).toISOString().slice(0, 16).replace('T', ' ')} UTC`;
+
+/**
+ * The report row for one nightly job, from the state file run-cron-job.sh keeps. A job that never started leaves no
+ * failure alert, so this is where it shows: no record at all, or no successful run in the last 26 hours, is flagged
+ * (critical when the last record is a failure or an old success, warning when there is no record yet).
+ */
+export function cronJobItem(job: { name: string; label: string }, stateDir: string, now: Date = new Date()): ReportItem {
+  let state: CronJobState | null = null;
+  try {
+    state = parseCronJobState(readFileSync(path.join(stateDir, `${job.name}.state`), 'utf8'));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      logCollectorError(`cron job ${job.name} state`, error);
+    }
+  }
+  if (state === null || (state.lastStart === null && state.lastSuccess === null)) {
+    return { label: job.label, value: 'NEVER RAN: no run recorded (cron did not start it, or no run since the failure alerts were installed)', tone: 'warning' };
+  }
+  const nowSeconds = Math.floor(now.getTime() / 1000);
+  const successFresh = state.lastSuccess !== null && nowSeconds - state.lastSuccess <= CRON_STALE_HOURS * 3600;
+  const lastSuccess = state.lastSuccess === null ? 'no successful run recorded' : `last success ${formatEpoch(state.lastSuccess)}`;
+  const lastRun =
+    state.lastStatus !== null && state.lastStatus !== 0
+      ? `the last run failed with exit status ${state.lastStatus} at ${formatEpoch(state.lastEnd ?? state.lastStart ?? nowSeconds)} (${state.failures} in a row)`
+      : state.lastStart !== null && (state.lastEnd === null || state.lastEnd < state.lastStart)
+        ? `the last run started ${formatEpoch(state.lastStart)} and did not finish`
+        : null;
+  if (!successFresh) {
+    const detail = lastRun ? `${lastRun}; ${lastSuccess}` : lastSuccess;
+    return { label: job.label, value: `NO SUCCESSFUL RUN in the last ${CRON_STALE_HOURS} hours: ${detail}`, tone: 'critical' };
+  }
+  if (lastRun) {
+    return { label: job.label, value: `${lastRun}; ${lastSuccess}`, tone: 'warning' };
+  }
+  return { label: job.label, value: `ran OK ${formatEpoch(state.lastSuccess as number)}`, tone: 'success' };
+}
+
+/** The nightly jobs section, and how many rows are flagged (not `success`). */
+export function buildCronJobsSection(stateDir: string, now: Date = new Date()): { section: ReportSection; flagged: ReportItem[] } {
+  const items = CRON_JOBS.map((job) => cronJobItem(job, stateDir, now));
+  return { section: section('NIGHTLY CRON JOBS', items), flagged: items.filter((item) => item.tone !== 'success') };
+}
+
 function backupReminderSection(): ReportSection {
   return section('MONTHLY BACKUP TEST REMINDER', [
     {
@@ -1437,6 +1517,13 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
   } else {
     logCollectorError('pending approvals count', new Error(`database not found at ${dbPath}`));
     sections.push(buildPendingApprovalsSection(null, env));
+  }
+
+  const cronJobs = buildCronJobsSection(path.join(repoRoot, 'backend/logs/cron-state'), now);
+  sections.push(cronJobs.section);
+  if (cronJobs.flagged.length > 0) {
+    const worst = cronJobs.flagged.some((item) => item.tone === 'critical') ? 'critical' : 'warning';
+    summary.push({ label: 'Cron jobs', value: `${cronJobs.flagged.map((item) => item.label).join(', ')}: needs attention`, tone: worst });
   }
 
   const metricsMonth = date.slice(0, 7);

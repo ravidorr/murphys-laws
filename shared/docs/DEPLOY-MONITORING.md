@@ -174,7 +174,7 @@ sudo crontab -e
 0 * * * * /usr/local/bin/performance-tracker.sh >> /var/log/performance-tracker.log 2>&1
 ```
 
-**Note:** The Law of the Day selection is not in this crontab. The deploy installs it as `/etc/cron.d/murphys-laws-law-of-day` (see `DEPLOYMENT.md`, "Law of the Day Selection"), so it is not entered by hand and a restored server gets it with the next deploy.
+**Note:** The Law of the Day selection and the daily email and push are not in this crontab. The deploy installs them as `/etc/cron.d/murphys-laws-law-of-day` and `/etc/cron.d/murphys-laws-daily-notifications` (see `DEPLOYMENT.md`, "Law of the Day Selection"), so they are not entered by hand and a restored server gets them with the next deploy. They start through `run-cron-job.sh`, which mails a failure alert through `alert-email.sh` and records each run; the daily report's `NIGHTLY CRON JOBS` section flags a job with no successful run in 26 hours (see `DEPLOYMENT.md`, "Failure alerts and the did-not-run check").
 
 **Note:** SSL monitoring, log analysis, vulnerability scanning (Sundays), and cost optimization (1st of month) are all integrated into the daily-report.sh script and run as part of the daily status report at 5 AM UTC.
 
