@@ -100,7 +100,7 @@ test('daily report launcher delegates to the TypeScript renderer', () => {
 
 test('peak analyzer includes legacy metrics files only for main-app role', () => {
   assert.match(peakAnalyzer, /METRICS_ROLE" = "main-app"/);
-  assert.match(peakAnalyzer, /PATTERNS\+=\("metrics-\$\{CURRENT_MONTH\}\.csv"/);
+  assert.match(peakAnalyzer, /PATTERNS\+=\("metrics-\$\{MONTH\}\.csv"\)/);
 });
 
 test('backup script verifies integrity before success', () => {

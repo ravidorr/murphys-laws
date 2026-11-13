@@ -492,7 +492,7 @@ test('log-analyzer errorSamples caps at 10 distinct requests per code, most freq
 });
 
 // The scripts under test count only recent rows, measured from the real clock, so a fixed date in a fixture stops matching
-// as the calendar moves on: analyze-resource-peaks.sh reads only the current and the previous month's CSV, and it and the
+// as the calendar moves on: analyze-resource-peaks.sh reads the CSV of every month its window touches, and it and the
 // capacity analyzer behind cost-optimization-report.sh both use only rows from the last 30 days. This sample is a day old,
 // which leaves a wide margin on both sides of that window, and is stamped in UTC like the collector writes it. The
 // file name's month is the timestamp's month, so the row is in the current or the previous month's file.

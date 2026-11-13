@@ -8,6 +8,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- `analyze-resource-peaks.sh` now checks its window and reads every month file the window touches. The review of the
+  earlier month-boundary fix found six older faults, all fixed here. (1) The 30-day cutoff was read from `date` inside
+  `awk` and never checked: when `date` failed or printed nothing the cutoff was empty, every row passed the filter and
+  the script reported an unbounded window as "Last 30 days". Now the time is read once (`date +%s`), the cutoff and the
+  months are formatted from that one instant and checked (a UTC `YYYY-MM-DDTHH:MM:SSZ` cutoff, `YYYY-MM` months), all
+  before anything is printed; if `date` cannot give them the script prints `Error: could not work out the start of the
+  N-day window` (or `...the months of the N-day window`) on stderr, prints nothing on stdout (so the JSON caller never
+  parses half a document) and exits 1. The cutoff and the first month are one instant, which they were not before (the
+  month was found with a local `date -d "-N days"`, which keeps the wall-clock time and so lands an hour off the exact
+  cutoff when daylight saving time changes inside the window); the time is read with GNU `date -d @<seconds>` or BSD
+  `date -r <seconds>`, and under `LC_ALL=C`, so the comparisons of timestamps and months are byte-wise whatever the
+  locale of the shell (cron and a login shell differ). (2) The days
+  argument is validated: a whole number from 1 to 365, otherwise a usage error (exit 2) on stderr. `-5` and `abc` used
+  to be ignored, `0` gave an empty window, `99999999999999999999` an empty cutoff, and `366` was accepted (the limit is
+  new). Leading zeros are decimal (`030` is 30). An argument the script does not know is a usage error too (it was
+  ignored), as are days given twice (the last one used to win silently), a `--format` other than `text` or `json` and a
+  role (`--role` or `METRICS_ROLE`) that does not start with a letter or a digit and go on with letters, digits, `-` or
+  `_`, because it goes into the file names. (3) It read only the files of two months, the current and the previous
+  one, whatever the window: a window longer than the previous month's reach (above 31 days, or early in a month: 30
+  days from Mar 1 or 2 start on Jan 30 or 31) silently left rows out. It now reads the file of every month from the
+  local month of the cutoff to the current one (at most 13 for 365 days), each once, with the same local-month file
+  names as `performance-tracker.sh`, the legacy `metrics-YYYY-MM.csv` names only for the `main-app` role and the `n8n`
+  role's own files only; a month without a file is skipped. The next month is stepped from the month's number, never
+  by adding a month to a date. (4) A trailing `--format` or `--role` with no value made the argument loop spin forever
+  (`shift 2` with one argument left shifts nothing); it is now a usage error with exit status 2. (5) A metric that no
+  row had a reading for was printed blank (`"value":" MB","timestamp":""`; `Min MemAvailable MB` was already left
+  out): the peaks started as unset variables, which compare as 0, so a metric that is 0 in every row (the swap,
+  usually) was never recorded yet was still printed, and a blank CPU reading with a blank load became a CPU of 0 %. A
+  peak is now recorded from the first reading, so the swap shows `0 MB` with its timestamp (the daily report's `PEAK
+  RESOURCE USAGE` section showed a blank swap row until now), and an empty, negative or non-numeric cell, a column the
+  header lacks or a row shorter than the header is a missing reading, never a 0. A metric with no reading at all is
+  left out of `metrics` in the JSON and named in a new `missingMetrics` array (present only when something is
+  missing; `mapPeakSection` in `render-daily-report.ts` reads `metrics` and `sampleCount` and ignores it, so the
+  daily report leaves such a metric out, and a `null` value would have made its `.replace` throw), and is a row `n/a`
+  with the timestamp `-` in the text table. Rows whose first field is not a UTC timestamp are not counted, and a CRLF
+  line ending no longer sticks to the last column. For data with a positive peak in every metric the JSON is byte for
+  byte what it was. (6) The file list was an unquoted string, so a metrics directory with a space in its path broke;
+  it is an array now, quoted at every use, and the script uses no `mapfile` and no associative arrays, so it runs under
+  the bash 3.2 of macOS and the bash of the server. Failures no longer leave half an output: awk's result is held
+  until awk has succeeded and the banner is printed after it, a file that exists but cannot be read is an error that
+  names it, and "Metrics directory ... not found" and
+  "No metrics files found ..." (which now names the months) go to stderr, where the daily report logs a failed run
+  (they were on stdout), still with exit 1. Callers checked: the daily report runs `--format json --role main-app` on
+  the 15th and reads `sampleCount` and `metrics`; the deploy only copies the script; `cost-optimization-report.sh`
+  does not call it. `analyze-resource-peaks-month-boundary.test.ts` gained tests for each point (the stand-in `date`
+  now formats an epoch, and can fail, print nothing, print garbage, lack `-d` and `-r`, work for the cutoff only or
+  give a first month that cannot be walked; the runs have a time limit so a loop that never ends fails instead of
+  hanging) and runs the window against the real `date` of the machine in three zones and a zone with daylight saving
+  time against the stand-in. Each fix was reverted in turn and the tests of its point failed, except for `LC_ALL=C`
+  (no test sets a locale) and two guards that change no result (the early exit on a first month after the current one, which the 14-month limit gives the same
+  error for, and the load test before the CPU fallback, which the peak tracker's own skip of negative readings makes
+  redundant). Backend bumped to `2.3.93`; root to `2.6.248`.
 - The iOS app version is now the same in every file that records it, and a check keeps it so. It was written in three
   places that had drifted: `ios/project.yml` and `ios/MurphysLaws/Info.plist` said `1.2.14 (30)`, but the committed
   `ios/MurphysLaws.xcodeproj/project.pbxproj` (which a local Xcode build uses; the iOS CI regenerates it from
