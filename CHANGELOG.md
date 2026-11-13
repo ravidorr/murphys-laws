@@ -191,6 +191,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `/var/log/nginx/*.log` logrotate rule covers it.
 
 ### Fixed
+- `analyze-resource-peaks.sh` no longer skips the previous month's metrics file, or reads the current month's twice, on
+  the days when the previous month is too short, and its 30-day cutoff is now UTC. It found the previous month with
+  `date -d "1 month ago"`, which GNU date resolves to the current month when the day does not exist a month earlier (in
+  a year that is not a leap year Mar 29 -> "Feb 29" -> Mar 1, and Mar 30 and 31 roll over too; in a leap year only Mar 30
+  and 31; plus the 31st of May, July, October and December). On Mar 29 and 30 (only Mar 30 in a leap year) the peaks of
+  the last days of February were left out of the 30-day window, and on all of those days the current month's file was
+  listed twice, so its rows were counted double (`sampleCount`, "Total records analyzed"). The daily report runs the
+  script only on the 15th, so this hit manual runs. The previous month is now worked out from the current month's
+  number, which works the same with GNU and BSD `date`. The cutoff string was built with `date -d "-30 days"` and
+  printed with a literal `Z`, but without `-u` it carried the local wall-clock time, while the CSV timestamps are UTC
+  (`performance-tracker.sh` writes them with `date -u`); the 30-day window was shifted by the host's zone offset (up to
+  14 hours, nothing on a host set to UTC). It now uses `date -u`, with the BSD form `date -u -v-30d` as the fallback.
+  The month in the file name stays local, as the collector names the file with a local `date +%Y-%m`. The only other
+  month arithmetic in the scripts is the "Next review" date (`+1 month`) of `cost-optimization-report.sh`, which the
+  daily report runs on the 1st (UTC), so it is safe there on a host set to UTC; a manual run on the 29th to 31st can
+  still roll over. `analyze-resource-peaks-month-boundary.test.ts` pins the days around month ends, leap years, the
+  months 08 and 09, the year change, the `n8n` role, the file name's local month, and the cutoff in UTC, UTC+14 and
+  UTC-11 with both GNU and BSD `date`, using a stand-in `date` that rolls months over the way GNU date does, honours
+  `-u` and `TZ`, and fails the test on any call it does not understand. The peaks test in
+  `operational-email-rendering.test.ts` asserts an exact sample count (`1`) again, which the entry below had to loosen
+  until this fix. Root bumped to `2.6.234` and backend to `2.3.87`.
 - The `analyze-resource-peaks --format json` test no longer fails once its fixture is a month old, and the
   `cost-optimization-report` one beside it no longer passes on a stale fixture. `scripts/operational-email-rendering.test.ts`
   wrote a metrics row dated `2026-10-10`, but `analyze-resource-peaks.sh` reads only the current and the previous month's
@@ -198,10 +219,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   real clock. From 9 November 2026 the row fell outside the window, the script printed `{"sampleCount":0,"metrics":[]}` and
   the assertions failed. The cost test had kept passing because it accepted "Collecting baseline" whatever the sample
   count; it now asserts that decision and that exactly one sample is counted, and the peaks test asserts the sample count
-  and one metric's value and timestamp. The fixture is dated one day before the test runs. The scripts are unchanged.
-  The peaks test asserts at least one sample rather than exactly one, because on day 29, 30 or 31 of a month whose
-  predecessor is shorter, `analyze-resource-peaks.sh` computes the previous month with `date -d "1 month ago"`, which
-  lands in the current month, and reads the same CSV twice; a separate change fixes the script and will tighten that count. Root bumped to `2.6.231`.
+  and one metric's value and timestamp. The fixture is dated one day before the test runs. The scripts are unchanged in
+  this entry. The peaks test asserted at least one sample rather than exactly one at the time, because on day 29, 30 or
+  31 of a month whose predecessor is shorter, `analyze-resource-peaks.sh` computed the previous month with
+  `date -d "1 month ago"`, which landed in the current month, and read the same CSV twice; the entry above fixes the
+  script and makes that count exact again. Root bumped to `2.6.231`.
 - `health-check.sh` no longer sends a false "[CRITICAL] Frontend/API Error - HTTP" alert with an empty status for a
   healthy site (the Nov 12 10:16 UTC alerts). It passed `-w` to curl twice and curl keeps only the last, so the status
   code was never printed and the empty value never equalled `200`. It now reads the status and the time from one
