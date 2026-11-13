@@ -107,6 +107,7 @@ describe('the cron entry', () => {
     db.exec(`
       CREATE TABLE laws (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, text TEXT NOT NULL, status TEXT DEFAULT 'published');
       CREATE TABLE votes (id INTEGER PRIMARY KEY AUTOINCREMENT, law_id INTEGER, vote_type TEXT, voter_identifier TEXT);
+      CREATE TABLE law_relations (id INTEGER PRIMARY KEY AUTOINCREMENT, from_law_id INTEGER NOT NULL, to_law_id INTEGER NOT NULL, relation_type TEXT NOT NULL, note TEXT);
       CREATE TABLE law_of_the_day_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         law_id INTEGER NOT NULL,
@@ -196,6 +197,21 @@ describe('the cron entry', () => {
     expect(answeredAt).toBeGreaterThanOrEqual(committedAt);
     const check = new Database(dbFile, { readonly: true });
     expect(check.prepare('SELECT law_id FROM law_of_the_day_history').all()).toEqual([{ law_id: 2 }]);
+    check.close();
+  }, 90_000);
+
+  it('never picks a corollary, however many votes it has, against a real database', () => {
+    const { run, readLog, dbFile } = cronJob(`
+      INSERT INTO laws (text) VALUES ('Zebra law'), ('Alpha corollary of the zebra law');
+      INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (2, 'up', 'a'), (2, 'up', 'b');
+      INSERT INTO law_relations (from_law_id, to_law_id, relation_type) VALUES (2, 1, 'COROLLARY_OF');
+    `);
+
+    const result = run();
+
+    expect(result.status, `${result.stderr}${readLog()}`).toBe(0);
+    const check = new Database(dbFile, { readonly: true });
+    expect(check.prepare('SELECT law_id FROM law_of_the_day_history').all()).toEqual([{ law_id: 1 }]);
     check.close();
   }, 90_000);
 

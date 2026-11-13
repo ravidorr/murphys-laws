@@ -23,6 +23,13 @@ const SCHEMA = `
     vote_type TEXT,
     voter_identifier TEXT
   );
+  CREATE TABLE law_relations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    from_law_id INTEGER NOT NULL,
+    to_law_id INTEGER NOT NULL,
+    relation_type TEXT NOT NULL,
+    note TEXT
+  );
   CREATE TABLE law_of_the_day_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     law_id INTEGER NOT NULL,
@@ -33,10 +40,28 @@ const SCHEMA = `
   );
 `;
 
-const DAY = '2026-11-13';
+// The day every test picks for. The one-year rule is evaluated on SQLite's own clock (date('now')), which no fake
+// timer reaches, so DAY is today's UTC date as SQLite reads it and every other date is counted back from DAY with
+// daysBefore. A fixed date would stop working once the real date moved a year past it, and a date taken from
+// Date.now() could equal DAY. Counted back from DAY, a history date can never equal DAY and always sits the same
+// distance inside or outside the one-year window, on any day the suite runs.
+const DAY = (() => {
+  const clock = new Database(':memory:');
+  try {
+    return (clock.prepare("SELECT date('now') AS day").get() as { day: string }).day;
+  } finally {
+    clock.close();
+  }
+})();
+
+const daysBefore = (day: string, days: number): string => new Date(Date.parse(`${day}T00:00:00Z`) - days * 86_400_000).toISOString().split('T')[0];
 
 const addLaw = (db: Db, text: string, status = 'published'): number =>
   Number(db.prepare('INSERT INTO laws (text, status) VALUES (?, ?)').run(text, status).lastInsertRowid);
+
+const relate = (db: Db, childId: number, parentId: number, type = 'COROLLARY_OF'): void => {
+  db.prepare('INSERT INTO law_relations (from_law_id, to_law_id, relation_type) VALUES (?, ?, ?)').run(childId, parentId, type);
+};
 
 const picksFor = (db: Db, date: string): number[] =>
   (db.prepare('SELECT law_id FROM law_of_the_day_history WHERE featured_date = ? ORDER BY id').all(date) as { law_id: number }[])
@@ -117,7 +142,6 @@ describe('LawService.selectLawOfTheDay', () => {
   });
 
   describe('the one-year rule', () => {
-    const daysAgo = (days: number): string => new Date(Date.now() - days * 86_400_000).toISOString().split('T')[0];
     const feature = (lawId: number, date: string): void => {
       db.prepare('INSERT INTO law_of_the_day_history (law_id, featured_date) VALUES (?, ?)').run(lawId, date);
     };
@@ -129,7 +153,7 @@ describe('LawService.selectLawOfTheDay', () => {
       const popular = addLaw(db, 'Popular law');
       const other = addLaw(db, 'Other law');
       upvote(popular);
-      feature(popular, daysAgo(1));
+      feature(popular, daysBefore(DAY, 1));
 
       expect(service.selectLawOfTheDay(DAY)).toEqual({ lawId: other, featuredDate: DAY, created: true });
     });
@@ -138,7 +162,7 @@ describe('LawService.selectLawOfTheDay', () => {
       const popular = addLaw(db, 'Popular law');
       addLaw(db, 'Other law');
       upvote(popular);
-      feature(popular, daysAgo(366));
+      feature(popular, daysBefore(DAY, 366));
 
       expect(service.selectLawOfTheDay(DAY)).toEqual({ lawId: popular, featuredDate: DAY, created: true });
     });
@@ -169,7 +193,7 @@ describe('LawService.selectLawOfTheDay', () => {
 
     it('falls back to any published law when every one was featured in the last year', () => {
       const law = addLaw(db, 'Only law');
-      feature(law, daysAgo(1));
+      feature(law, daysBefore(DAY, 1));
 
       expect(service.selectLawOfTheDay(DAY)).toEqual({ lawId: law, featuredDate: DAY, created: true });
     });
@@ -180,6 +204,96 @@ describe('LawService.selectLawOfTheDay', () => {
 
     expect(service.selectLawOfTheDay(DAY)).toBeNull();
     expect(picksFor(db, DAY)).toEqual([]);
+  });
+
+  describe('corollaries', () => {
+    const feature = (lawId: number, date: string): void => {
+      db.prepare('INSERT INTO law_of_the_day_history (law_id, featured_date) VALUES (?, ?)').run(lawId, date);
+    };
+    const upvote = (lawId: number, times = 1): void => {
+      for (let i = 0; i < times; i += 1) {
+        db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', ?)").run(lawId, `voter-${i}`);
+      }
+    };
+
+    it('never picks a corollary, even one with more upvotes than every other law', () => {
+      const parent = addLaw(db, 'Zebra parent');
+      const corollary = addLaw(db, 'Alpha corollary');
+      relate(db, corollary, parent);
+      upvote(corollary, 5);
+
+      expect(service.selectLawOfTheDay(DAY)).toEqual({ lawId: parent, featuredDate: DAY, created: true });
+      expect(picksFor(db, DAY)).toEqual([parent]);
+    });
+
+    it('never picks a corollary in the fallback either, when every other law was featured in the last year', () => {
+      const parent = addLaw(db, 'Parent');
+      const corollary = addLaw(db, 'Corollary');
+      relate(db, corollary, parent);
+      upvote(corollary, 5);
+      feature(parent, daysBefore(DAY, 10));
+
+      expect(service.selectLawOfTheDay(DAY)).toEqual({ lawId: parent, featuredDate: DAY, created: true });
+    });
+
+    it.each([
+      ['the unpublished parent first', true],
+      ['the published parent first', false],
+    ])('excludes a law that is a corollary of one published and one unpublished law, with %s', (_order, unpublishedFirst) => {
+      const unpublished = addLaw(db, 'Unpublished parent', 'in_review');
+      const parent = addLaw(db, 'Zebra parent');
+      const corollary = addLaw(db, 'Alpha corollary');
+      relate(db, corollary, unpublishedFirst ? unpublished : parent);
+      relate(db, corollary, unpublishedFirst ? parent : unpublished);
+
+      expect(service.selectLawOfTheDay(DAY)).toEqual({ lawId: parent, featuredDate: DAY, created: true });
+    });
+
+    it('still picks a law whose parent is not published, which the site shows as an ordinary law', () => {
+      const parent = addLaw(db, 'Parent in review', 'in_review');
+      const orphan = addLaw(db, 'Corollary of an unpublished law');
+      relate(db, orphan, parent);
+
+      expect(service.selectLawOfTheDay(DAY)).toEqual({ lawId: orphan, featuredDate: DAY, created: true });
+    });
+
+    it('does not treat other relations as corollaries', () => {
+      const parent = addLaw(db, 'Zebra parent');
+      const commentary = addLaw(db, 'Alpha commentary');
+      relate(db, commentary, parent, 'COMMENT_ON');
+
+      expect(service.selectLawOfTheDay(DAY)).toEqual({ lawId: commentary, featuredDate: DAY, created: true });
+    });
+
+    it('does not treat a parent as a corollary of its own children', () => {
+      const parent = addLaw(db, 'Alpha parent');
+      const corollary = addLaw(db, 'Zebra corollary');
+      relate(db, corollary, parent);
+
+      expect(service.selectLawOfTheDay(DAY)).toEqual({ lawId: parent, featuredDate: DAY, created: true });
+    });
+
+    it('leaves a pick already recorded for the day alone, whatever the law has become since', () => {
+      const parent = addLaw(db, 'Parent');
+      const recorded = addLaw(db, 'Recorded before it became a corollary');
+      feature(recorded, DAY);
+      relate(db, recorded, parent);
+
+      expect(service.selectLawOfTheDay(DAY)).toEqual({ lawId: recorded, featuredDate: DAY, created: false });
+      expect(picksFor(db, DAY)).toEqual([recorded]);
+    });
+
+    it('returns null, as for an empty database, when every published law is a corollary of a published law', () => {
+      // Cannot happen under the one-level rule (a parent is never a corollary), so this pins that a data fault
+      // gives the same null as an empty database, never a corollary
+      const parent = addLaw(db, 'Parent');
+      const corollary = addLaw(db, 'Corollary');
+      relate(db, corollary, parent);
+      relate(db, parent, corollary);
+
+      expect(service.selectLawOfTheDay(DAY)).toBeNull();
+      expect(picksFor(db, DAY)).toEqual([]);
+    });
   });
 
   // The stand-in below offers only `immediate`, so this test also fails if the pick ever runs as a deferred
