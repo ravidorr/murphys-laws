@@ -681,6 +681,29 @@ describe('validateHomePage', () => {
     expect(validateHomePage(commented)).toEqual(['missing the app bundle loader']);
   });
 
+  it('reads script tags as a browser does: any case, whitespace or attributes on the end tag; the placeholder only as the loader accepts it', () => {
+    const upper = held.replace('<script>getElementById(\'app-entry\')</script>', '<SCRIPT >getElementById(\'app-entry\')</SCRIPT >')
+      .replace('</script></head>', '</script foo="bar"></head>');
+    expect(validateHomePage(upper)).toEqual([]);
+    expect(validateHomePage(held.replace('<script type="text/plain"', '<SCRIPT type="text/plain"'))).toEqual(['expected one app entry placeholder, found 0']);
+    expect(validateHomePage(held + '<script type="module" crossorigin src="/assets/index-AbCd1234.js"></script foo="bar">')).toEqual(['still has an ordinary app module script']);
+    expect(validateHomePage(held + '<SCRIPT type="module" crossorigin src="/assets/index-AbCd1234.js"></SCRIPT >')).toEqual(['still has an ordinary app module script']);
+    expect(validateHomePage(held + '<LINK REL="modulepreload" href="/assets/vendor-X.js">')).toEqual(['preloads the app bundle or its chunks, which defeats holding it back']);
+  });
+
+  it('takes the loader only from an inline script, not from one with a src or a type', () => {
+    const withoutLoader = held.replace('<script>getElementById(\'app-entry\')</script>', '');
+    expect(validateHomePage(withoutLoader + '<script src="/x.js">getElementById(\'app-entry\')</script>')).toEqual(['missing the app bundle loader']);
+    expect(validateHomePage(withoutLoader + '<script type="text/plain">getElementById(\'app-entry\')</script>')).toEqual(['missing the app bundle loader']);
+    expect(validateHomePage(withoutLoader + '<script nomodule>getElementById(\'app-entry\')</script >')).toEqual([]);
+  });
+
+  it('flags a placeholder the loader would refuse, so a build that moved the assets fails instead of losing the app', () => {
+    for (const src of ['https://cdn.example/assets/index-AbCd1234.js', '/assets/index-AbCd1234.js?v=1', '/assets/index-a/b.js']) {
+      expect(validateHomePage(held.replace('/assets/index-AbCd1234.js', src))).toEqual(['expected one app entry placeholder, found 0']);
+    }
+  });
+
   it('flags a preload of the bundle or of a chunk, which would fetch it while it is held back', () => {
     expect(validateHomePage(held + '<link rel="modulepreload" crossorigin href="/assets/vendor-X.js">'))
       .toEqual(['preloads the app bundle or its chunks, which defeats holding it back']);

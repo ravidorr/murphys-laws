@@ -854,7 +854,7 @@ function injectJsonLd(html: string, jsonLd: string): string {
   return html.replace('</head>', `${jsonLd}\n</head>`);
 }
 
-const APP_ENTRY_SCRIPT = /<script type="module" crossorigin src="([^"]+)"><\/script>/g;
+const APP_ENTRY_SCRIPT = /<script type="module" crossorigin src="([^"]+)"><\/script\b[^>]*>/gi;
 
 /**
  * Turns the app bundle's module script of dist/index.html into an inert placeholder (`#app-entry`, with the bundle URL
@@ -932,17 +932,21 @@ function validateGeneratedPage(html: string, expectations: GeneratedPageExpectat
 }
 
 /**
- * The built home page must hold the bundle: one placeholder naming it, no ordinary entry tag, the loader in a script of
- * its own, and no preload of an asset (a modulepreload link would fetch chunks while the bundle is held back).
+ * The built home page must hold the bundle: one placeholder naming it (in the form the loader accepts: type text/plain,
+ * data-src a file of /assets/), no ordinary entry tag, the loader in an inline script of its own (a script with a src
+ * or a type is not it), and no preload of an asset (a modulepreload link would fetch chunks while the bundle is held
+ * back). Script tags are matched as a browser reads them: in any case, with attributes or whitespace on the end tag. The placeholder is matched exactly as the loader accepts it (lower case).
  */
 function validateHomePage(html: string): string[] {
   const failures: string[] = [];
-  const placeholders = html.match(/<script type="text\/plain" id="app-entry" data-src="\/assets\/index-[^"]+\.js"><\/script>/g)?.length ?? 0;
+  const placeholders = html.match(/<script type="text\/plain" id="app-entry" data-src="\/assets\/index-[\w.-]+\.js"><\/script\b[^>]*>/g)?.length ?? 0;
   if (placeholders !== 1) failures.push(`expected one app entry placeholder, found ${placeholders}`);
-  if (/<script type="module" crossorigin src="\/assets\/index-/.test(html)) failures.push('still has an ordinary app module script');
-  const inlineScripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]!);
+  if (/<script type="module" crossorigin src="\/assets\/index-/i.test(html)) failures.push('still has an ordinary app module script');
+  const inlineScripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)]
+    .filter((match) => !/\b(?:src|type)\s*=/i.test(match[1]!))
+    .map((match) => match[2]!);
   if (!inlineScripts.some((script) => script.includes("getElementById('app-entry')"))) failures.push('missing the app bundle loader');
-  if (/<link[^>]+rel="modulepreload"[^>]*>/.test(html)) failures.push('preloads the app bundle or its chunks, which defeats holding it back');
+  if (/<link\b[^>]*\brel="modulepreload"[^>]*>/i.test(html)) failures.push('preloads the app bundle or its chunks, which defeats holding it back');
   return failures;
 }
 

@@ -54,7 +54,7 @@ function deferred(): { promise: Promise<unknown>; resolve: (value: unknown) => v
 
 describe('app bundle loader in index.html', () => {
   beforeEach(() => {
-    document.head.querySelectorAll('script').forEach((script) => script.remove());
+    document.head.querySelectorAll('script, #app-entry').forEach((element) => element.remove());
     history.replaceState(null, '', '/');
     delete window.__earlyLawOfDay;
   });
@@ -64,7 +64,7 @@ describe('app bundle loader in index.html', () => {
     vi.useRealTimers();
     delete (document as { readyState?: unknown }).readyState;
     delete window.__earlyLawOfDay;
-    document.head.querySelectorAll('script').forEach((script) => script.remove());
+    document.head.querySelectorAll('script, #app-entry').forEach((element) => element.remove());
   });
 
   it('is plain ES5, because a browser that cannot parse it silently skips the whole script', () => {
@@ -197,6 +197,63 @@ describe('app bundle loader in index.html', () => {
 
     expect(moduleScripts()).toHaveLength(1);
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  describe('trusts only the placeholder the SSG writes as a script source', () => {
+    function addElement(tag: string, attributes: Record<string, string>): void {
+      const element = document.createElement(tag);
+      element.id = 'app-entry';
+      for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, value);
+      document.head.appendChild(element);
+    }
+
+    it('accepts a text/plain script whose data-src is a file of /assets/', () => {
+      setEarlyRequest(undefined);
+      addElement('script', { type: 'text/plain', 'data-src': '/assets/index-AbCd_1-2.js' });
+
+      runLoader();
+
+      expect(moduleScripts().map((script) => script.getAttribute('src'))).toEqual(['/assets/index-AbCd_1-2.js']);
+    });
+
+    it.each([
+      ['a script of another type', 'script', { type: 'text/javascript', 'data-src': ENTRY_URL }],
+      ['a script without a type', 'script', { 'data-src': ENTRY_URL }],
+      ['another tag (DOM clobbering)', 'img', { type: 'text/plain', 'data-src': ENTRY_URL }],
+      ['an absolute URL', 'script', { type: 'text/plain', 'data-src': 'https://evil.example/x.js' }],
+      ['a protocol-relative URL', 'script', { type: 'text/plain', 'data-src': '//evil.example/x.js' }],
+      ['a javascript: URL', 'script', { type: 'text/plain', 'data-src': 'javascript:alert(1)//.js' }],
+      ['a data: URL', 'script', { type: 'text/plain', 'data-src': 'data:text/javascript,alert(1)//.js' }],
+      ['a path with a traversal', 'script', { type: 'text/plain', 'data-src': '/assets/../evil.js' }],
+      ['a path in a subdirectory', 'script', { type: 'text/plain', 'data-src': '/assets/sub/x.js' }],
+      ['a file outside /assets/', 'script', { type: 'text/plain', 'data-src': '/other/x.js' }],
+      ['a file that is not a script', 'script', { type: 'text/plain', 'data-src': '/assets/x.css' }],
+      ['a relative path', 'script', { type: 'text/plain', 'data-src': 'assets/x.js' }],
+      ['a data-src with a query', 'script', { type: 'text/plain', 'data-src': '/assets/x.js?a=1' }],
+      ['no data-src', 'script', { type: 'text/plain' }],
+    ])('adds no script for %s, on any trigger', async (_name, tag, attributes) => {
+      vi.useFakeTimers();
+      const early = deferred();
+      setEarlyRequest(early.promise);
+      addElement(tag, attributes);
+
+      runLoader();
+      early.resolve({ id: 7 });
+      await vi.advanceTimersByTimeAsync(HOLD_MS * 2);
+
+      expect(moduleScripts()).toHaveLength(0);
+    });
+
+    it('does not fall back to a later valid placeholder when an invalid element has the id first', () => {
+      setEarlyRequest(undefined);
+      addElement('img', { 'data-src': 'https://evil.example/x.js' });
+      addPlaceholder();
+
+      runLoader();
+
+      // getElementById returns the first element with the id: the clobbering element wins, and nothing is loaded from it
+      expect(moduleScripts()).toHaveLength(0);
+    });
   });
 
   it('still starts the bundle on the later trigger when adding it fails once, because only a successful add counts as started', async () => {
