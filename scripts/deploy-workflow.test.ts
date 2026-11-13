@@ -1401,6 +1401,24 @@ test('a failure that the script does not handle itself still fails the deploy, w
 });
 
 // ---------------------------------------------------------------------------------------------------------------
+// The check of the PM2 logs after the restart: backend/scripts/check-pm2-health.sh (tested in
+// backend/tests/scripts/check-pm2-health.test.ts, over sample `pm2 logs` output)
+
+test('the deploy marks the moment PM2 starts, then checks the logs with the script, which can only warn', () => {
+  const update = at(deployScript, 'pm2 update\n');
+  // `|| echo ...`: under `set -e` a failed touch would end the deploy after pm2 delete, with no API process running;
+  // and a check that did not run must be visible in the log, not hidden by `|| true`
+  const marker = at(deployScript, 'touch logs/.pm2-restart || echo "WARNING: ');
+  const start = at(deployScript, 'pm2 start ecosystem.config.cjs\n');
+  const check = at(deployScript, 'bash scripts/check-pm2-health.sh logs/.pm2-restart </dev/null || echo "WARNING: PM2 log check failed (exit $?)');
+  assert.doesNotMatch(deployScript, /check-pm2-health\.sh[^\n]*\|\| true/, 'a check that did not run is not hidden');
+  assert.ok(at(deployScript, restartMarker) < update && update < marker && marker < start && start < check, 'update, marker, start, check, in this order');
+  assert.ok(existsSync(path.join(rootDirectory, 'backend/scripts/check-pm2-health.sh')));
+  assert.doesNotMatch(deployScript, /pm2 logs murphys-api --lines 20 --nostream \|/, 'the pipe into grep, which matched the file name in the header of the error log, is gone');
+  assert.doesNotMatch(deployScript, /Errors detected in logs/, 'the warning is printed by the script');
+});
+
+// ---------------------------------------------------------------------------------------------------------------
 // GitHub's limit on the length of an expression
 
 // A workflow string that contains `${{ ... }}` is compiled into one expression, and GitHub rejects a workflow whose

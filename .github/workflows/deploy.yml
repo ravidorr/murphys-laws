@@ -429,6 +429,7 @@ jobs:
             # only after deleting the API so it cannot restart against files that
             # are newer than the installed dependencies or database schema.
             pm2 update
+            touch logs/.pm2-restart || echo "WARNING: no PM2 restart marker" >&2
             pm2 start ecosystem.config.cjs
             pm2 save
 
@@ -463,11 +464,7 @@ jobs:
             echo "Checking PM2 process status..."
             pm2 list
 
-            # Check for any error logs
-            echo "Checking for errors in PM2 logs..."
-            if pm2 logs murphys-api --lines 20 --nostream | grep -i "error\|module.*version"; then
-              echo "⚠️  WARNING: Errors detected in logs"
-            fi
+            bash scripts/check-pm2-health.sh logs/.pm2-restart </dev/null || echo "WARNING: PM2 log check failed (exit $?)" >&2
 
             echo "==> Health check: testing API endpoints"
             if ! npx tsx scripts/wait-for-health-check.ts \
