@@ -1647,7 +1647,10 @@ describe('buildStaticCategoriesContent', () => {
 describe('buildStaticCategoriesContent against the app template', () => {
   it('uses the heading and intro text of the app, so the pre-render and the app read the same', () => {
     const template = readFileSync(resolve(__dirname, '../src/views/templates/categories.html'), 'utf8');
-    const text = (html: string, tag: string) => (html.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`))?.[1] ?? '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    const text = (html: string, tag: string) => {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      return (doc.querySelector(tag)?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    };
     const content = buildStaticCategoriesContent([{ slug: 'murphys-love-laws', title: 'Love', law_count: 2 }]);
 
     expect(text(content, 'h1')).toBe(text(template, 'h1'));
