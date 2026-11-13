@@ -520,7 +520,7 @@ describe('API utilities', () => {
       fetchSpy.mockResolvedValue({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: async () => ({ law: { id: 1, title: 'Top Law' }, featured_date: '2025-10-29' })
+        json: async () => ({ law: { id: 1, text: 'Top law text', title: 'Top Law' }, featured_date: '2025-10-29' })
       });
 
       const result = await fetchLawOfTheDay();
@@ -530,7 +530,7 @@ describe('API utilities', () => {
         expect.any(Object)
       );
       expect(result).toEqual({
-        data: [{ id: 1, title: 'Top Law' }],
+        data: [{ id: 1, text: 'Top law text', title: 'Top Law' }],
         total: 1,
         limit: 1,
         offset: 0

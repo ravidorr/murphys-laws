@@ -299,6 +299,10 @@ describe('early Law of the Day script in index.html', () => {
     ['a payload without a law', () => Promise.resolve(jsonResponse({ law: null })), 'shape'],
     ['a law without text', () => Promise.resolve(jsonResponse({ law: { id: 1 } })), 'shape'],
     ['a law without an id', () => Promise.resolve(jsonResponse({ law: { text: 'No id' } })), 'shape'],
+    ['a law with an id that is a string', () => Promise.resolve(jsonResponse({ law: { id: '7', text: 'String id' } })), 'shape'],
+    ['a law with an id that is not a whole number', () => Promise.resolve(jsonResponse({ law: { id: 1.5, text: 'Half' } })), 'shape'],
+    ['a law with an id of 0', () => Promise.resolve(jsonResponse({ law: { id: 0, text: 'Zero' } })), 'shape'],
+    ['a law with a blank text', () => Promise.resolve(jsonResponse({ law: { id: 1, text: '   ' } })), 'shape'],
   ])('resolves to null instead of rejecting on %s, and records why', async (_name, respond, reason) => {
     const zone = mountPrerenderedZone();
     vi.stubGlobal('fetch', vi.fn().mockImplementation(respond));

@@ -20,9 +20,20 @@ function isFetchTransportError(error: unknown): boolean {
     error.name === 'TimeoutError' ||
     (
       error instanceof TypeError &&
-      /networkerror.*fetch|failed to fetch|load failed|network request failed/i.test(error.message)
+      /networkerror.*fetch|failed to fetch|load failed|network request failed|^network error$/i.test(error.message)
     )
   );
+}
+
+/** A response with a failure status, so a caller can report the status without reading it out of the message */
+export class ApiStatusError extends Error {
+  readonly status: number;
+
+  constructor(status: number) {
+    super(`API request failed: ${status}`);
+    this.name = 'ApiStatusError';
+    this.status = status;
+  }
 }
 
 /**
@@ -52,7 +63,7 @@ export async function fetchAPI(
     ...(cache ? { cache } : {}),
   });
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    throw new ApiStatusError(response.status);
   }
 
   // Check content-type if headers are available (may not be in test mocks)
@@ -190,10 +201,14 @@ export async function fetchLaws({ limit = 25, offset = 0, sort = 'score', order 
 
 /**
  * Fetches the Law of the Day
- * Returns the daily rotating law selected by the algorithm:
+ * Returns the daily rotating law, one per UTC day. The server (LawService.selectLawOfTheDay) picks it the first time
+ * the day's law is asked for (by the API or by the midnight cron, whichever comes first) and records the pick:
+ * - Only published laws are candidates, and a corollary of a published law is never picked (#344)
  * - Highest upvotes
- * - Not featured in last 365 days
+ * - Not featured in the last 365 days (when that leaves no candidate, the same order applies without this rule)
  * - If tie, sorted alphabetically by text
+ * A pick already recorded for the day is kept, the newest one whose law is still published, so the day's law changes
+ * only when that law is unpublished. A corollary recorded before the corollary rule stays that day's law.
  * When an early request (see index.html) is adopted, it and this call share one FETCH_TIMEOUT_MS window that starts
  * with the early request, so a call that is still pending then rejects with a TimeoutError at that deadline. Without
  * an early request the call gets a window of its own.
@@ -209,6 +224,32 @@ export async function fetchLawOfTheDay(): Promise<PaginatedResponse<Law>> {
 }
 
 const LAW_OF_THE_DAY_PATH = '/api/v1/law-of-day';
+
+/** The API answered, but not with a law the page can show (see lawShapeProblem). `reason` is the early request's name for it. */
+export class LawOfTheDayShapeError extends Error {
+  readonly reason = 'shape';
+
+  constructor(problem: string) {
+    super(`The Law of the Day response is not a law: ${problem}`);
+    this.name = 'LawOfTheDayShapeError';
+  }
+}
+
+/**
+ * What is wrong with a Law of the Day response, or null when it holds a law the page can show: an integer `id` above 0
+ * and a text with something in it, the two fields the renderer and the export need. The renderer already copes with
+ * any other field being missing or odd (counts go through Number.isFinite, strings through escapeHtml, attributions
+ * through Array.isArray). The inline script in index.html applies the same rule to the early request's answer, so a law adopted from it
+ * has passed the same check.
+ */
+function lawShapeProblem(payload: unknown): string | null {
+  const law = (payload as { law?: unknown } | null)?.law;
+  if (typeof law !== 'object' || law === null) return 'there is no law in it';
+  const { id, text } = law as { id?: unknown; text?: unknown };
+  if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0) return 'its id is missing or not a positive integer';
+  if (typeof text !== 'string' || text.trim() === '') return 'its text is missing or empty';
+  return null;
+}
 
 function timeoutError(): Error {
   const error = new Error('The Law of the Day request timed out');
@@ -244,6 +285,8 @@ async function requestLawOfTheDay(early: EarlyLawOfDay | null): Promise<Law> {
     // copy could show a count without the visitor's own vote next to their voted highlight.
     const cache = votedWithinCacheWindow() ? 'no-cache' : undefined;
     const payload = await Promise.race([fetchAPI(LAW_OF_THE_DAY_PATH, {}, { cache, timeoutMs: budget }), deadline]);
+    const problem = lawShapeProblem(payload);
+    if (problem) throw new LawOfTheDayShapeError(problem);
     return (payload as { law: Law }).law;
   } finally {
     clearTimeout(timer);
@@ -314,11 +357,69 @@ async function waitForEarlyLaw(early: EarlyLawOfDay): Promise<Law | null> {
   }
 }
 
+/**
+ * Error events are not sampled, so a broken API would send one from every visitor, and from every retry. The page
+ * therefore sends at most one Law of the Day event per page load (this module lives as long as the page does): the
+ * first failure to be reported, whether it is the early request's, the app's own request or the render. Later ones
+ * still leave a breadcrumb. Sentry's `beforeSend` (src/main.ts) only filters by message and stack, so this has to be
+ * decided where the event is sent. The early request's report always comes first (takeEarlyLawOfDay hands the request
+ * out once, before the app asks for itself), so it sets the flag without checking it.
+ */
+let lawOfTheDayReported = false;
+
+/** True the first time it is asked, and false from then on */
+function claimLawOfTheDayReport(): boolean {
+  const first = !lawOfTheDayReported;
+  lawOfTheDayReported = true;
+  return first;
+}
+
 function reportEarlyFailure(reason: string, extra: Record<string, string> = {}): void {
   const message = `Early Law of the Day failed: ${reason}`;
   Sentry.addBreadcrumb({ category: 'law-of-day', level: 'warning', message });
   if (!EARLY_TRANSPORT_FAILURES.has(reason)) {
+    lawOfTheDayReported = true;
     Sentry.captureMessage(message, { level: 'warning', extra: { reason, ...extra } });
+  }
+}
+
+/** Names why the app's own Law of the Day request failed, in the early request's words (see index.html) */
+function lawOfTheDayFailureReason(error: unknown): string {
+  // An answer, whatever it says, proves the network works, so only the other failures can be blamed on being offline
+  if (error instanceof LawOfTheDayShapeError) return error.reason;
+  if (error instanceof ApiStatusError) return String(error.status);
+  if (navigator.onLine === false) return 'network';
+  if (error instanceof SyntaxError) return 'parse';
+  if (isFetchTransportError(error)) {
+    const { name } = error as { name: string };
+    return name === 'TimeoutError' ? 'timeout' : name === 'AbortError' ? 'abort' : 'network';
+  }
+  return 'error';
+}
+
+/**
+ * Reports that the app's own Law of the Day request failed (a failure status, an answer that is not a law, a body
+ * that is not JSON), with the reason and the detail as context. Outcomes that are expected on a bad connection
+ * (EARLY_TRANSPORT_FAILURES, and a failure without an answer while the browser is offline) are only a breadcrumb, and so is
+ * everything after the first event of the page load (see lawOfTheDayReported).
+ */
+export function reportLawOfTheDayFailure(error: unknown): void {
+  const reason = lawOfTheDayFailureReason(error);
+  const message = `Law of the Day failed to load: ${reason}`;
+  Sentry.addBreadcrumb({ category: 'law-of-day', level: 'warning', message });
+  if (EARLY_TRANSPORT_FAILURES.has(reason) || !claimLawOfTheDayReport()) return;
+  const detail = error instanceof Error ? error.message : String(error);
+  Sentry.captureMessage(message, { level: 'error', extra: { reason, detail } });
+}
+
+/**
+ * Reports that showing the Law of the Day threw, with its stack. That is a bug in the page, not a failed request, so
+ * it is never treated as a transient outcome; it still counts against the one event of the page load.
+ */
+export function reportLawOfTheDayRenderFailure(error: unknown): void {
+  Sentry.addBreadcrumb({ category: 'law-of-day', level: 'error', message: 'Law of the Day failed to render' });
+  if (claimLawOfTheDayReport()) {
+    Sentry.captureException(error, { extra: { stage: 'render' } });
   }
 }
 

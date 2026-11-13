@@ -8,6 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The home page now reports a Law of the Day that fails to load, and checks what the API sends (issue #347). What was
+  wrong: `fetchAndRender()` in `web/src/views/home.ts` ended in a `.catch` that showed the error state and told nobody,
+  so a broken `/api/v1/law-of-day` stayed invisible until a visitor complained; the same `.catch` also caught an
+  exception thrown while showing the law and presented it as "could not be loaded", with no trace; and the only check of
+  the answer was that it had a first item, so a law without an `id` or a `text` went straight to the renderer and the
+  export content. What changed: `requestLawOfTheDay` (`web/src/utils/api.ts`) now checks the law once, where the answer
+  arrives (an integer `id` above 0 and a text with something in it, the two fields the renderer and the export need; the
+  inline script in `index.html` applies the same rule to the early request's answer, where it used to accept any truthy
+  `id`), and throws a `LawOfTheDayShapeError` whose `reason` is `shape`; `fetchAPI` throws an `ApiStatusError` that carries the
+  HTTP status (its message is unchanged). The home view handles the request and the rendering separately: a request
+  that failed is reported with `reportLawOfTheDayFailure` (a Sentry message such as `Law of the Day failed to load: 503`
+  or `...: shape`, with the reason and the detail as context), and an exception while showing the law is reported with
+  `Sentry.captureException` (`stage: render`). Failures that are expected on a bad connection (timeout, abort, network,
+  and any failure while the browser is offline) are only a breadcrumb, as for the early request. Error events are not
+  sampled, so the page sends at most one Law of the Day event per page load, shared with the early request's report:
+  later failures, retries included, leave a breadcrumb only. Sentry's `beforeSend` in `main.ts` only filters by message
+  and stack, so the limit is decided where the event is sent. The error state and its retry button are unchanged. A
+  response without a law (`{ "law": null }`) used to show "no daily law available"; it is now the error state with the
+  retry button, like the 404 the API sends when no law is published. The comment above `fetchLawOfTheDay()` now lists
+  the whole selection rule of `LawService.selectLawOfTheDay` (published laws only, no corollary of a published law,
+  the 365-day rule and its fallback, and a pick already recorded for the day is kept), which is the second part of issue
+  #356. New tests: `home-law-of-day-failures.test.ts` (failure status, malformed payloads, transient failures, offline, a
+  render exception, one event per page load, the retry). Web bumped to `3.4.128`; root to `2.6.258`.
 - The "Browse Murphy's Laws by Category" page (`/categories`) is redesigned (issue #346). What was wrong: the page nested
   one `.categories-grid` inside another, so the seven category groups were laid out as columns of a three-column grid
   (a ragged 3 + 3 + 1 arrangement, "Specialized" alone in a column with 22 cards) and the page was 8,218 px tall at

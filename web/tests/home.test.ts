@@ -200,7 +200,7 @@ describe('Home view', () => {
     });
   });
 
-  it('keeps a stable daily-law fallback when no law is available', async () => {
+  it('keeps a stable error state with a retry when the response holds no law', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ law: null })
@@ -209,13 +209,14 @@ describe('Home view', () => {
     const el = Home({ onNavigate: vi.fn() });
 
     await vi.waitFor(() => {
-      expect(el.querySelector('[data-home-zone="law-of-day"]')?.getAttribute('data-daily-law-state')).toBe('empty');
+      expect(el.querySelector('[data-home-zone="law-of-day"]')?.getAttribute('data-daily-law-state')).toBe('error');
     });
 
     const dailyLawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]')!;
     expect(dailyLawZone.classList.contains('min-h-400')).toBe(true);
     expect(dailyLawZone.getAttribute('aria-busy')).toBe('false');
-    expect(dailyLawZone.textContent).toMatch(/no daily law available/i);
+    expect(dailyLawZone.textContent).toMatch(/daily law could not be loaded/i);
+    expect(dailyLawZone.querySelector('[data-action="retry"]')).toBeTruthy();
     expect(dailyLawZone.querySelector('[role="status"]')).toBeNull();
   });
 
