@@ -4,10 +4,25 @@ import { fileURLToPath } from 'node:url';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import legacy from '@vitejs/plugin-legacy';
 import { earlyApiBasePlugin } from './scripts/early-api-base.ts';
+import { resolveAppRelease } from './scripts/app-release.ts';
+import rootPackage from '../package.json';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// One release name for the whole build, derived from the commit and never from the clock: it is compiled into the
+// bundle (Sentry.init in src/main.ts) and names the release the Sentry plugin uploads the source maps to. A
+// timestamp would give the entry chunk a new content hash on every build.
+// A build that uploads source maps must know its commit: a shared `-dev` release would mix the maps of different builds.
+const APP_RELEASE = resolveAppRelease({
+  env: process.env,
+  packageVersion: rootPackage.version,
+  requireCommit: process.env.SENTRY_UPLOAD === 'true',
+});
+
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_RELEASE),
+  },
   build: {
     // Required for Sentry source maps. 'hidden' still emits the .map files for the upload but leaves out the
     // //# sourceMappingURL comment: the upload deletes the maps from dist, so the comment pointed at a 404.
@@ -35,7 +50,7 @@ export default defineConfig({
           filesToDeleteAfterUpload: ['./dist/**/*.map'],
         },
         release: {
-          name: process.env.VITE_APP_VERSION || `murphys-laws-web@${Date.now()}`,
+          name: APP_RELEASE,
         },
       })
       : undefined,
