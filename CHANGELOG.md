@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Stopped the deploy from printing "Errors detected in logs" after every healthy release (issue #349). What was wrong:
+  the deploy piped `pm2 logs murphys-api --lines 20 --nostream` into `grep -i "error\|module.*version"`, and PM2 prints
+  a header before the lines of each log file, so the header of the error log
+  (`/root/murphys-laws/backend/logs/api-error-1.log last 20 lines:`) matched on the word "error" in a file name, while the
+  last 20 lines held no error. The check is now `backend/scripts/check-pm2-health.sh`, which skips the banner and the
+  headers and still looks for `error` and `module.*version` (the native module mismatch of
+  `shared/docs/PREVENTING-502-ERRORS.md`) in the log lines. It also skips a log file that was not written to since the
+  restart: the deploy touches `backend/logs/.pm2-restart` just before `pm2 start`, and a file older than it holds only
+  output of earlier runs (a tie counts as written after the restart, so a startup crash is never skipped; PM2 does not
+  timestamp the lines here, so the lines of a file that was written to are still the last 20, which may include older ones). It
+  only warns, as before; neither a failure of the script nor of the `touch` can fail the deploy, and each prints a
+  WARNING instead of passing unnoticed. A header of an unexpected shape cannot make it skip the next file. `backend/tests/scripts/check-pm2-health.test.ts` runs it over sample `pm2 logs` output (a healthy deploy prints
+  nothing; an error written after the restart still warns) and `scripts/deploy-workflow.test.ts` checks the wiring. The
+  deploy script is 20 characters shorter (14,927, from 14,947). Why `backend/logs` holds over a hundred numbered
+  `api-error-N.log` files was not confirmed: the lead is that `backend/ecosystem.config.cjs` sets `error_file` and `out_file` without `merge_logs`, so PM2
+  adds the process id to the names, and the deploy runs `pm2 delete all` and `pm2 start`; the ecosystem file is unchanged.
+  Backend bumped to `2.3.101`; root to `2.6.263`.
+>>>>>>> Stashed changes
 - The health monitor now runs a check that could not run again, twice and 45 seconds apart, before it emails "Health
   Check Could Not Run". What was wrong: the 2026-11-13 07:40 UTC mail (`Cannot find package .../dotenv/index.js`) was not
   a broken install. The deploy of 07:37 UTC was inside `npm ci`, which empties `backend/node_modules` for about 20 to 60
