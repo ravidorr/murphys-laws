@@ -212,6 +212,22 @@ async function deploy(): Promise<void> {
     'Applying database migrations'
   );
 
+  // The files and dependencies are in place, and the job first runs at 00:00 UTC, so this does not wait for the
+  // restart. It also never writes an empty root crontab when it removes the old select-law-of-day line. Like the
+  // deploy workflow, a failure is only a warning: the API picks the law on the first request of the day when the
+  // job is not installed, and holding back the release for it would be worse.
+  try {
+    exec(
+      `ssh ${DROPLET_HOST} "sudo bash ${DROPLET_PATH}/backend/scripts/install-law-of-day-cron.sh ${DROPLET_PATH}"`,
+      'Installing the Law of the Day schedule'
+    );
+  } catch (error) {
+    log(
+      `WARNING: the Law of the Day schedule was not installed (${error instanceof Error ? error.message : String(error)}; see the message above); the first request of each day picks the law until a deploy installs it, and the deployment continues`,
+      'yellow'
+    );
+  }
+
   log('\nRestarting PM2 services...', 'blue');
   exec(
     `ssh ${DROPLET_HOST} "sudo -u root bash -c 'source ~/.nvm/nvm.sh && cd ${DROPLET_PATH}/backend && pm2 restart ecosystem.config.cjs'"`,
