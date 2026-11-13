@@ -99,6 +99,8 @@ when `npm ci` itself is retried) and a check started then crashes. The last atte
 is healthy and sends no "could not run" mail (the output of the failed attempts stays in the monitor log), and one
 that finds an outage is counted as one. A retry can land while the same deploy restarts the API and then send
 "Health Check Failed (1/3)"; the next healthy run clears it.
+The same two retries apply when the check ran but the API answered 502, 503 or 504, which is what a deploy
+restarting the API looks like from outside (the 2026-11-13 20:55 UTC mail). Other failures are counted at once.
 What it emails, and how often:
 
 - First failure: "Health Check Failed (1/3)". If that mail could not be sent, the next failing run tries
