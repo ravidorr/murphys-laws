@@ -181,7 +181,8 @@
             if (!response.ok) return settle(null, String(response.status));
             return response.json().then(function (payload) {
               var law = payload && payload.law;
-              if (law && law.id && typeof law.text === 'string') settle(law, null);
+              // The same rule as lawShapeProblem in src/utils/api.ts: a whole number id above 0 and a text with something in it
+              if (law && typeof law.id === 'number' && law.id > 0 && Math.floor(law.id) === law.id && typeof law.text === 'string' && law.text.trim() !== '') settle(law, null);
               else settle(null, 'shape');
             }, function (error) {
               // A body that is not JSON is a SyntaxError; anything else here is a connection lost while reading it

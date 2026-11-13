@@ -5,7 +5,13 @@ import { SodCalculatorSimple } from '@components/sod-calculator-simple.ts';
 import { Trending } from '@components/trending.ts';
 import { DailyEmailSignup } from '@components/daily-email-signup.ts';
 import { ARCHIVE_SEARCH_HTML } from './home-archive-search.ts';
-import { consumeEarlyLawOfTheDay, fetchLawOfTheDay, peekEarlyLawOfTheDay } from '../utils/api.ts';
+import {
+  consumeEarlyLawOfTheDay,
+  fetchLawOfTheDay,
+  peekEarlyLawOfTheDay,
+  reportLawOfTheDayFailure,
+  reportLawOfTheDayRenderFailure
+} from '../utils/api.ts';
 import { triggerAdSense } from '../utils/ads.ts';
 import { setExportContent, clearExportContent, ContentType } from '../utils/export-context.ts';
 import { hydrateIcons } from '@utils/icons.ts';
@@ -197,28 +203,47 @@ export function Home({ onNavigate, onSearch }: { onNavigate: OnNavigate; onSearc
     }
   }
 
+  // The error state with its retry button; the page around it keeps working
+  function showDailyLawError() {
+    const currentLawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]');
+    if (currentLawZone) {
+      renderDailyLawZone(currentLawZone, null, onNavigate, 'error');
+    }
+    try {
+      // No law: clears the export content and still signals the ad listener, like a law would
+      onDailyLawShown(null);
+    } catch (error) {
+      reportLawOfTheDayRenderFailure(error);
+    }
+  }
+
   function fetchAndRender() {
     const lawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]')!;
     renderDailyLawZone(lawZone, null, onNavigate, 'loading');
 
-    fetchLawOfTheDay()
-      .then((lawJson): void => {
-        const lawOfTheDay = lawJson && lawJson.data && lawJson.data[0] ? lawJson.data[0] : null;
-
-        const currentLawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]');
-        if (currentLawZone) {
-          renderDailyLawZone(currentLawZone, lawOfTheDay, onNavigate, lawOfTheDay ? 'ready' : 'empty');
+    // Two separate steps, so that each failure gets its own handling: a request that failed, or that answered with
+    // something that is not a law, is reported with its reason, and an exception thrown while showing the law is a bug
+    // of the page. fetchLawOfTheDay only resolves with a law: the app's own request is checked in requestLawOfTheDay and an
+    // adopted early request by the inline script in index.html.
+    fetchLawOfTheDay().then(
+      (lawJson): void => {
+        const lawOfTheDay = lawJson.data[0]!;
+        try {
+          const currentLawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]');
+          if (currentLawZone) {
+            renderDailyLawZone(currentLawZone, lawOfTheDay, onNavigate, 'ready');
+          }
+          onDailyLawShown(lawOfTheDay);
+        } catch (error) {
+          reportLawOfTheDayRenderFailure(error);
+          showDailyLawError();
         }
-        onDailyLawShown(lawOfTheDay);
-      })
-      .catch(() => {
-        const currentLawZone = el.querySelector<HTMLElement>('[data-home-zone="law-of-day"]');
-        if (currentLawZone) {
-          renderDailyLawZone(currentLawZone, null, onNavigate, 'error');
-        }
-        // No law: clears the export content and still signals the ad listener, like a law would
-        onDailyLawShown(null);
-      });
+      },
+      (error: unknown): void => {
+        reportLawOfTheDayFailure(error);
+        showDailyLawError();
+      }
+    );
   }
 
   // The complete page structure is already rendered; only the reserved daily-law slot changes.

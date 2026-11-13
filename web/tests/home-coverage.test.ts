@@ -23,8 +23,15 @@ describe('Home view - Coverage', () => {
   });
 
   it('clicking retry button triggers another fetch (L165 B0)', async () => {
-    // Make triggerAdSense throw so the .then() callback fails → outer .catch() fires
-    // This is the only way to reach lines 145-154 (the error/retry state)
+    // A valid law, so the request succeeds and it is the rendering that fails: make triggerAdSense throw once, so the
+    // success handler throws and the error/retry state is shown
+    const lawOfTheDayAnswer = (input: string | URL | Request) => Promise.resolve({
+      ok: true,
+      json: async () => String(input).includes('/law-of-day')
+        ? { law: { id: 1, text: 'A law that is shown.', upvotes: 0, downvotes: 0 } }
+        : { data: [] }
+    });
+    globalThis.fetch = vi.fn().mockImplementation(lawOfTheDayAnswer);
     vi.spyOn(adsModule, 'triggerAdSense').mockImplementationOnce(() => {
       throw new Error('ads failed for test');
     });
@@ -39,12 +46,7 @@ describe('Home view - Coverage', () => {
     const retryBtn = el.querySelector('[data-action="retry"]') as HTMLElement | null;
     expect(retryBtn).toBeTruthy();
 
-    // Mock fetch to succeed on retry, but don't throw this time
-    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [] })
-    } as Response);
-
+    // The retry succeeds, and triggerAdSense does not throw this time
     const fetchCallsBefore = vi.mocked(globalThis.fetch).mock.calls.length;
     retryBtn!.click();
 
