@@ -1,4 +1,4 @@
-import { chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { readLog, runFile, sandbox, scriptsDir, type Sandbox } from '../helpers/shell-sandbox.ts';
@@ -7,8 +7,10 @@ import { readLog, runFile, sandbox, scriptsDir, type Sandbox } from '../helpers/
 // fake `crontab` that keeps root's crontab in a file. Nothing outside the sandbox is touched.
 
 const installer = path.join(scriptsDir, 'install-law-of-day-cron.sh');
-const cronSource = path.resolve(scriptsDir, '../config/cron.d/murphys-laws-law-of-day');
+const cronDir = path.resolve(scriptsDir, '../config/cron.d');
+const cronSource = path.join(cronDir, 'murphys-laws-law-of-day');
 const INSTALLED = 'murphys-laws-law-of-day';
+const NOTIFICATIONS = 'murphys-laws-daily-notifications';
 const OLD_LINE = '0 0 * * * cd /root/murphys-laws && /usr/bin/node backend/scripts/select-law-of-day.mjs >> logs/law-of-day.log 2>&1';
 const BACKUP_LINE = '0 4 * * * /usr/local/bin/backup-murphys.sh >> /var/log/backup-murphys.log 2>&1';
 const HEALTH_LINE = '*/5 * * * * /usr/local/bin/health-monitor.sh > /dev/null 2>&1';
@@ -62,6 +64,14 @@ function setup({ crontab, withSource = true, withTsx = true, withJobScript = tru
   mkdirSync(cronD);
   if (withSource) {
     copyFileSync(cronSource, path.join(app, 'backend/config/cron.d', INSTALLED));
+    copyFileSync(path.join(cronDir, NOTIFICATIONS), path.join(app, 'backend/config/cron.d', NOTIFICATIONS));
+  }
+  for (const helperScript of ['run-cron-job.sh', 'alert-email.sh']) {
+    copyFileSync(path.join(scriptsDir, helperScript), path.join(app, 'backend/scripts', helperScript));
+  }
+  chmodSync(path.join(app, 'backend/scripts/run-cron-job.sh'), 0o755);
+  for (const jobScript of ['send-daily-law-email.ts', 'send-daily-law-push.ts']) {
+    writeFileSync(path.join(app, 'backend/scripts', jobScript), '// current\n');
   }
   if (withTsx) {
     mkdirSync(path.join(app, 'backend/node_modules/tsx/dist'), { recursive: true });
@@ -98,8 +108,8 @@ function setup({ crontab, withSource = true, withTsx = true, withJobScript = tru
 }
 
 /** The schedule file as the installer writes it: the repository one with the node of the job in its command. */
-const scheduleFor = (nodePath: string): string =>
-  readFileSync(cronSource, 'utf8')
+const scheduleFor = (nodePath: string, source: string = cronSource): string =>
+  readFileSync(source, 'utf8')
     .split('\n')
     .map((line) => (line.startsWith('#') ? line : line.replace('/usr/bin/node', nodePath)))
     .join('\n');
@@ -118,7 +128,8 @@ describe('install-law-of-day-cron.sh', () => {
     expect(statSync(install.installed).mode & 0o7777).toBe(0o644);
     expect(statSync(install.installed).isFile()).toBe(true);
     expect(result.stdout).toContain('Installed');
-    expect(result.stdout).toContain(`the job runs ${install.node}, v22.20.0`);
+    expect(result.stdout).toContain(`the jobs run ${install.node}, v22.20.0`);
+    expect(readFileSync(path.join(install.cronD, NOTIFICATIONS), 'utf8')).toBe(scheduleFor(install.node, path.join(cronDir, NOTIFICATIONS)));
     expect(result.stderr).toBe('');
   });
 
@@ -128,7 +139,7 @@ describe('install-law-of-day-cron.sh', () => {
     expect(install.run().status).toBe(0);
 
     const installed = readFileSync(install.installed, 'utf8');
-    expect(installed).toContain(`&& ${install.node} node_modules/tsx/dist/cli.mjs scripts/select-law-of-day.ts; }`);
+    expect(installed).toContain(`run-cron-job.sh law-of-day ${install.node} node_modules/tsx/dist/cli.mjs scripts/select-law-of-day.ts\n`);
     expect(installed.split('\n').filter((line) => !line.startsWith('#') && line.includes('/usr/bin/node'))).toEqual([]);
     // the comments are the repository's own
     expect(installed.split('\n').filter((line) => line.startsWith('#'))).toEqual(readFileSync(cronSource, 'utf8').split('\n').filter((line) => line.startsWith('#')));
@@ -151,7 +162,7 @@ describe('install-law-of-day-cron.sh', () => {
     const result = install.run({ LAW_OF_DAY_NODE_BIN: '' });
 
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain("the node for the Law of the Day job, '', is not an absolute path of plain characters");
+    expect(result.stderr).toContain("the node for the cron jobs, '', is not an absolute path of plain characters");
     expect(readdirSync(install.cronD)).toEqual([]);
     expect(readFileSync(install.crontabFile, 'utf8')).toBe(`${OLD_LINE}\n`);
   });
@@ -180,8 +191,9 @@ describe('install-law-of-day-cron.sh', () => {
     const original = readFileSync(cronSource, 'utf8');
     const cases: [string, (text: string) => string, string][] = [
       ['has no final newline', (text) => text.trimEnd(), 'does not end with a newline'],
-      ['has a % in the job', (text) => text.replace('select-law-of-day.ts;', 'select-law-of-day.ts --date=%Y;'), 'has a % outside its comments'],
-      ['does not run the node on the script', (text) => text.replace('select-law-of-day.ts;', 'other.ts;'), 'does not run'],
+      ['has a % in the job', (text) => text.replace('select-law-of-day.ts', 'select-law-of-day.ts --date=%Y'), 'has a % outside its comments'],
+      ['does not run the node on the script', (text) => text.replace('select-law-of-day.ts', 'other.ts'), 'other.ts is missing'],
+      ['does not go through run-cron-job.sh', (text) => text.replace('run-cron-job.sh law-of-day ', ''), 'does not run'],
       ['only has the job in a comment', (text) => text.replace(/^0 0 /m, '# 0 0 '), 'does not run'],
     ];
     for (const [label, change, message] of cases) {
@@ -206,7 +218,7 @@ describe('install-law-of-day-cron.sh', () => {
 
     expect(install.run().status).toBe(0);
 
-    expect(readdirSync(install.cronD).sort()).toEqual([INSTALLED, 'other-job']);
+    expect(readdirSync(install.cronD).sort()).toEqual([NOTIFICATIONS, INSTALLED, 'other-job']);
     expect(readFileSync(path.join(install.cronD, 'other-job'), 'utf8')).toBe('# someone else\n');
   });
 
@@ -665,8 +677,10 @@ describe('install-law-of-day-cron.sh', () => {
       expect(install.run().status).toBe(0);
 
       const calls = readLog(chownLog).trim().split('\n');
-      expect(calls).toHaveLength(1);
-      expect(calls[0]).toMatch(new RegExp(`^root:root .*/etc-cron\\.d/\\.${INSTALLED}\\.[A-Za-z0-9]+$`));
+      expect(calls).toHaveLength(2);
+      for (const name of [NOTIFICATIONS, INSTALLED]) {
+        expect(calls.some((call) => new RegExp(`^root:root .*/etc-cron\\.d/\\.${name}\\.[A-Za-z0-9]+$`).test(call))).toBe(true);
+      }
     });
 
     it('is not touched when not root', () => {
@@ -704,6 +718,72 @@ describe('install-law-of-day-cron.sh', () => {
     expect(result.status).not.toBe(0);
     expect(readFileSync(install.crontabFile, 'utf8')).toBe(`${OLD_LINE}\n`);
     expect(readLog(install.crontabLog)).toBe('');
+  });
+});
+
+describe('all the schedules together', () => {
+  it('installs none of them when one fails its checks, and leaves the installed ones as they were', () => {
+    const install = setup();
+    writeFileSync(install.installed, 'previous law of the day\n');
+    const notifications = path.join(install.app, 'backend/config/cron.d', NOTIFICATIONS);
+    writeFileSync(notifications, readFileSync(notifications, 'utf8').replace('send-daily-law-push.ts', 'missing-push.ts'));
+
+    const result = install.run();
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('missing-push.ts is missing');
+    expect(readFileSync(install.installed, 'utf8')).toBe('previous law of the day\n');
+    expect(readdirSync(install.cronD)).toEqual([INSTALLED]);
+  });
+
+  it('installs the schedule of every murphys-laws-* file, and no other file of the directory', () => {
+    const install = setup();
+    writeFileSync(path.join(install.app, 'backend/config/cron.d', 'README'), 'not a schedule\n');
+
+    expect(install.run().status).toBe(0);
+
+    expect(readdirSync(install.cronD).sort()).toEqual([NOTIFICATIONS, INSTALLED]);
+  });
+
+  it('refuses when run-cron-job.sh is missing or not executable, since no job could start', () => {
+    const missing = setup();
+    rmSync(path.join(missing.app, 'backend/scripts/run-cron-job.sh'));
+    const notExecutable = setup();
+    chmodSync(path.join(notExecutable.app, 'backend/scripts/run-cron-job.sh'), 0o644);
+
+    expect(missing.run().stderr).toContain('run-cron-job.sh is missing');
+    expect(notExecutable.run().stderr).toContain('run-cron-job.sh is not executable');
+    expect(readdirSync(missing.cronD)).toEqual([]);
+    expect(readdirSync(notExecutable.cronD)).toEqual([]);
+  });
+
+  it('refuses a schedule file with no job in it', () => {
+    const install = setup();
+    writeFileSync(path.join(install.app, 'backend/config/cron.d', NOTIFICATIONS), '# only a comment\n');
+
+    const result = install.run();
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(`${NOTIFICATIONS} does not run`);
+    expect(readdirSync(install.cronD)).toEqual([]);
+  });
+});
+
+describe('the daily notifications schedule file', () => {
+  const file = path.join(cronDir, NOTIFICATIONS);
+  const text = readFileSync(file, 'utf8');
+  const jobs = text.split('\n').filter((line) => /^\d/.test(line));
+
+  it('has a name cron reads and ends with a newline', () => {
+    expect(NOTIFICATIONS).toMatch(/^[A-Za-z0-9_-]+$/);
+    expect(text.endsWith('\n')).toBe(true);
+  });
+
+  it('sends the email at 06:15 UTC and the push at 06:20 UTC, after the 00:00 UTC pick, each through run-cron-job.sh', () => {
+    expect(jobs).toEqual([
+      '15 6 * * * root /root/murphys-laws/backend/scripts/run-cron-job.sh daily-email /usr/bin/node node_modules/tsx/dist/cli.mjs scripts/send-daily-law-email.ts',
+      '20 6 * * * root /root/murphys-laws/backend/scripts/run-cron-job.sh daily-push /usr/bin/node node_modules/tsx/dist/cli.mjs scripts/send-daily-law-push.ts',
+    ]);
   });
 });
 

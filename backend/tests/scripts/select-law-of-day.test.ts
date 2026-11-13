@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import Database from 'better-sqlite3';
@@ -76,8 +76,8 @@ describe('the cron entry', () => {
 
   it('uses absolute paths, no % (cron turns it into a newline) and a log directory the deploy creates', () => {
     expect(command).not.toContain('%');
-    expect(command).toMatch(/^\{ cd \/root\/murphys-laws\/backend && \/usr\/bin\/node [^;]*; \} >> /);
-    expect(command).toMatch(/; \} >> \/root\/murphys-laws\/backend\/logs\/law-of-day\.log 2>&1$/);
+    // run-cron-job.sh runs it from backend/ and appends to backend/logs/law-of-day.log, which the deploy creates
+    expect(command).toMatch(/^\/root\/murphys-laws\/backend\/scripts\/run-cron-job\.sh law-of-day \/usr\/bin\/node node_modules\//);
   });
 
   it('runs a script the repository ships, with a tsx that is a production dependency', () => {
@@ -96,7 +96,10 @@ describe('the cron entry', () => {
     const backend = path.join(app, 'backend');
     mkdirSync(path.join(backend, 'scripts'), { recursive: true });
     mkdirSync(path.join(backend, 'logs'));
-    copyFileSync(path.join(backendDir, 'scripts/select-law-of-day.ts'), path.join(backend, 'scripts/select-law-of-day.ts'));
+    for (const script of ['select-law-of-day.ts', 'run-cron-job.sh', 'alert-email.sh']) {
+      copyFileSync(path.join(backendDir, 'scripts', script), path.join(backend, 'scripts', script));
+    }
+    chmodSync(path.join(backend, 'scripts/run-cron-job.sh'), 0o755);
     symlinkSync(path.join(backendDir, 'src'), path.join(backend, 'src'));
     // The node_modules that holds tsx: backend/node_modules on the server, the hoisted root one in a workspace checkout
     const nodeModules = path.dirname(path.dirname(createRequire(import.meta.url).resolve('tsx/package.json')));
