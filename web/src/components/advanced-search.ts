@@ -9,6 +9,8 @@ import {
   setCachedCategories,
   deferUntilIdle
 } from '../utils/category-cache.ts';
+import { registerFilterLawsTool } from '../utils/webmcp-tools.ts';
+import type { CleanableElement } from '../types/app.d.ts';
 
 const SUBMITTERS_DEBOUNCE_MS = 250;
 const SUBMITTERS_LIMIT = 20;
@@ -324,6 +326,9 @@ export function AdvancedSearch({
   populateDropdowns();
   setupLazyLoad();
   setupAttributionTypeahead();
+
+  // The tool applies filters through the same callback as the Search button
+  (el as CleanableElement).cleanup = registerFilterLawsTool(onSearch);
 
   const cachedCategories = getCachedCategories();
   if (cachedCategories && cachedCategories.length > 0) {

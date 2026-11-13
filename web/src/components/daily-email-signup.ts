@@ -1,6 +1,8 @@
 import { apiPost } from '../utils/request.ts';
 import { trackProductEvent } from '../utils/metrics.ts';
 import { disablePush, enablePush, getPushSubscription, isPushSupported } from '../utils/push-notifications.ts';
+import { registerDailyEmailTool } from '../utils/webmcp-tools.ts';
+import type { CleanableElement } from '../types/app.d.ts';
 
 const FORM_HTML = `
   <div class="section-header">
@@ -52,6 +54,8 @@ export function DailyEmailSignup(): HTMLElement {
       button.disabled = false;
     }
   });
+
+  (section as CleanableElement).cleanup = registerDailyEmailTool(form, input);
 
   setUpPushToggle(section);
   return section;

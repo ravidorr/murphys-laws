@@ -6,6 +6,8 @@ import * as structuredData from '../src/modules/structured-data.js';
 import type { CleanableElement } from '../src/types/app.js';
 
 const breadcrumbMockState = vi.hoisted(() => ({ returnNull: false }));
+// Stands in for the cleanup the real AdvancedSearch uses to drop its WebMCP tool
+const advancedSearchCleanup = vi.hoisted(() => vi.fn());
 
 // Mock Sentry
 vi.mock('@sentry/browser', () => ({
@@ -81,6 +83,7 @@ vi.mock('../src/components/advanced-search.js', () => {
       const el = document.createElement('section');
       el.className = 'section section-card mb-12';
       el.innerHTML = '<div class="test-advanced-search">Advanced Search Mock</div>';
+      (el as HTMLElement & { cleanup?: () => void }).cleanup = advancedSearchCleanup;
       return el;
     }),
     getLocalThis: (): AdvancedSearchMockState => localThis
@@ -1026,6 +1029,26 @@ describe('CategoryDetail view', () => {
       (el as CleanableElement).cleanup!();
 
       expect(clearExportContent).toHaveBeenCalled();
+    });
+
+    it('removes the search component\'s agent tool, which the router never collects from async content', async () => {
+      const el = CategoryDetail({ categoryId, onNavigate });
+      await new Promise(resolve => setTimeout(resolve, 10));
+      expect(advancedSearchCleanup).not.toHaveBeenCalled();
+
+      (el as CleanableElement).cleanup!();
+
+      expect(advancedSearchCleanup).toHaveBeenCalledTimes(1);
+    });
+
+    it('removes the agent tool of a search component created after the visitor already left', async () => {
+      const el = CategoryDetail({ categoryId, onNavigate });
+      (el as CleanableElement).cleanup!();
+      expect(advancedSearchCleanup).not.toHaveBeenCalled();
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(advancedSearchCleanup).toHaveBeenCalledTimes(1);
     });
   });
 

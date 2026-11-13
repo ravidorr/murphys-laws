@@ -3,6 +3,7 @@ import templateHtml from '@components/templates/header.html?raw';
 import { hydrateIcons, createIcon } from '../utils/icons.ts';
 import { getTheme, cycleTheme, getEffectiveTheme, getThemeIcon, getThemeLabel, getThemeTooltip, initTheme } from '../utils/theme.ts';
 import { SearchAutocomplete } from './search-autocomplete.ts';
+import { registerSearchLawsTool } from '../utils/webmcp-tools.ts';
 import { isFavoritesEnabled } from '../utils/feature-flags.ts';
 import { ExportMenu } from './export-menu.ts';
 import { trackPendoEvent } from '../utils/pendo.ts';
@@ -154,6 +155,7 @@ export function Header({ onSearch, onNavigate }: { onSearch: (filters: { q: stri
 
   const form = header.querySelector('form[role="search"]');
   let autocompleteCleanup: (() => void) | null = null;
+  let unregisterSearchTool: () => void = () => {};
 
   if (form) {
     const input = form.querySelector<HTMLInputElement>('input[aria-label="Search"]') || form.querySelector<HTMLInputElement>('input');
@@ -169,6 +171,8 @@ export function Header({ onSearch, onNavigate }: { onSearch: (filters: { q: stri
         }
       });
       autocompleteCleanup = autocomplete.cleanup;
+      // The header is on every page, so this is the one place the search tool is offered from
+      unregisterSearchTool = registerSearchLawsTool(form as HTMLFormElement, input);
     }
 
     form.addEventListener('submit', (e) => {
@@ -182,6 +186,7 @@ export function Header({ onSearch, onNavigate }: { onSearch: (filters: { q: stri
   const originalCleanup = (header as CleanableElement).cleanup;
   (header as CleanableElement).cleanup = () => {
     originalCleanup!();
+    unregisterSearchTool();
     if (autocompleteCleanup) {
       autocompleteCleanup();
     }

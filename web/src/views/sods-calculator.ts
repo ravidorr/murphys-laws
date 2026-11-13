@@ -16,9 +16,10 @@ import {
   parseCalculatorState,
   serializeCalculatorState,
   CALCULATOR_RISK_LEVELS,
-  CALCULATOR_RESULT_SETTLE_MS,
-  type CalculatorResultBand
+  CALCULATOR_RESULT_SETTLE_MS
 } from '@utils/calculator-state.ts';
+import { calculateSodsLaw, type SodsLawResult } from '@utils/sods-law.ts';
+import { registerSodsLawTool } from '@utils/webmcp-tools.ts';
 import { getCalculatorScenarioLinks, renderInternalLinkList } from '@utils/internal-links.ts';
 import type { CleanableElement } from '../types/app.d.ts';
 
@@ -105,16 +106,14 @@ export function Calculator(): HTMLDivElement {
     const I = parseFloat(sliders.importance.value);
     const S = parseFloat(sliders.skill.value);
     const F = parseFloat(sliders.frequency.value);
-    const A = 0.7;
 
-    // Calculate score (scale 0-8.6 per FAQ; display as 0-100% for UX consistency with Buttered Toast)
-    const score = ((U + C + I) * (10 - S)) / 20 * A * (1 / (1 - Math.sin(F / 10)));
-    const displayScore = Math.min(score, 8.6);
-    const displayPercent = Math.round((displayScore / 8.6) * 100);
+    // Score scale 0-8.6 per FAQ; displayed as 0-100% for UX consistency with Buttered Toast
+    const result = calculateSodsLaw({ urgency: U, complexity: C, importance: I, skill: S, frequency: F });
+    const displayPercent = result.probabilityPercent;
     probabilityPercent = displayPercent;
 
     scoreValueDisplay.textContent = `${displayPercent}%`;
-    updateResultInterpretation(displayScore);
+    showResultInterpretation(result);
 
     const interpretation = scoreInterpretationDisplay.textContent as string;
     setExportContent({
@@ -185,31 +184,11 @@ export function Calculator(): HTMLDivElement {
 
   updateCalculation();
 
-  function updateResultInterpretation(score: number) {
-    let interpretation: string;
-    let cls: CalculatorResultBand;
-
-    if (score < 2) {
-      interpretation = "You're probably safe. What could possibly go wrong?";
-      cls = 'calc-ok';
-    } else if (score < 4) {
-      interpretation = 'A bit risky. Maybe have a backup plan.';
-      cls = 'calc-warn';
-    } else if (score < 6) {
-      interpretation = 'Definitely worrying. Proceed with caution.';
-      cls = 'calc-orange';
-    } else if (score < 8) {
-      interpretation = "Disaster is looming. It's not looking good.";
-      cls = 'calc-danger';
-    } else {
-      interpretation = 'Catastrophe is almost certain. Good luck.';
-      cls = 'calc-dark';
-    }
-
-    scoreInterpretationDisplay.textContent = interpretation;
+  function showResultInterpretation(result: SodsLawResult) {
+    scoreInterpretationDisplay.textContent = result.interpretation;
     resultDisplay.classList.remove('calc-ok', 'calc-warn', 'calc-orange', 'calc-danger', 'calc-dark');
-    resultDisplay.classList.add(cls);
-    riskLevel = CALCULATOR_RISK_LEVELS[cls];
+    resultDisplay.classList.add(result.band);
+    riskLevel = result.riskLevel;
   }
 
   const state = {
@@ -291,7 +270,10 @@ export function Calculator(): HTMLDivElement {
     getShareResult: () => ({ probability_percent: probabilityPercent, risk_level: riskLevel })
   });
 
+  const unregisterTool = registerSodsLawTool();
+
   (el as CleanableElement).cleanup = () => {
+    unregisterTool();
     // Report a result that was still settling when the visitor left
     calculatorUsed.flush();
     clearFormulaTimeouts();
