@@ -49,6 +49,22 @@ async function mount(law: unknown, onNavigate = vi.fn()): Promise<{ el: HTMLElem
   return { el, onNavigate };
 }
 
+/** The page's landmarks in document order, so a test can say which comes first without caring about the markup. */
+function landmarkOrder(el: HTMLElement): string[] {
+  const landmarks: Array<[string, string]> = [
+    ['card', '[data-law-card-root]'],
+    ['parent-banner', '.parent-banner'],
+    ['corollaries', '.corollary-list'],
+    ['context', '[data-law-context]'],
+    ['related', '[data-related-laws]']
+  ];
+  return landmarks
+    .map(([name, selector]) => [name, el.querySelector(selector)] as const)
+    .filter((entry): entry is readonly [string, Element] => entry[1] !== null)
+    .sort(([, a], [, b]) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
+    .map(([name]) => name);
+}
+
 describe('LawDetail corollaries', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -73,6 +89,20 @@ describe('LawDetail corollaries', () => {
     expect(section.compareDocumentPosition(related) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const urls = vi.mocked(globalThis.fetch).mock.calls.map((call) => String(call[0]));
     expect(urls.filter((url) => url.includes('corollar'))).toEqual([]);
+  });
+
+  it('puts the Corollaries section between the law card and the context', async () => {
+    const { el } = await mount(parentLaw);
+    expect(landmarkOrder(el)).toEqual(['card', 'corollaries', 'context', 'related']);
+  });
+
+  it('puts the "Corollary of" banner between the law card and the context', async () => {
+    const { el } = await mount(corollaryLaw);
+    expect(landmarkOrder(el)).toEqual(['card', 'parent-banner', 'context', 'related']);
+    // The banner is its own block, not tucked inside the card or the context
+    const banner = el.querySelector('.parent-banner') as HTMLElement;
+    expect(banner.closest('[data-law-card-root]')).toBeNull();
+    expect(banner.closest('[data-law-context]')).toBeNull();
   });
 
   it('renders no section and no banner for a law without corollaries', async () => {

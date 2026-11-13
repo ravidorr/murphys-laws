@@ -63,6 +63,25 @@ test('a law page lists its corollaries above related laws and opens one', async 
   await expect(page.locator('section.corollary-list')).toBeVisible();
 });
 
+test('the "Corollary of" banner sits between the law card and the context', async ({ page }) => {
+  await page.goto('/law/902');
+
+  const card = page.locator('[data-law-card-root]');
+  const banner = page.locator('a.parent-banner');
+  const context = page.locator('[data-law-context]');
+  await expect(banner).toBeVisible();
+
+  const [cardBox, bannerBox, contextBox] = await Promise.all([card.boundingBox(), banner.boundingBox(), context.boundingBox()]);
+  expect(cardBox).not.toBeNull();
+  expect(bannerBox).not.toBeNull();
+  expect(contextBox).not.toBeNull();
+  // The banner takes the 3rem the cards and the Corollaries list leave between sections, on both sides
+  const gapAboveBanner = bannerBox!.y - (cardBox!.y + cardBox!.height);
+  const gapBelowBanner = contextBox!.y - (bannerBox!.y + bannerBox!.height);
+  expect(gapAboveBanner).toBeCloseTo(48, 0);
+  expect(gapBelowBanner).toBeCloseTo(48, 0);
+});
+
 test('a corollary vote counts on the card and leaves the parent alone', async ({ page }) => {
   await page.route(/\/api\/v1\/laws\/902\/vote/, (route) => route.fulfill({ json: { upvotes: 5, downvotes: 1 } }));
   await page.goto('/law/901');

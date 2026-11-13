@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The "Corollary of" banner on a corollary's law page now sits below the law card and above the "In context" section
+  (issue #345); it used to sit above the card, under the breadcrumb. A parent law's Corollaries section was already in
+  that place, so both pieces now follow the same order: card, then corollary pieces, then context. The order is set in
+  `law-detail.html` for the app and in `buildStaticLawDetailContent` for the prerendered page (`ssg.ts`), and both
+  render through `renderParentBanner`, so a direct visit does not jump when the app takes over. The banner's bottom
+  margin is `var(--space-12)`, the 3rem the cards and the Corollaries list use, so the card, the banner and the context
+  are 48 px apart (it was 16 px, as the gap to the card below). The prerendered law card also gets `mb-12`, as the app's
+  card has: without it the prerendered card touched the banner, the Corollaries list and the context, and the page grew
+  48 px at each of those joins when the app replaced it (measured: card to Corollaries list 0 px prerendered, 48 px in
+  the app; now 48 px in both). `DESIGN.md` describes the new place. Tests: `law-detail-corollaries.test.ts` pins the
+  order card, banner, context for a corollary and card, Corollaries, context for a parent, `ssg.test.ts` pins the same
+  order and the card margin in the prerendered HTML, and `e2e/corollaries.spec.ts` checks the banner's position in a
+  browser. Checked in a browser on a corollary, a parent and a plain law, light and dark, at 1280 px and 375 px wide.
+  Web bumped to `3.4.123`; root to `2.6.252`.
 - A corollary can no longer be the Law of the Day (issue #344). `LawService.selectLawOfTheDay` is the only place the
   pick is made (the 00:00 UTC cron script `select-law-of-day.ts` and the API's first request of the day, which also serves
   the email, push, embed and feed, all call it; the web page, the apps, the CLI and the MCP server only read
