@@ -21,8 +21,10 @@
 #
 # LAW_OF_DAY_NODE_BIN is the absolute path of the node that the job runs (default /usr/bin/node). Both deploy paths
 # pass the node the deploy itself runs with (the nvm node), so the job uses the node that better-sqlite3 was built
-# for, and the next deploy fixes the path after a Node upgrade. When it is not /usr/bin/node, the installer writes it
-# into the job's command in place of /usr/bin/node. CRON_D_DIR (default /etc/cron.d) is only overridden by the tests.
+# for, and the next deploy fixes the path after a Node upgrade. The default is only for a caller that sets nothing: on
+# the production server /usr/bin/node is a symlink to nvm v22.20.0 (the node PM2 runs), a different patch version from the
+# deploy's node (v22.16.0, the version of .nvmrc) but the same major, so the checks below would accept either. When the variable is not /usr/bin/node, the installer writes it into the job's
+# command in place of /usr/bin/node. CRON_D_DIR (default /etc/cron.d) is only overridden by the tests.
 
 set -euo pipefail
 
@@ -127,13 +129,16 @@ fi
 mv -f "$temporary" "$CRON_D_DIR/$CRON_NAME"
 echo "Installed $CRON_D_DIR/$CRON_NAME (the job runs $NODE_BIN, $("$NODE_BIN" --version 2>/dev/null || echo "version unknown"))"
 
-# The schedule says 00:00 UTC, but cron.d runs it in the server's own time zone unless the cron in use honors the
-# CRON_TZ line of the file (the Debian and Ubuntu cron package does not document it). The pick itself is always for
-# the current UTC day, so a run at another hour still picks the right law, but a run before 00:00 UTC only finds the
-# day before already picked: the job then no longer picks ahead of the first visitor.
+# The schedule says 00:00 UTC, but the Debian and Ubuntu cron package that the production server uses ignores the CRON_TZ
+# line of the file (its crontab(5) documents only TZ), so cron.d runs the job in the server's own time zone, which is
+# UTC there. This warning covers a server in another zone; it is printed at deploy time only, does not stop the deploy, and
+# compares the current UTC offset (so it does not see a zone that is at +0000 now and changes with summer time). The
+# installer does not detect which cron package is installed. The pick itself is always for the current UTC
+# day, so a run at another hour still picks the right law, but a run before 00:00 UTC only finds the day before
+# already picked: the job then no longer picks ahead of the first visitor.
 utc_offset="$(date +%z)" || utc_offset="+0000"
 if [ "$utc_offset" != "+0000" ]; then
-  echo "WARNING: the server's time zone is UTC$utc_offset; unless the cron honors CRON_TZ=UTC (cronie does, the Debian and Ubuntu cron package does not document it), the Law of the Day job runs at 00:00 local time and not at 00:00 UTC, and then does not pick ahead of the first visitor" >&2
+  echo "WARNING: the server's time zone is UTC$utc_offset; the Debian and Ubuntu cron package ignores the CRON_TZ=UTC line of the schedule file, so with that cron the Law of the Day job runs at 00:00 local time and not at 00:00 UTC, and then does not pick ahead of the first visitor" >&2
 fi
 
 # Removes the old `select-law-of-day.mjs` line from root's crontab, which would otherwise start a second job at the
