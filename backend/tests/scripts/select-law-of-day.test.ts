@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import Database from 'better-sqlite3';
@@ -121,7 +121,7 @@ describe('the cron entry', () => {
     const scratchCommand = command
       .replaceAll('/root/murphys-laws', app)
       .replace('/usr/bin/node', `'${process.execPath}'`);
-    const run = () => spawnSync('sh', ['-c', scratchCommand], { encoding: 'utf8', env: { PATH: '/usr/bin:/bin' }, timeout: 60_000 });
+    const run = (env: Record<string, string> = {}) => spawnSync('sh', ['-c', scratchCommand], { encoding: 'utf8', env: { PATH: '/usr/bin:/bin', ...env }, timeout: 60_000 });
     // cron's own redirect sends everything the job prints to the log, so that is where a failure shows
     const logFile = path.join(backend, 'logs/law-of-day.log');
     const readLog = () => (existsSync(logFile) ? readFileSync(logFile, 'utf8') : '');
@@ -175,7 +175,15 @@ describe('the cron entry', () => {
     holder.prepare('INSERT INTO law_of_the_day_history (law_id, featured_date) VALUES (2, ?)').run(day);
 
     const job = runTogether(1);
-    await new Promise((resolve) => setTimeout(resolve, 2500));
+    // Wait for the job itself, not for a fixed time: its database service prints this line when it has opened the
+    // file, and the only things left before it blocks on the write lock are two statements
+    const startedAt = Date.now();
+    while (!readLog().includes('Database connected') && Date.now() - startedAt < 60_000) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    expect(readLog(), 'the job opened the database while the lock was held').toContain('Database connected');
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const committedAt = Date.now();
     holder.exec('COMMIT');
     holder.close();
     const codes = await job;
@@ -183,6 +191,9 @@ describe('the cron entry', () => {
     const log = readLog();
     expect(codes, log).toEqual([0]);
     expect(log).toMatch(/\] Already picked for \d{4}-\d{2}-\d{2}: law 2\n/);
+    // It started before the commit and could only answer after it: it waited for the lock, and did not pick for itself
+    const answeredAt = Date.parse(/\[([^\]]+)\] \[Law of the Day\] Already picked/.exec(log)?.[1] ?? '');
+    expect(answeredAt).toBeGreaterThanOrEqual(committedAt);
     const check = new Database(dbFile, { readonly: true });
     expect(check.prepare('SELECT law_id FROM law_of_the_day_history').all()).toEqual([{ law_id: 2 }]);
     check.close();
@@ -206,6 +217,17 @@ describe('the cron entry', () => {
     expect(result.status).toBe(1);
     expect(readLog()).toMatch(/\[Law of the Day\] ERROR:.*murphys\.db does not exist/s);
     expect(existsSync(dbFile)).toBe(false);
+  }, 90_000);
+
+  it('opens the database the way the API does: a MURPHYS_DB_PATH that names an empty file is refused, not created over', () => {
+    const { run, readLog, dbFile } = cronJob("INSERT INTO laws (text) VALUES ('Law A');");
+    const empty = path.join(path.dirname(dbFile), 'empty.db');
+    writeFileSync(empty, '');
+
+    const result = run({ MURPHYS_DB_PATH: empty });
+
+    expect(result.status).toBe(1);
+    expect(readLog()).toMatch(/\[Law of the Day\] ERROR:.*MURPHYS_DB_PATH must name an existing, non-empty database file/s);
   }, 90_000);
 
   it('fails visibly in the log, with a non-zero exit, when the database is unusable', () => {

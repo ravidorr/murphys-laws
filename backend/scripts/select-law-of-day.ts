@@ -14,6 +14,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseService } from '../src/services/database.service.ts';
 import { LawService } from '../src/services/laws.service.ts';
+import { resolveDatabasePath } from '../src/utils/database-path.ts';
 
 type LogFn = (message: string) => void;
 
@@ -43,7 +44,8 @@ export function runSelectLawOfDay(
 }
 
 function main(): number {
-  const dbPath = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'murphys.db');
+  // The same file the API opens, found the same way (MURPHYS_DB_PATH is not set in production)
+  const dbPath = resolveDatabasePath(resolve(dirname(fileURLToPath(import.meta.url)), '..', 'murphys.db'));
   // Opening a missing file would create an empty database (owned by whoever runs the job) and fail later on a missing table
   if (!existsSync(dbPath)) {
     throw new Error(`the database ${dbPath} does not exist`);

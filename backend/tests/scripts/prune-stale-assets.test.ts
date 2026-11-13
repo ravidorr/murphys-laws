@@ -961,7 +961,7 @@ describe('deploy wiring', () => {
     const prune = lineOf('prune-stale-assets.mjs');
 
     expect(prune).toBeGreaterThan(lineOf('sudo rsync -a --delete "$STAGING_DIR/web/dist/" "$TARGET_DIR/web/dist/"'));
-    expect(prune).toBeGreaterThan(lineOf('sudo rsync -a --delete "$STAGING_DIR/backend/scripts/" "$TARGET_DIR/backend/scripts/"'));
+    expect(prune).toBeGreaterThan(lineOf(`sudo rsync -a --delete --exclude='select-law-of-day.mjs' "$STAGING_DIR/backend/scripts/" "$TARGET_DIR/backend/scripts/"`));
     expect(prune).toBeLessThan(lineOf('echo "==> Deploy: testing nginx and reloading"'));
   });
 

@@ -19,7 +19,7 @@ const HEALTH_LINE = '*/5 * * * * /usr/local/bin/health-monitor.sh > /dev/null 2>
 const FAKE_CRONTAB = `#!/bin/bash
 echo "crontab $*" >> "$CRONTAB_LOG"
 case "$1" in
-  -l) [ -n "\${FAKE_CRONTAB_LIST_FAILS:-}" ] && { echo "$FAKE_CRONTAB_LIST_FAILS" >&2; exit 1; }; [ -f "$CRONTAB_FILE" ] || { echo "no crontab for root" >&2; exit 1; }; cat "$CRONTAB_FILE" ;;
+  -l) [ -n "\${FAKE_CRONTAB_LIST_FAILS:-}" ] && { echo "$FAKE_CRONTAB_LIST_FAILS" >&2; exit 1; }; [ -f "$CRONTAB_FILE" ] || { echo "no crontab for root" >&2; exit 1; }; [ -z "\${FAKE_CRONTAB_STDERR:-}" ] || echo "$FAKE_CRONTAB_STDERR" >&2; cat "$CRONTAB_FILE" ;;
   -) cat > "$CRONTAB_FILE.new"; [ -n "\${FAKE_CRONTAB_WRITE_FAILS:-}" ] && { echo "fake crontab: cannot write" >&2; exit 1; }; mv "$CRONTAB_FILE.new" "$CRONTAB_FILE" ;;
   *) echo "fake crontab: unsupported $*" >&2; exit 2 ;;
 esac
@@ -30,9 +30,11 @@ interface Install {
   app: string;
   cronD: string;
   installed: string;
+  node: string;
   crontabFile: string;
   crontabLog: string;
-  run: (env?: Record<string, string>) => ReturnType<typeof runFile>;
+  /** A value of undefined removes the variable from the environment of the installer. */
+  run: (env?: Record<string, string | undefined>) => ReturnType<typeof runFile>;
 }
 
 interface Options {
@@ -46,7 +48,7 @@ interface Options {
 
 /**
  * A scratch release the installer can accept: the schedule file, tsx, an .nvmrc, and a `node` of the same major
- * version (the real one is /usr/bin/node, which the tests replace through NODE_BIN).
+ * version (the real one is /usr/bin/node, which the tests replace through LAW_OF_DAY_NODE_BIN).
  */
 function setup({ crontab, withSource = true, withTsx = true, withJobScript = true, nvmrc = '22.16.0\n', nodeVersion = 'v22.20.0' }: Options = {}): Install {
   const box = sandbox();
@@ -65,6 +67,7 @@ function setup({ crontab, withSource = true, withTsx = true, withJobScript = tru
     mkdirSync(path.join(app, 'backend/node_modules/tsx/dist'), { recursive: true });
     writeFileSync(path.join(app, 'backend/node_modules/tsx/dist/cli.mjs'), '// tsx\n');
   }
+  writeFileSync(path.join(app, 'backend/scripts/select-law-of-day.mjs'), '// old\n');
   if (withJobScript) {
     writeFileSync(path.join(app, 'backend/scripts/select-law-of-day.ts'), '// current\n');
   }
@@ -84,11 +87,22 @@ function setup({ crontab, withSource = true, withTsx = true, withJobScript = tru
     app,
     cronD,
     installed: path.join(cronD, INSTALLED),
+    node,
     crontabFile,
     crontabLog,
-    run: (env = {}) => runFile(installer, [app], box, { TMPDIR: box.root, CRON_D_DIR: cronD, NODE_BIN: node, CRONTAB_FILE: crontabFile, CRONTAB_LOG: crontabLog, ...env }),
+    run: (env = {}) => {
+      const merged: Record<string, string | undefined> = { TMPDIR: box.root, CRON_D_DIR: cronD, LAW_OF_DAY_NODE_BIN: node, CRONTAB_FILE: crontabFile, CRONTAB_LOG: crontabLog, ...env };
+      return runFile(installer, [app], box, Object.fromEntries(Object.entries(merged).filter((entry): entry is [string, string] => entry[1] !== undefined)));
+    },
   };
 }
+
+/** The schedule file as the installer writes it: the repository one with the node of the job in its command. */
+const scheduleFor = (nodePath: string): string =>
+  readFileSync(cronSource, 'utf8')
+    .split('\n')
+    .map((line) => (line.startsWith('#') ? line : line.replace('/usr/bin/node', nodePath)))
+    .join('\n');
 
 describe('install-law-of-day-cron.sh', () => {
   it('installs the schedule from the repository into cron.d, as cron requires it', () => {
@@ -99,12 +113,91 @@ describe('install-law-of-day-cron.sh', () => {
     expect(result.status, result.stderr).toBe(0);
     // better-sqlite3 is loaded from the backend directory of the release, where the job's `cd` finds it
     expect(readLog(path.join(install.box.root, 'node-load.log')).trim()).toMatch(/\/app\/backend$/);
-    expect(readFileSync(install.installed, 'utf8')).toBe(readFileSync(cronSource, 'utf8'));
+    expect(readFileSync(install.installed, 'utf8')).toBe(scheduleFor(install.node));
     // cron ignores a file in cron.d that the group or others can write to
     expect(statSync(install.installed).mode & 0o7777).toBe(0o644);
     expect(statSync(install.installed).isFile()).toBe(true);
     expect(result.stdout).toContain('Installed');
+    expect(result.stdout).toContain(`the job runs ${install.node}, v22.20.0`);
     expect(result.stderr).toBe('');
+  });
+
+  it('writes the node of the deploy into the job, in place of /usr/bin/node, and only in the job', () => {
+    const install = setup();
+
+    expect(install.run().status).toBe(0);
+
+    const installed = readFileSync(install.installed, 'utf8');
+    expect(installed).toContain(`&& ${install.node} node_modules/tsx/dist/cli.mjs scripts/select-law-of-day.ts; }`);
+    expect(installed.split('\n').filter((line) => !line.startsWith('#') && line.includes('/usr/bin/node'))).toEqual([]);
+    // the comments are the repository's own
+    expect(installed.split('\n').filter((line) => line.startsWith('#'))).toEqual(readFileSync(cronSource, 'utf8').split('\n').filter((line) => line.startsWith('#')));
+  });
+
+  it('runs /usr/bin/node when the deploy names no node at all', () => {
+    // The tests cannot rely on a /usr/bin/node, so the .nvmrc wants a Node that no machine has: the refusal names it
+    const install = setup({ nvmrc: '99\n' });
+
+    const result = install.run({ LAW_OF_DAY_NODE_BIN: undefined });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('/usr/bin/node');
+    expect(existsSync(install.installed)).toBe(false);
+  });
+
+  it('refuses an empty node, which a deploy that could not find its node passes, instead of using /usr/bin/node', () => {
+    const install = setup({ crontab: `${OLD_LINE}\n` });
+
+    const result = install.run({ LAW_OF_DAY_NODE_BIN: '' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("the node for the Law of the Day job, '', is not an absolute path of plain characters");
+    expect(readdirSync(install.cronD)).toEqual([]);
+    expect(readFileSync(install.crontabFile, 'utf8')).toBe(`${OLD_LINE}\n`);
+  });
+
+  it.each([
+    ['a relative path', 'node'],
+    ['a path with a space', '/opt/my node/bin/node'],
+    ['a path with a %', '/opt/100%/node'],
+    ['a path with a quote', "/opt/it's/node"],
+    ['a path with a pipe', '/opt/a|b/node'],
+    ['a path with a $', '/opt/$HOME/node'],
+  ])('refuses %s as the node of the job, before it checks or changes anything', (_label, nodePath) => {
+    const install = setup({ crontab: `${OLD_LINE}\n` });
+
+    const result = install.run({ LAW_OF_DAY_NODE_BIN: nodePath });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('is not an absolute path of plain characters');
+    expect(readdirSync(install.cronD)).toEqual([]);
+    expect(readFileSync(install.crontabFile, 'utf8')).toBe(`${OLD_LINE}\n`);
+    expect(existsSync(path.join(install.app, 'backend/logs'))).toBe(false);
+  });
+
+  it('refuses a schedule file that would break cron, and installs nothing', () => {
+    const source = (install: Install): string => path.join(install.app, 'backend/config/cron.d', INSTALLED);
+    const original = readFileSync(cronSource, 'utf8');
+    const cases: [string, (text: string) => string, string][] = [
+      ['has no final newline', (text) => text.trimEnd(), 'does not end with a newline'],
+      ['has a % in the job', (text) => text.replace('select-law-of-day.ts;', 'select-law-of-day.ts --date=%Y;'), 'has a % outside its comments'],
+      ['does not run the node on the script', (text) => text.replace('select-law-of-day.ts;', 'other.ts;'), 'does not run'],
+      ['only has the job in a comment', (text) => text.replace(/^0 0 /m, '# 0 0 '), 'does not run'],
+    ];
+    for (const [label, change, message] of cases) {
+      const install = setup({ crontab: `${OLD_LINE}\n` });
+      writeFileSync(source(install), change(original));
+      writeFileSync(install.installed, 'previous schedule\n');
+
+      const result = install.run();
+
+      expect(result.status, label).toBe(1);
+      expect(result.stderr, label).toContain(message);
+      expect(readFileSync(install.installed, 'utf8'), label).toBe('previous schedule\n');
+      expect(readdirSync(install.cronD), label).toEqual([INSTALLED]);
+      expect(readFileSync(install.crontabFile, 'utf8'), label).toBe(`${OLD_LINE}\n`);
+      expect(existsSync(path.join(install.app, 'backend/logs')), label).toBe(false);
+    }
   });
 
   it('leaves nothing but the schedule in cron.d, so no temporary file is read as a job', () => {
@@ -152,7 +245,7 @@ describe('install-law-of-day-cron.sh', () => {
     chmodSync(install.installed, 0o666);
 
     expect(install.run().status).toBe(0);
-    expect(readFileSync(install.installed, 'utf8')).toBe(readFileSync(cronSource, 'utf8'));
+    expect(readFileSync(install.installed, 'utf8')).toBe(scheduleFor(install.node));
     expect(statSync(install.installed).mode & 0o777).toBe(0o644);
   });
 
@@ -165,7 +258,7 @@ describe('install-law-of-day-cron.sh', () => {
 
     expect(install.run().status).toBe(0);
     expect(lstatSync(install.installed).isSymbolicLink()).toBe(false);
-    expect(readFileSync(install.installed, 'utf8')).toBe(readFileSync(cronSource, 'utf8'));
+    expect(readFileSync(install.installed, 'utf8')).toBe(scheduleFor(install.node));
     expect(readFileSync(target, 'utf8')).toBe('untouched\n');
   });
 
@@ -181,6 +274,16 @@ describe('install-law-of-day-cron.sh', () => {
       expect(readLog(install.crontabLog)).toBe('crontab -l\ncrontab -\n');
       expect(result.stderr).toBe('');
       expect(readdirSync(install.box.root).filter((name) => name.startsWith('root-crontab')).sort()).toEqual(['root-crontab']);
+    });
+
+    it('warns when `crontab -l` succeeds but printed something, as the deploy cleanup does, and still removes the old line', () => {
+      const install = setup({ crontab: `${BACKUP_LINE}\n${OLD_LINE}\n` });
+
+      const result = install.run({ FAKE_CRONTAB_STDERR: 'crontab: warning: something on stderr' });
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stderr).toContain('WARNING: crontab -l printed: crontab: warning: something on stderr');
+      expect(readFileSync(install.crontabFile, 'utf8')).toBe(`${BACKUP_LINE}\n`);
     });
 
     it('is never rewritten when it has no old line, so the job cannot run twice and nothing else changes', () => {
@@ -265,7 +368,7 @@ describe('install-law-of-day-cron.sh', () => {
 
     it('is left alone, with a warning, when grep cannot search it', () => {
       const install = setup({ crontab: `${BACKUP_LINE}\n${OLD_LINE}\n` });
-      writeFileSync(path.join(install.box.bin, 'grep'), '#!/bin/bash\necho "grep: input error" >&2\nexit 2\n');
+      writeFileSync(path.join(install.box.bin, 'grep'), '#!/bin/bash\n[ "$1" = "-aF" ] && { echo "grep: input error" >&2; exit 2; }\nexec /usr/bin/grep "$@"\n');
       chmodSync(path.join(install.box.bin, 'grep'), 0o755);
 
       const result = install.run();
@@ -326,6 +429,42 @@ describe('install-law-of-day-cron.sh', () => {
     expect(existsSync(path.join(install.app, 'backend/scripts/select-law-of-day.ts'))).toBe(true);
   });
 
+  describe('the old .mjs script', () => {
+    const oldScript = (install: Install): string => path.join(install.app, 'backend/scripts/select-law-of-day.mjs');
+
+    it('is removed once its crontab line is gone', () => {
+      const install = setup({ crontab: `${BACKUP_LINE}\n${OLD_LINE}\n` });
+
+      expect(install.run().status).toBe(0);
+      expect(existsSync(oldScript(install))).toBe(false);
+    });
+
+    it('is removed when root has no crontab or the line was never there', () => {
+      expect(existsSync(oldScript(setupAndRun(undefined)))).toBe(false);
+      expect(existsSync(oldScript(setupAndRun(`${BACKUP_LINE}\n`)))).toBe(false);
+    });
+
+    it.each([
+      ['it is the only entry', { crontab: `${OLD_LINE}\n` }, {}],
+      ['the crontab cannot be read', { crontab: `${BACKUP_LINE}\n${OLD_LINE}\n` }, { FAKE_CRONTAB_LIST_FAILS: 'crontab: cannot read the spool directory' }],
+      ['the crontab cannot be written', { crontab: `${BACKUP_LINE}\n${OLD_LINE}\n` }, { FAKE_CRONTAB_WRITE_FAILS: '1' }],
+    ])('stays while the old line does, because %s, so the line is not left running a file that is gone', (_label, options, env) => {
+      const install = setup(options);
+
+      const result = install.run(env);
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(readFileSync(oldScript(install), 'utf8')).toBe('// old\n');
+      expect(readFileSync(install.crontabFile, 'utf8')).toContain(OLD_LINE);
+    });
+
+    function setupAndRun(crontab: string | undefined): Install {
+      const install = setup(crontab === undefined ? {} : { crontab });
+      expect(install.run().status).toBe(0);
+      return install;
+    }
+  });
+
   describe('refuses, and changes nothing, when the job could not start', () => {
     const expectUntouched = (install: Install, crontab: string): void => {
       expect(existsSync(install.installed)).toBe(false);
@@ -333,6 +472,8 @@ describe('install-law-of-day-cron.sh', () => {
       expect(readFileSync(install.crontabFile, 'utf8')).toBe(crontab);
       expect(readdirSync(install.cronD)).toEqual([]);
       expect(readLog(install.crontabLog)).toBe('');
+      // the old job keeps what it runs until the new one is installed
+      expect(readFileSync(path.join(install.app, 'backend/scripts/select-law-of-day.mjs'), 'utf8')).toBe('// old\n');
     };
 
     it('when the release has no schedule file', () => {
@@ -368,7 +509,7 @@ describe('install-law-of-day-cron.sh', () => {
     it('when /usr/bin/node does not exist', () => {
       const install = setup({ crontab: `${OLD_LINE}\n` });
 
-      const result = install.run({ NODE_BIN: path.join(install.box.root, 'no-such-node') });
+      const result = install.run({ LAW_OF_DAY_NODE_BIN: path.join(install.box.root, 'no-such-node') });
 
       expect(result.status).toBe(1);
       expect(result.stderr).toContain('no-such-node is not an executable');
@@ -381,7 +522,7 @@ describe('install-law-of-day-cron.sh', () => {
       writeFileSync(broken, '#!/bin/bash\nexit 1\n');
       chmodSync(broken, 0o755);
 
-      const result = install.run({ NODE_BIN: broken });
+      const result = install.run({ LAW_OF_DAY_NODE_BIN: broken });
 
       expect(result.status).toBe(1);
       expect(result.stderr).toContain('broken-node --version printed nothing or failed');
