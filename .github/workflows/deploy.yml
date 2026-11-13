@@ -232,12 +232,12 @@ jobs:
             # rsync would bring them back). To turn it off, delete this block; adding --dry-run to the command only
             # reports. It deletes nothing when a safety check fails (including when no access log can be read,
             # because the glob below then stays literal) and must never block a release, so any non-zero exit only
-            # warns (a hang is cut off after 5 minutes). Node comes from root's nvm, as in the commands below.
+            # warns (a hang is cut off after 90 seconds, well inside the ssh action's own time limit). Node comes from root's nvm, as in the commands below.
             echo "==> Deploy: pruning stale build assets"
             prune_rc=0
-            sudo env STAGING_DIR="$STAGING_DIR" TARGET_DIR="$TARGET_DIR" bash -c 'export NVM_DIR=/root/.nvm; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1; cd "$TARGET_DIR" && nvm use --silent >/dev/null 2>&1; node --version; timeout 300 node "$TARGET_DIR/backend/scripts/prune-stale-assets.mjs" $(for log in /var/log/nginx/access.log*; do printf -- "--access-log %s " "$log"; done) "$STAGING_DIR/web/dist" "$TARGET_DIR/web/dist" 2>&1' || prune_rc=$?
+            sudo env STAGING_DIR="$STAGING_DIR" TARGET_DIR="$TARGET_DIR" bash -c 'export NVM_DIR=/root/.nvm; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1; cd "$TARGET_DIR" && nvm use --silent >/dev/null 2>&1; node --version; timeout 90 node "$TARGET_DIR/backend/scripts/prune-stale-assets.mjs" $(for log in /var/log/nginx/access.log*; do printf -- "--access-log %s " "$log"; done) "$STAGING_DIR/web/dist" "$TARGET_DIR/web/dist" 2>&1' || prune_rc=$?
             if [ "$prune_rc" -ne 0 ]; then
-              echo "::warning::Stale asset pruning did not complete (exit $prune_rc: 1 means a safety check stopped it before any deletion or the script could not run, 3 means some deletions failed, 124 means it timed out, anything else means it could not start, for example no node; see its output above); the deploy continues"
+              echo "WARNING: stale asset pruning did not complete (exit $prune_rc: 1 means a safety check stopped it before any deletion or the script could not run, 3 means some deletions failed, 124 means it timed out, anything else means it could not start, for example no node; see its output above); the deploy continues"
             fi
 
             # "sudo nginx -t && sudo systemctl reload nginx" does not stop this script under set -e (a failure

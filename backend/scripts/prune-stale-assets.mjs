@@ -11,10 +11,11 @@
  *
  * For each dist directory given, it keeps a file under assets/ when ANY of these holds:
  *   1. it is named by the current build: every text file of the dist directory outside assets/ (html, js, mjs, css,
- *      json, webmanifest, xml, txt and _redirects: the prerendered pages, manifest.webmanifest, sw.js with the
- *      precache list inside it, offline.js, ...) is scanned for asset file names;
- *   2. it is named by a kept file: every kept JavaScript and CSS file, including old files kept by another rule, is
- *      scanned for asset file names (static and dynamic imports, the __vite__mapDeps lists and CSS url()
+ *      json, webmanifest, xml, txt, svg and _redirects: the prerendered pages, manifest.webmanifest, sw.js with the
+ *      precache list inside it, offline.js, ...) is scanned for the names of the files under assets/, of any
+ *      extension and written however (see namesIn);
+ *   2. it is named by a kept file: every kept text file of assets/ (JavaScript, CSS, SVG, JSON, HTML, ...), including
+ *      old files kept by another rule, is scanned for asset file names (static and dynamic imports, the __vite__mapDeps lists and CSS url()
  *      references all contain one), until nothing new turns up;
  *   3. it was modified within the last --max-age-days days (default 30);
  *   4. it is the .gz, .br or .map sibling of a kept file. The build writes .gz and .br copies next to each
@@ -38,7 +39,10 @@
  *
  * Plain JavaScript on purpose: it runs on the server straight after the upload, with no packages installed.
  *
- * Usage: node backend/scripts/prune-stale-assets.mjs [--dry-run] [--max-age-days N] [--access-log FILE ...] <dist-dir> ...
+ * Usage: node backend/scripts/prune-stale-assets.mjs [--dry-run] [--max-age-days N] [--max-delete-fraction F]
+ *        [--access-log FILE ...] <dist-dir> ...
+ * --max-delete-fraction (0 to 1, default 0.9) is a manual escape hatch for a first run over a large backlog, whose plan
+ * the default limit would stop: look at a --dry-run first. The deploy never passes it.
  * An --access-log file that does not exist is skipped (a rotated name that is gone); a file that cannot be read aborts.
  * Exit codes: 0 done (or dry run), 1 nothing deleted because a safety check failed (or an unexpected error stopped
  * the planning), 2 bad usage, 3 deleting finished with failures (some files could not be removed; the output
@@ -57,10 +61,14 @@ export const MAX_DELETE_FRACTION = 0.9;
 const DAY_MS = 24 * 60 * 60 * 1000;
 // A file name inside a script, page or stylesheet that looks like a build output.
 // A name ends where the extension ends: without the lookahead "a.json" would give "a.js".
+// This is only one of three ways a name is found (see namesIn); none of them can make a file look unreferenced.
 const NAME_PATTERN = /[A-Za-z0-9_.-]+\.(?:json|js|mjs|css|map|svg|png|jpe?g|gif|webp|avif|ico|woff2?|ttf|otf|wasm)(?![A-Za-z0-9_])/g;
 // Files outside assets/ that can name an asset.
-const ROOT_TEXT_PATTERN = /\.(?:html?|js|mjs|css|json|webmanifest|xml|txt)$|^_redirects$/;
-const SCANNED_ASSET_PATTERN = /\.(?:js|mjs|css)$/;
+const ROOT_TEXT_PATTERN = /\.(?:html?|js|mjs|css|json|webmanifest|xml|txt|svg)$|^_redirects$/;
+// Any run of the characters a build writes into a file name, whatever its extension.
+const NAME_RUN_PATTERN = /[A-Za-z0-9_.-]+/g;
+const PLAIN_NAME_PATTERN = /^[A-Za-z0-9_.-]+$/;
+const SCANNED_ASSET_PATTERN = /\.(?:js|mjs|css|svg|json|html?|xml|txt|webmanifest)$/;
 const SIBLING_SUFFIXES = ['.gz', '.br', '.map'];
 
 class RetentionAbort extends Error {}
@@ -143,9 +151,35 @@ export function requestedNames(logPaths) {
   return requested;
 }
 
-/** The asset names a text mentions that exist in `names`. */
+// The names of a set that hold a character outside the plain class (an "@2x", a "+", a space), per set.
+const oddNamesBySet = new WeakMap();
+
+/**
+ * The asset names a text mentions that exist in `names`. A name counts as mentioned when any of these finds it:
+ * the build-output pattern above, a run of plain name characters that is exactly the name (any extension, so an
+ * .mp3 or .eot is found, and a trailing dot of a sentence does not hide one), or, for a name with other characters in
+ * it, the name written out literally, or percent-encoded as a URL (a space becomes %20), anywhere in the text. Each
+ * way only adds names, so a name written oddly can only drop a file from the deletion plan, never add one to it.
+ */
 export function namesIn(text, names) {
-  return new Set((text.match(NAME_PATTERN) ?? []).filter((name) => names.has(name)));
+  const found = new Set();
+  const add = (name) => {
+    if (names.has(name)) found.add(name);
+  };
+  for (const name of text.match(NAME_PATTERN) ?? []) add(name);
+  for (const run of text.match(NAME_RUN_PATTERN) ?? []) {
+    add(run);
+    add(run.replace(/\.+$/, ''));
+  }
+  let odd = oddNamesBySet.get(names);
+  if (odd === undefined) {
+    odd = [...names].filter((name) => !PLAIN_NAME_PATTERN.test(name));
+    oddNamesBySet.set(names, odd);
+  }
+  for (const name of odd) {
+    if (text.includes(name) || text.includes(encodeURI(name)) || text.includes(encodeURIComponent(name))) found.add(name);
+  }
+  return found;
 }
 
 /** The /assets/ files the entry page loads: the scripts and the linked files (stylesheets, preloads) named in index.html. */
@@ -159,7 +193,10 @@ export function entryAssets(indexHtml) {
  * Works out what to keep and what to delete under <dist>/assets/ without touching anything.
  * Throws RetentionAbort when a safety check fails.
  */
-export function planDirectory(dist, { now = Date.now(), maxAgeDays = DEFAULT_MAX_AGE_DAYS, requested = new Set() } = {}) {
+export function planDirectory(
+  dist,
+  { now = Date.now(), maxAgeDays = DEFAULT_MAX_AGE_DAYS, requested = new Set(), maxDeleteFraction = MAX_DELETE_FRACTION } = {},
+) {
   const assets = join(dist, 'assets');
   if (!statFile(join(dist, 'index.html')).isFile()) abort(`${dist}/index.html is not a file`);
   if (!statFile(assets).isDirectory()) abort(`${assets} is not a directory`);
@@ -238,8 +275,11 @@ export function planDirectory(dist, { now = Date.now(), maxAgeDays = DEFAULT_MAX
   const size = (keys) => keys.reduce((sum, key) => sum + files.get(key).size, 0);
 
   if (keep.size < MIN_KEPT_FILES) abort(`only ${keep.size} files of ${files.size} would be kept in ${assets}`);
-  if (candidates.length > files.size * MAX_DELETE_FRACTION) {
-    abort(`${candidates.length} of ${files.size} files in ${assets} would be deleted, which is more than ${MAX_DELETE_FRACTION * 100}%`);
+  if (candidates.length > files.size * maxDeleteFraction) {
+    abort(
+      `${candidates.length} of ${files.size} files in ${assets} would be deleted, which is more than ${Math.round(maxDeleteFraction * 1000) / 10}% ` +
+        '(a first run over a large backlog can be allowed with --max-delete-fraction)',
+    );
   }
 
   return {
@@ -261,6 +301,7 @@ const megabytes = (bytes) => `${(bytes / 1048576).toFixed(1)} MB`;
 export function run(argv, { log = console.log, error = console.error, now = Date.now() } = {}) {
   let dryRun = false;
   let maxAgeDays = DEFAULT_MAX_AGE_DAYS;
+  let maxDeleteFraction = MAX_DELETE_FRACTION;
   const accessLogs = [];
   const directories = [];
   for (let index = 0; index < argv.length; index += 1) {
@@ -272,6 +313,14 @@ export function run(argv, { log = console.log, error = console.error, now = Date
       index += 1;
       if (!Number.isFinite(maxAgeDays) || maxAgeDays < 1) {
         error('--max-age-days needs a number of at least 1');
+        return 2;
+      }
+    } else if (argument === '--max-delete-fraction') {
+      const text = argv[index + 1];
+      maxDeleteFraction = text === undefined || text.trim() === '' ? Number.NaN : Number(text);
+      index += 1;
+      if (!(maxDeleteFraction >= 0 && maxDeleteFraction <= 1)) {
+        error('--max-delete-fraction needs a number from 0 to 1');
         return 2;
       }
     } else if (argument === '--access-log') {
@@ -290,14 +339,14 @@ export function run(argv, { log = console.log, error = console.error, now = Date
     }
   }
   if (directories.length === 0) {
-    error('usage: prune-stale-assets.mjs [--dry-run] [--max-age-days N] [--access-log FILE ...] <dist-dir> [<dist-dir> ...]');
+    error('usage: prune-stale-assets.mjs [--dry-run] [--max-age-days N] [--max-delete-fraction F] [--access-log FILE ...] <dist-dir> [<dist-dir> ...]');
     return 2;
   }
 
   let plans;
   try {
     const requested = requestedNames(accessLogs);
-    plans = directories.map((dist) => planDirectory(dist, { now, maxAgeDays, requested }));
+    plans = directories.map((dist) => planDirectory(dist, { now, maxAgeDays, requested, maxDeleteFraction }));
   } catch (caught) {
     if (!(caught instanceof RetentionAbort)) throw caught;
     error(`Asset retention aborted, nothing deleted: ${caught.message}`);

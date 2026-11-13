@@ -708,6 +708,112 @@ describe('access logs', () => {
   });
 });
 
+/** A dist whose plan would delete 70 of 76 files (92%): over the default limit, inside a limit of 0.95. */
+function backlogDist(): string {
+  const dist = mkdtempSync(path.join(tmpdir(), 'prune-assets-'));
+  boxes.push(dist);
+  const names = ['a', 'b', 'c', 'd', 'e'].map((letter) => `keep-${letter}.js`);
+  write(
+    path.join(dist, 'index.html'),
+    `<script type="module" src="/assets/index-CUR1.js"></script>${names.map((name) => `<i src="/assets/${name}">`).join('')}`,
+    OLD,
+  );
+  write(path.join(dist, 'assets/index-CUR1.js'), '', OLD);
+  for (const name of names) write(path.join(dist, 'assets', name), '', OLD);
+  for (let index = 0; index < 70; index += 1) write(path.join(dist, `assets/stale-${index}.js`), '', OLD);
+  return dist;
+}
+
+describe('--max-delete-fraction', () => {
+  const collect = () => {
+    const out: string[] = [];
+    const err: string[] = [];
+    return { out, err, log: (line: string) => out.push(line), error: (line: string) => err.push(line) };
+  };
+
+  it('stops a backlog over the default limit, and names the flag in the reason', () => {
+    const dist = backlogDist();
+    const io = collect();
+
+    expect(run([dist], { ...io, now: NOW })).toBe(1);
+    expect(io.err.join('\n')).toMatch(/70 of 76 files .* more than 90% .*--max-delete-fraction/);
+    expect(listing(dist)).toHaveLength(76);
+  });
+
+  it('allows that backlog when asked for a higher limit, and a lower limit stops a smaller plan', () => {
+    const dist = backlogDist();
+    const io = collect();
+
+    expect(run(['--max-delete-fraction', '0.95', dist], { ...io, now: NOW })).toBe(0);
+    expect(listing(dist)).toHaveLength(6);
+
+    const smaller = fakeDist();
+    const strict = collect();
+    expect(run(['--max-delete-fraction', '0.1', smaller], { ...strict, now: NOW })).toBe(1);
+    expect(strict.err.join('\n')).toMatch(/4 of \d+ files .* more than 10%/);
+  });
+
+  it('is applied by planDirectory, where 1 allows anything the five-file minimum does not stop', () => {
+    expect(planDirectory(backlogDist(), { now: NOW, maxDeleteFraction: 1 }).candidates).toHaveLength(70);
+    expect(() => planDirectory(backlogDist(), { now: NOW, maxDeleteFraction: 0.5 })).toThrow(/more than 50%/);
+  });
+
+  it('refuses a missing, empty or out-of-range value as a usage error before doing anything', () => {
+    const bad = [['--max-delete-fraction'], ['--max-delete-fraction', ''], ['--max-delete-fraction', 'x'], ['--max-delete-fraction', '1.5'], ['--max-delete-fraction', '-0.1']];
+    for (const argv of bad) {
+      const dist = backlogDist();
+      const io = collect();
+
+      expect(run([...argv, dist], { ...io, now: NOW }), argv.join(' ')).toBe(2);
+      expect(io.err.join('\n')).toMatch(/--max-delete-fraction needs a number from 0 to 1/);
+      expect(listing(dist)).toHaveLength(76);
+    }
+  });
+});
+
+describe('names written in any form', () => {
+  it('finds names with any extension, an "@2x" or a space (written out or percent-encoded), in any quoting, and a trailing dot', () => {
+    const names = new Set(['sound-C1.mp3', 'font-D1.eot', 'logo@2x-B1.webp', 'my file-E1.png', 'my file-L1.png', 'tail-K1.mp3', 'plain-F1.js', 'a.js']);
+    const text =
+      'a("sound-C1.mp3");url(font-D1.eot?#iefix) "/assets/logo@2x-B1.webp" x:"my file-E1.png" ' +
+      'url(/assets/my%20file-L1.png) see plain-F1.js and tail-K1.mp3. a.js';
+
+    expect([...namesIn(text, names)].sort()).toEqual([
+      'a.js',
+      'font-D1.eot',
+      'logo@2x-B1.webp',
+      'my file-E1.png',
+      'my file-L1.png',
+      'plain-F1.js',
+      'sound-C1.mp3',
+      'tail-K1.mp3',
+    ]);
+    // "a.json" is the trap of a name pattern without a lookahead: it must not be read as a.js.
+    expect([...namesIn('a.json', new Set(['a.js']))]).toEqual([]);
+    // The odd-name list of a set is built once and reused.
+    expect([...namesIn('logo@2x-B1.webp', names)]).toEqual(['logo@2x-B1.webp']);
+    expect([...namesIn('tail-K1.mp3.', names)]).toEqual(['tail-K1.mp3']);
+  });
+
+  it('keeps old files that the current build names in an unusual way', () => {
+    const dist = fakeDist();
+    for (const name of ['logo@2x-B1.webp', 'sound-C1.mp3', 'font-D1.eot', 'my file-E1.png', 'mapped-G1.js', 'inner-H1.js']) {
+      write(path.join(dist, 'assets', name), 'x', OLD);
+    }
+    write(path.join(dist, 'sw.js'), 'precache([{url:"/assets/pre-SW01.js"},{url:"/assets/logo@2x-B1.webp"}])', OLD);
+    write(path.join(dist, 'about/index.html'), '<script src="/assets/page-ABT1.js"></script><audio src="/assets/sound-C1.mp3"></audio>', OLD);
+    write(path.join(dist, 'assets/style-CUR1.css'), '@font-face{src:url(./font-FNT1.woff2)} @font-face{src:url(./font-D1.eot)} .a{background:url(img-BG1.svg)} .b{background:url("my file-E1.png")}', OLD);
+    // Reached only through a kept SVG and a kept JSON file.
+    write(path.join(dist, 'assets/img-BG1.svg'), '<svg><image href="inner-H1.js"/></svg>', OLD);
+    write(path.join(dist, 'assets/data-J1.json'), '{"x":"mapped-G1.js"}', OLD);
+    write(path.join(dist, 'robots.txt'), 'assets/data-J1.json', OLD);
+
+    const { candidates } = planDirectory(dist, { now: NOW });
+
+    expect(candidates).toEqual(['old-OLD1.js', 'old-OLD1.js.map', 'old-dep-OLD2.js', 'old-style-OLD3.css']);
+  });
+});
+
 describe('command line', () => {
   const script = path.resolve(__dirname, '../../scripts/prune-stale-assets.mjs');
   const node = (scriptPath: string, ...args: string[]) => spawnSync(process.execPath, [scriptPath, ...args], { encoding: 'utf8' });
@@ -776,7 +882,7 @@ describe('deploy wiring', () => {
 
     expect(lines[start]).toMatch(/\|\| prune_rc=\$\?$/);
     expect(block).toContain('prune_rc=0');
-    expect(block).toContain('::warning::Stale asset pruning did not complete (exit $prune_rc');
+    expect(block).toContain('WARNING: stale asset pruning did not complete (exit $prune_rc');
     expect(block).not.toContain('|| true');
     expect(block).not.toMatch(/if ! sudo/);
   });

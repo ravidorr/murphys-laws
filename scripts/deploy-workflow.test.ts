@@ -501,7 +501,7 @@ test('the pruning part of the deploy step is found where the tests expect it', (
   assert.ok(pruneBlockStart > -1 && pruneBlockStart < nginxBlockStart, 'pruning runs before nginx is tested and reloaded');
   assert.match(pruneBlock, /"\$STAGING_DIR\/web\/dist" "\$TARGET_DIR\/web\/dist" 2>&1'/, 'it covers the staging copy and the web root, both quoted');
   assert.doesNotMatch(pruneBlock, /--dry-run|rm -r/);
-  assert.match(pruneBlock, /timeout \d+ node /, 'a hang is cut off');
+  assert.match(pruneBlock, /timeout 90 node /, 'a hang is cut off well before the ssh action gives up');
 });
 
 test('the pruning deletes the stale files of the staging copy and the web root, keeps the rest and the deploy goes on', () => {
@@ -509,7 +509,7 @@ test('the pruning deletes the stale files of the staging copy and the web root, 
   const result = runPruneBlock(sandbox);
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /AFTER_PRUNE/);
-  assert.doesNotMatch(result.stdout + result.stderr, /::warning::/);
+  assert.doesNotMatch(result.stdout + result.stderr, /WARNING/);
   assert.match(result.stdout, /Deleted 6 stale asset files/);
   for (const root of ['staging', 'target'] as const) {
     assert.deepEqual(presentIn(sandbox, root, staleFiles), [false, false, false], `${root} lost its stale files`);
@@ -524,7 +524,7 @@ test('without any existing access log nothing is deleted, the exit code is repor
   assert.equal(result.status, 0, 'a failing prune never fails the step');
   assert.match(result.stdout, /AFTER_PRUNE/);
   assert.match(result.stdout, /Asset retention aborted, nothing deleted: none of the 1 access log files exists/, 'the reason is in the same stream as the warning');
-  assert.match(result.stdout, /::warning::Stale asset pruning did not complete \(exit 1:/);
+  assert.match(result.stdout, /WARNING: stale asset pruning did not complete \(exit 1:/);
   assertNothingDeleted(sandbox);
 });
 
@@ -549,7 +549,7 @@ for (const [label, nodeExit] of [
     const result = runPruneBlock(sandbox);
     assert.equal(result.status, 0, 'the step goes on under set -e');
     assert.match(result.stdout, /AFTER_PRUNE/);
-    assert.ok(result.stdout.includes(`::warning::Stale asset pruning did not complete (exit ${nodeExit}:`), result.stdout);
+    assert.ok(result.stdout.includes(`WARNING: stale asset pruning did not complete (exit ${nodeExit}:`), result.stdout);
     assertNothingDeleted(sandbox);
   });
 }
@@ -560,6 +560,6 @@ test('a script that crashes on the server only warns', () => {
   const result = runPruneBlock(sandbox);
   assert.equal(result.status, 0);
   assert.match(result.stdout, /AFTER_PRUNE/);
-  assert.match(result.stdout, /::warning::Stale asset pruning did not complete \(exit 1:/);
+  assert.match(result.stdout, /WARNING: stale asset pruning did not complete \(exit 1:/);
   assertNothingDeleted(sandbox);
 });
