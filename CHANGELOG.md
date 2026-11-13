@@ -40,8 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for `sudo` and `timeout`, against throwaway staging and web-root copies in `scripts/deploy-workflow.test.ts`:
   stale files go from both, and a missing access log, a failed safety check, a `node` that exits 127 (as a missing
   one does) or a crashing script (exit 1, 3 or 127) only warn while the deploy goes on. The script also starts when it
-  is reached through a symbolic link (its entry-point check compares real paths).
-  Root bumped to `2.6.236` and backend to `2.3.89`.
+  is reached through a symbolic link (its entry-point check, `isEntryPoint`, compares real paths and, like `runCli`
+  and `run`, is tested in-process; only the one line that applies the exit code is excluded from coverage). A file whose
+  name has a space or another escaped character is also kept when the access log shows it requested, because the logged
+  path is read both as written (`my%20file.png`) and decoded once.
+  Root bumped to `2.6.237` and backend to `2.3.90`.
 - The root scripts tests (`scripts/*.test.ts`, `npm run test:scripts`) now run in CI on every pull request and every
   push to `main`. Only four of them (the workflow and lockfile contract tests) ran before, so a fixture dated 2026-10-10
   went stale on 2026-11-09 (the metrics analyzers only read the last 30 days) and failed unnoticed for days. They run in

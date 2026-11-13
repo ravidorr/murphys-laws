@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync,
 import { gzipSync } from 'node:zlib';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // Passes every node:fs call through, unless a test installs an override to force a failure.
@@ -34,8 +35,10 @@ const {
   entryAssets,
   namesIn,
   planDirectory,
+  isEntryPoint,
   requestedNames,
   run,
+  runCli,
 } = await import('../../scripts/prune-stale-assets.mjs');
 
 // The real lstat and unlink, for the overrides that fake one file.
@@ -656,6 +659,56 @@ describe('access logs', () => {
     expect(() => requestedNames([path.join(box, 'empty.log')])).toThrow(/no successful \/assets\/ request/);
   });
 
+  it('reads a percent-encoded request path as written and decoded, and never decodes twice', () => {
+    const box = logBox();
+    writeFileSync(
+      path.join(box, 'access.log'),
+      [
+        line('/assets/my%20file-E1.png', 200),
+        line('/assets/a%2Bb-1.js', 200),
+        line('/assets/c%40d-2.js', 304),
+        line('/assets/bad%ZZ-3.js', 200),
+        line('/assets/dbl%2520file-4.js', 200),
+        line('/assets/sub%2Fnested-5.js', 200),
+        line('/assets/gone%20file-6.js', 404),
+      ].join('\n'),
+    );
+
+    const requested = requestedNames([path.join(box, 'access.log')]);
+
+    expect([...requested].sort()).toEqual(
+      [
+        'a%2Bb-1.js',
+        'a+b-1.js',
+        'bad%ZZ-3.js',
+        'c%40d-2.js',
+        'c@d-2.js',
+        'dbl%2520file-4.js',
+        'dbl%20file-4.js',
+        'my file-E1.png',
+        'my%20file-E1.png',
+        'nested-5.js',
+        'sub%2Fnested-5.js',
+      ].sort(),
+    );
+    // Decoded once only: the doubly encoded name does not become "dbl file-4.js"; a failed request adds nothing.
+    expect(requested.has('dbl file-4.js')).toBe(false);
+    expect(requested.has('gone file-6.js')).toBe(false);
+  });
+
+  it('keeps an old file whose name has a space when the log shows it requested as %20', () => {
+    const dist = fakeDist();
+    write(path.join(dist, 'assets/my file-E1.png'), 'png', OLD);
+    write(path.join(dist, 'assets/other file-E2.png'), 'png', OLD);
+    const box = logBox();
+    writeFileSync(path.join(box, 'access.log'), line('/assets/my%20file-E1.png', 200));
+
+    const plan = planDirectory(dist, { now: NOW, requested: requestedNames([path.join(box, 'access.log')]) });
+
+    expect(plan.candidates).toContain('other file-E2.png');
+    expect(plan.candidates).not.toContain('my file-E1.png');
+  });
+
   it('aborts when a log cannot be read or decompressed', () => {
     const box = logBox();
     writeFileSync(path.join(box, 'broken.log.gz'), 'not gzip');
@@ -811,6 +864,53 @@ describe('names written in any form', () => {
     const { candidates } = planDirectory(dist, { now: NOW });
 
     expect(candidates).toEqual(['old-OLD1.js', 'old-OLD1.js.map', 'old-dep-OLD2.js', 'old-style-OLD3.css']);
+  });
+});
+
+describe('entry point', () => {
+  const script = path.resolve(__dirname, '../../scripts/prune-stale-assets.mjs');
+  const scriptUrl = pathToFileURL(script).href;
+  const collect = () => {
+    const out: string[] = [];
+    const err: string[] = [];
+    return { out, err, log: (line: string) => out.push(line), error: (line: string) => err.push(line), now: NOW };
+  };
+
+  it('is the entry point for the real path, for a typed path that is a link to it, and for nothing else', () => {
+    const links = mkdtempSync(path.join(tmpdir(), 'prune-entry-'));
+    boxes.push(links);
+    symlinkSync(path.dirname(script), path.join(links, 'scripts'));
+    const typed = path.join(links, 'scripts', 'prune-stale-assets.mjs');
+
+    expect(isEntryPoint(scriptUrl, script)).toBe(true);
+    // Through a link: only the real path matches the module URL.
+    expect(isEntryPoint(scriptUrl, typed)).toBe(true);
+    // With --preserve-symlinks-main the module URL keeps the typed path, which is not the real one.
+    expect(isEntryPoint(pathToFileURL(typed).href, typed)).toBe(true);
+    expect(isEntryPoint(scriptUrl, path.join(links, 'other.mjs'))).toBe(false);
+    expect(isEntryPoint(scriptUrl, path.join(links, 'scripts', 'missing.mjs'))).toBe(false);
+    expect(isEntryPoint(scriptUrl, path.resolve(__dirname, 'prune-stale-assets.test.ts'))).toBe(false);
+    expect(isEntryPoint(scriptUrl, undefined)).toBe(false);
+    expect(isEntryPoint(scriptUrl, '')).toBe(false);
+  });
+
+  it('runs the command line with the arguments after the script, and does nothing when it was only imported', () => {
+    const dist = fakeDist();
+    const before = listing(dist);
+    const io = collect();
+
+    expect(runCli(scriptUrl, ['node', script, '--dry-run', dist], io)).toBe(0);
+    expect(io.out.at(-1)).toBe('Dry run: nothing deleted.');
+    expect(listing(dist)).toEqual(before);
+
+    expect(runCli(scriptUrl, ['node', script], io)).toBe(2);
+    expect(runCli(scriptUrl, ['node', script, '--bogus'], io)).toBe(2);
+
+    const other = collect();
+    expect(runCli(scriptUrl, ['node', '/somewhere/else.mjs', '--dry-run', dist], other)).toBeNull();
+    expect(runCli(scriptUrl, ['node'], other)).toBeNull();
+    expect(other.out).toEqual([]);
+    expect(other.err).toEqual([]);
   });
 });
 
