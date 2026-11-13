@@ -144,8 +144,9 @@ ssh ravidor@167.99.53.90 "pm2 list"
 (`listen 443 ssl http2;`, the syntax of nginx 1.24; `http2 on;` only exists from 1.25.1).
 
 `npm run build` ends with `web/scripts/precompress-assets.ts`, which writes a `.gz` (level 9) and a `.br` (quality 11)
-copy next to every `.js`, `.css` and `.svg` file in `web/dist/assets/` when the copy is smaller than the original. nginx serves the
-`.gz` copy of the content-hashed files with `gzip_static`, so the server does no compression work for them. The deploy
+copy next to every `.js`, `.css` and `.svg` file in `web/dist/assets/` when the copy is smaller than the original. nginx
+serves the `.br` copy of the content-hashed files with `brotli_static` to clients that accept brotli and the `.gz` copy
+with `gzip_static` to the others, so the server does no compression work for them. The deploy
 workflow uploads all of `web/dist/`, so the copies reach the server with the rest of the build. A `.gz` or `.br` file
 belongs to its original. Both deploy paths replace `web/dist/` with `rsync --delete`, so the copies follow their originals;
 if you prune files by hand on the server, remove the matching `.gz` and `.br` files too.
@@ -174,24 +175,38 @@ whose only entry is the scanner line (an empty crontab is never written). So a f
 other scheduled jobs. If the log shows one of these warnings, run `sudo crontab -l` on the server to see why; the
 standalone entry, if it is still there, would run the scan a second time next to the daily report.
 
-### Follow-up: enabling brotli (not active yet)
+### Brotli for the precompressed assets
 
-nginx does not serve the `.br` files yet, because the brotli module is not installed on the droplet and nginx rejects
-an unknown directive. A `brotli_static on;` line deployed before the module exists makes `nginx -t` fail in the deploy
-step (see "A rejected nginx configuration" above for what the deploy does then). Do these steps in this order:
+nginx serves the `.br` copy of the hashed JS, CSS and SVG files with `brotli_static on;` (next to `gzip_static on;` in the
+`location ~* "^/assets/..."` block of `nginx.conf`) to clients that send `Accept-Encoding: br`, the `.gz` copy to
+clients that only accept gzip, and the plain file to the rest. There is no dynamic brotli (`brotli on`): every other
+response keeps gzip. The `Vary: Accept-Encoding` header of the `.br` and `.gz` responses, which keeps a shared cache from
+handing a brotli body to a client that cannot decode it, comes from `gzip_vary on;` in the server block (with it off,
+neither static module sends `Vary`), so keep that directive.
 
-1. On the droplet, install the Ubuntu 24.04 packages (universe, built for the distribution's nginx 1.24):
-   `sudo apt install libnginx-mod-http-brotli-filter libnginx-mod-http-brotli-static`
-2. Check that they loaded and the config is still valid: `ls /etc/nginx/modules-enabled | grep brotli`, then
-   `sudo nginx -t && sudo systemctl reload nginx` (the package install may already have reloaded nginx).
-3. In a pull request, add `brotli_static on;` to the `location ~* "^/assets/..."` block of `nginx.conf`, next to
-   `gzip_static on;`. Optionally add `brotli on; brotli_comp_level 5; brotli_types` with the same list as `gzip_types`
-   in the server block for the files that have no `.br` copy. Extend `web/tests/nginx-performance.test.ts`, which
-   currently asserts that no brotli directive is present.
-4. Verify after the deploy: `curl -sI -H 'Accept-Encoding: br' https://murphys-laws.com/assets/<file>` shows
-   `Content-Encoding: br` and `Vary: Accept-Encoding`; with `Accept-Encoding: gzip` it still shows `gzip`.
-5. Roll back by reverting the pull request and deploying. The packages can stay installed;
-   `sudo apt remove libnginx-mod-http-brotli-filter libnginx-mod-http-brotli-static` removes them.
+`brotli_static` comes from the `libnginx-mod-http-brotli-static` package (Ubuntu 24.04 universe, built for the
+distribution's nginx 1.24; `libnginx-mod-http-brotli-filter` is only needed for dynamic brotli, which is not used). The
+package is installed on the production droplet (since 2026-11-13, version `1.0.0~rc-5build1`, with
+`/etc/nginx/modules-enabled/50-mod-http-brotli-static.conf` in place). It must be installed on a server before a
+release containing `brotli_static` is deployed to it: without it `nginx -t` rejects the file as an unknown directive (see
+"A rejected nginx configuration" above for what the deploy does then). The same holds on a new droplet and after a
+rollback that removed the package, and an nginx that does not come from the Ubuntu archive cannot load the Ubuntu
+module either.
+
+On a new droplet install the package with nginx (`shared/docs/DISASTER-RECOVERY.md`). To install it on a running server:
+
+1. `sudo apt-get install libnginx-mod-http-brotli-static`
+2. `ls /etc/nginx/modules-enabled | grep brotli`, then `sudo nginx -t && sudo systemctl reload nginx` (the package
+   install may already have reloaded nginx; a reload is enough, no restart is needed)
+3. Verify a deployed release with the header a browser sends, over HTTP/2 the names are lower case:
+   `curl -sI -H 'Accept-Encoding: gzip, deflate, br' https://murphys-laws.com/assets/<file>` shows
+   `content-encoding: br`, one `cache-control` and `vary: Accept-Encoding`; with `Accept-Encoding: gzip` it shows
+   `content-encoding: gzip`. A `gzip` answer to the browser header means `gzip_static` is shadowing `brotli_static`.
+
+To roll back, revert the pull request and deploy first. Only then remove the package
+(`sudo apt-get remove libnginx-mod-http-brotli-static`, then `sudo nginx -t` and `sudo systemctl reload nginx`). While
+the live `nginx.conf` still contains `brotli_static`, removing the module makes the next reload fail and a restart or
+reboot leave nginx down.
 
 ---
 

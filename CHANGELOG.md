@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- nginx now serves the precompressed brotli copies of the hashed assets (`brotli_static on;` in the `/assets/` location,
+  next to `gzip_static on;`). A client that sends `Accept-Encoding: br` gets the `.br` file the build already writes
+  next to each `.js`, `.css` and `.svg` file (measured on a build of the web app: the main bundle, 429 KB raw, is
+  108 KB instead of 131 KB as the `.gz` file; the three JavaScript bundles and the stylesheet together go from 360 KB
+  to 294 KB), gzip-only clients still get the `.gz` file and the rest the plain file. There is no dynamic brotli: every
+  other response keeps gzip. The directive needs the `libnginx-mod-http-brotli-static` package (Ubuntu 24.04 universe,
+  `1.0.0~rc-5build1`, for the distribution's nginx 1.24), which was installed on the production server on 2026-11-13
+  (`/etc/nginx/modules-enabled/50-mod-http-brotli-static.conf` is in place and `nginx -t` passes), so this release can
+  be deployed; the filter package is not needed and not installed. A new droplet gets the package with nginx
+  (`DISASTER-RECOVERY.md`), and the module must stay installed until a release that removes `brotli_static` is
+  deployed (`DEPLOYMENT.md`, section "Brotli for the precompressed assets", has the install, verification and
+  rollback order). Checked in an `ubuntu:24.04` container with nginx 1.24.0, the package above and this `nginx.conf`:
+  a browser's `Accept-Encoding` gets `content-encoding: br` with a body that decodes to the original, `gzip` gets the
+  `.gz` file, no header gets the plain file, each with one `Cache-Control` and `Vary: Accept-Encoding` (from
+  `gzip_vary on;`, which must stay), a script outside `/assets/` is never sent as br, and without the module
+  `nginx -t` fails with `unknown directive "brotli_static"`. The nginx test requires exactly the one brotli directive,
+  in the hashed-assets location, `gzip_vary on;` at the server level and the module in the disaster-recovery install
+  line. Web bumped to `3.4.122`; root to `2.6.246`.
 - The web build is deterministic: one commit builds one set of bundle file names. The Sentry release name was
   `murphys-laws-web@<Date.now()>`, and the Sentry plugin (which runs in the deploy build, where `SENTRY_UPLOAD` is
   set) compiles it into the entry chunk, so every deploy build gave `index-*.js` and `index-legacy-*.js` (and with
@@ -361,9 +379,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `web/scripts/precompress-assets.ts`, which writes `.gz` (level 9) and `.br` (quality 11) copies of the JS, CSS and SVG files under
   `web/dist/assets/`; nginx serves the `.gz` copies with `gzip_static`, so the 1 vCPU server compresses nothing for
   them (measured on the real files: 559 KB to 173 KB gzip and 144 KB brotli, 119 KB to 18 KB gzip and 15 KB brotli).
-  Brotli is not enabled yet: its nginx module is not installed on the server and an unknown directive would fail
-  `nginx -t` during the deploy; the `.br` files are ready, and `shared/docs/DEPLOYMENT.md` has the install, enable,
-  verify and rollback steps. Content-hashed files under `/assets/` now carry one
+  Brotli was left off at first: its nginx module was not installed on the server and an unknown directive would fail
+  `nginx -t` during the deploy (the first entry of this section enables it). Content-hashed files under `/assets/` now carry one
   `Cache-Control: public, max-age=31536000, immutable` header instead of two (`max-age=31536000` from `expires` plus
   `public, no-transform`) and no longer an `Expires` header; the other static files keep their current headers. Both TLS server blocks now
   `listen 443 ssl http2;`. Checked against nginx 1.24.0 with a self-signed certificate: ALPN selects h2, `return 444`

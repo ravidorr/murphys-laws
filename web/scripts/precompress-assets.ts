@@ -3,17 +3,18 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import zlib from "node:zlib";
 
-// The text types of the hashed build output that nginx serves with gzip_static (the extension list of the hashed
-// /assets/ location in nginx.conf; a test keeps the two in step). Raster images and woff/woff2 fonts are already
-// compressed, and source maps are never requested by visitors.
+// The text types of the hashed build output that nginx serves with gzip_static and brotli_static (the extension
+// list of the hashed /assets/ location in nginx.conf; a test checks that the pattern covers them). Raster images
+// and woff/woff2 fonts are already compressed, and source maps are never requested by visitors.
 export const COMPRESSIBLE_EXTENSIONS: ReadonlySet<string> = new Set([
   ".css",
   ".js",
   ".svg",
 ]);
 
-// Only the content-hashed build output is precompressed. nginx serves it with gzip_static (see nginx.conf), and the
-// files never change under one name. Pages and other root files are small and compressed on the fly.
+// Only the content-hashed build output is precompressed. nginx serves it with gzip_static and brotli_static (see
+// nginx.conf), and the files never change under one name. Pages and other root files are small and compressed on
+// the fly.
 export const PRECOMPRESS_DIRECTORIES: readonly string[] = ["assets"];
 
 export interface PrecompressOptions {

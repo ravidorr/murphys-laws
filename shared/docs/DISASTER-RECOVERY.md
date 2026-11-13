@@ -132,8 +132,8 @@ sqlite3 /root/backups/murphys-2025-01-15-020000.db "PRAGMA integrity_check;"
  # Update system
  apt update && apt upgrade -y
 
- # Install required packages
- apt install -y nginx git sqlite3 certbot python3-certbot-nginx \
+ # Install required packages (libnginx-mod-http-brotli-static: nginx.conf uses brotli_static, and nginx -t fails without it)
+ apt install -y nginx libnginx-mod-http-brotli-static git sqlite3 certbot python3-certbot-nginx \
  fail2ban ufw nodejs npm jq bc curl wget
 
  # Create user
