@@ -107,6 +107,7 @@ test.describe('Accessibility - WCAG AA Compliance', () => {
   const auditedRoutes = [
     '/',
     '/browse',
+    '/categories',
     '/category/murphys-computer-laws',
     '/law/2',
     '/submit',
@@ -121,6 +122,10 @@ test.describe('Accessibility - WCAG AA Compliance', () => {
         await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
         await page.goto(route);
         await expect(page.locator('main h1')).toBeVisible({ timeout: 10000 });
+        if (route === '/categories') {
+          // The heading is in the page before the categories load; audit the cards, not the loading message
+          await expect(page.locator('.category-cluster .category-card').first()).toBeVisible({ timeout: 10000 });
+        }
         await waitForGlobalStyles(page);
 
         const results = await new AxeBuilder({ page })

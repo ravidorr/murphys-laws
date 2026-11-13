@@ -98,21 +98,40 @@
 /* Category Grid (Directory) */
 .category-directory-search {
   max-width: 36rem;
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-10);
+}
+
+.category-directory-search p {
+  margin: var(--space-2) 0 0;
 }
 
 .category-featured {
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-12);
 }
 
+.category-featured-title {
+  margin-bottom: var(--space-5);
+}
+
+/* Featured cards are title and count only; the grid fills the row whatever the width */
 .category-featured-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--space-4);
+}
+
+@media (width <= 480px) {
+  .category-featured-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .category-featured-grid .category-card-description {
   display: none;
+}
+
+.category-featured-grid .category-card-title {
+  margin-bottom: var(--space-4);
 }
 
 .category-grid {

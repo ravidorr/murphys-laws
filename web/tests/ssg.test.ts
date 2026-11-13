@@ -18,6 +18,7 @@ import {
   buildStaticArticleArchive,
   buildStaticHomeContent,
   buildStaticCategoryContent,
+  buildStaticCategoriesContent,
   buildNotFoundPage,
   validateNotFoundPage,
   applyPageMetadata,
@@ -1615,5 +1616,71 @@ describe('buildStaticCategoryContent', () => {
     expect(content.indexOf('<h1')).toBeLessThan(content.indexOf('CARDS'));
     expect(content).toContain('<span class="accent-text">Explore</span> nearby');
     expect(content).toContain('href="/murphys-laws-about-work"');
+  });
+});
+
+describe('buildStaticCategoriesContent', () => {
+  const categories = [
+    { slug: 'murphys-computer-laws', title: "Murphy's Computer Laws[^1]", description: 'Digital doom.', law_count: 182 },
+    { slug: 'murphys-love-laws', title: "Murphy's Love Laws", law_count: 1 }
+  ];
+  const content = buildStaticCategoriesContent(categories);
+
+  it('renders the same heading, intro and cluster markup as the app', () => {
+    expect(content).toContain('<h1 class="page-title">');
+    expect(content).toContain('class="text-muted-fg mb-6 max-w-2xl"');
+    expect(content).toContain('<div class="category-clusters">');
+    expect(content).toContain('data-category-cluster="Technology"');
+    expect(content).toContain('data-category-cluster="Relationships"');
+  });
+
+  it('shows each category with its real description, count and arrow, and no footnote marker', () => {
+    expect(content).toContain('<h3 class="category-card-title">Murphy&#39;s Computer Laws</h3>');
+    expect(content).toContain('<p class="category-card-description">Digital doom.</p>');
+    expect(content).toContain('<span class="category-card-count">182 laws</span>');
+    expect(content).toContain('<span class="category-card-count">1 law</span>');
+    expect(content).toContain('<span class="category-card-arrow" aria-hidden="true"></span>');
+    expect(content).toContain('<p class="category-card-description">Explore laws in this category.</p>');
+  });
+});
+
+describe('buildStaticCategoriesContent against the app template', () => {
+  it('uses the heading and intro text of the app, so the pre-render and the app read the same', () => {
+    const template = readFileSync(resolve(__dirname, '../src/views/templates/categories.html'), 'utf8');
+    const text = (html: string, tag: string) => (html.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`))?.[1] ?? '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    const content = buildStaticCategoriesContent([{ slug: 'murphys-love-laws', title: 'Love', law_count: 2 }]);
+
+    expect(text(content, 'h1')).toBe(text(template, 'h1'));
+    expect(text(content, 'p')).toBe(text(template, 'p'));
+    expect(text(content, 'h1')).toContain('Laws by Category');
+  });
+
+  it('links each card to its category and strips a footnote from a description', () => {
+    const content = buildStaticCategoriesContent([{ slug: 'murphys-love-laws', title: 'Love', description: 'Hearts.[^2]', law_count: 2 }]);
+
+    expect(content).toContain('href="/category/murphys-love-laws"');
+    expect(content).toContain('aria-label="Love - 2 laws"');
+    expect(content).toContain('aria-labelledby="category-cluster-relationships"');
+    expect(content).toContain('<p class="category-card-description">Hearts.</p>');
+  });
+});
+
+describe('fetchAllCategories descriptions', () => {
+  const respond = (data: unknown[]) => vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ data }) });
+
+  it('keeps a category description, trimmed, and leaves it out when missing, blank or not text', async () => {
+    const categories = await fetchAllCategories(respond([
+      { slug: 'a', title: 'A', description: '  About A.  ', law_count: 1 },
+      { slug: 'b', title: 'B', law_count: 2 },
+      { slug: 'c', title: 'C', description: 7, law_count: 3 },
+      { slug: 'd', title: 'D', description: '   ', law_count: 4 }
+    ]));
+
+    expect(categories).toEqual([
+      { slug: 'a', title: 'A', description: 'About A.', law_count: 1 },
+      { slug: 'b', title: 'B', law_count: 2 },
+      { slug: 'c', title: 'C', law_count: 3 },
+      { slug: 'd', title: 'D', law_count: 4 }
+    ]);
   });
 });

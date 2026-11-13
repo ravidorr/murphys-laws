@@ -45,6 +45,7 @@ declare module '@scripts/ssg' {
   export interface StaticCategory {
     slug: string;
     title: string;
+    description?: string;
     law_count: number;
   }
 
@@ -85,6 +86,7 @@ declare module '@scripts/ssg' {
   export function buildStaticArticleArchive(slug: string, laws: StaticLaw[]): { nextSteps: string; featuredLaws: string; submitAction: string };
   export function buildStaticHomeContent(featuredLaw?: StaticLaw): string;
   export function buildStaticCategoryContent(options: { slug: string; title: string; descriptionText: string; lawCardsSection: string; lawIndex: string }): string;
+  export function buildStaticCategoriesContent(categories: StaticCategory[]): string;
   export function buildNotFoundPage(template: string, laws: StaticLaw[]): string;
   export function validateNotFoundPage(html: string): string[];
   export function fetchWithRetry(url: string, options?: {

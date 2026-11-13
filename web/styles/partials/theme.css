@@ -620,8 +620,8 @@
   :root:not([data-theme="light"]) .card,
   :root:not([data-theme="light"]) .section-card,
   :root:not([data-theme="light"]) .card--category,
-  .category-card--rich,
-  .category-card--compact {
+  :root:not([data-theme="light"]) .category-card--rich,
+  :root:not([data-theme="light"]) .category-card--compact {
     border-color: var(--fg);
   }
 
@@ -650,8 +650,8 @@
   :root[data-theme="dark"] .card,
   :root[data-theme="dark"] .section-card,
   :root[data-theme="dark"] .card--category,
-  .category-card--rich,
-  .category-card--compact {
+  :root[data-theme="dark"] .category-card--rich,
+  :root[data-theme="dark"] .category-card--compact {
     border-color: var(--fg);
   }
 
@@ -688,8 +688,8 @@
 :root[data-contrast="more"] .card,
 :root[data-contrast="more"] .section-card,
 :root[data-contrast="more"] .card--category,
-  .category-card--rich,
-  .category-card--compact {
+:root[data-contrast="more"] .category-card--rich,
+:root[data-contrast="more"] .category-card--compact {
   border-width: 2px;
   border-color: var(--fg);
   background: var(--bg);
@@ -742,8 +742,8 @@
 :root[data-contrast="more"]:not([data-theme="light"]) .card,
 :root[data-contrast="more"]:not([data-theme="light"]) .section-card,
 :root[data-contrast="more"]:not([data-theme="light"]) .card--category,
-  .category-card--rich,
-  .category-card--compact {
+:root[data-contrast="more"]:not([data-theme="light"]) .category-card--rich,
+:root[data-contrast="more"]:not([data-theme="light"]) .category-card--compact {
   border-color: var(--fg);
 }
 

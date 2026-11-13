@@ -4,9 +4,9 @@ import * as Sentry from '@sentry/browser';
 import templateHtml from '@views/templates/categories.html?raw';
 import { fetchCategories } from '../utils/api.ts';
 import { hydrateIcons } from '@utils/icons.ts';
-import { getRandomLoadingMessage, getCategoryDisplayName } from '../utils/constants.ts';
-import { escapeHtml, stripMarkdownFootnotes } from '../utils/sanitize.ts';
-import { groupCategories } from '@utils/category-groups.ts';
+import { getRandomLoadingMessage } from '../utils/constants.ts';
+import { stripMarkdownFootnotes } from '../utils/sanitize.ts';
+import { renderCategoryCard, renderCategoryClusters } from '@utils/category-cards.ts';
 import { trackProductEvent } from '@utils/metrics.ts';
 import { getQueryProperties, trackPendoEvent, normalizeQuery } from '@utils/pendo.ts';
 import { createDebouncedTask } from '@utils/debounce.ts';
@@ -34,35 +34,18 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
     'murphys-computer-laws'
   ]);
 
-  // Render a single category card
-  function renderCategoryCard(category: Category) {
-    const title = getCategoryDisplayName(category.slug, stripMarkdownFootnotes(category.title));
-    const rawDescription = category.description || 'Explore laws in this category.';
-    const description = rawDescription.length > 150 ? `${rawDescription.slice(0, 147).trimEnd()}…` : rawDescription;
-    const lawCount = category.law_count || 0;
-    const lawText = lawCount === 1 ? 'law' : 'laws';
-
-    return `
-      <a href="/category/${escapeHtml(category.slug)}" class="card card--category category-card category-card--rich" data-category-slug="${escapeHtml(category.slug)}" aria-label="${escapeHtml(title)} - ${lawCount} ${lawText}">
-        <h3 class="category-card-title">${escapeHtml(title)}</h3>
-        <p class="category-card-description">${escapeHtml(description)}</p>
-        <div class="category-card-footer">
-          <span class="category-card-count">
-            <span class="icon" data-icon="list" aria-hidden="true"></span>
-            ${lawCount} ${lawText}
-          </span>
-          <span class="category-card-arrow">
-            <span class="icon" data-icon="arrowRight" aria-hidden="true"></span>
-          </span>
-        </div>
-      </a>
-    `;
-  }
-
-  // Render all category cards
+  // Render all category cards, grouped into clusters
   function renderCategories(categories: Category[]) {
     if (!categories || categories.length === 0) {
-      return `
+      return categoryQuery.trim()
+        ? `
+        <div class="empty-state">
+          <span class="icon empty-state-icon" data-icon="search" aria-hidden="true"></span>
+          <p class="empty-state-title">No categories match</p>
+          <p class="empty-state-text">Try a different word, or clear the search to see every category.</p>
+        </div>
+      `
+        : `
         <div class="empty-state">
           <span class="icon empty-state-icon" data-icon="folder" aria-hidden="true"></span>
           <p class="empty-state-title">No categories found</p>
@@ -71,19 +54,7 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
       `;
     }
 
-    return groupCategories(categories)
-      .map((group) => `
-        <section class="category-cluster" data-category-cluster="${group.name}">
-          <header class="category-cluster-header">
-            <h2 class="category-cluster-title">${escapeHtml(group.name)}</h2>
-            <p class="category-cluster-description">${escapeHtml(group.description)}</p>
-          </header>
-          <div class="categories-grid">
-            ${group.categories.map(renderCategoryCard).join('')}
-          </div>
-        </section>
-      `)
-      .join('');
+    return renderCategoryClusters(categories);
   }
 
   // Render the page structure
@@ -116,7 +87,6 @@ export function Categories({ onNavigate }: { onNavigate: OnNavigate }): HTMLDivE
       const featuredCategories = categories.filter((category) => featuredSlugs.has(category.slug));
       featuredGrid.innerHTML = featuredCategories.map(renderCategoryCard).join('');
       featured.toggleAttribute('hidden', featuredCategories.length === 0);
-      hydrateIcons(featuredGrid);
     } else {
       featured?.setAttribute('hidden', '');
     }
