@@ -606,6 +606,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `/var/log/nginx/*.log` logrotate rule covers it.
 
 ### Fixed
+- The daily report could name a Law of the Day that visitors never saw (issue #356). `render-daily-report.ts` read the
+  day's law from `law_of_the_day_history` with `LIMIT 1` and no `ORDER BY`, and did not check that the law is still
+  published. The table only has `UNIQUE(law_id, featured_date)`, so a day can have two rows (a pick that was
+  unpublished and replaced the same day), and which one the report printed was unspecified: it could be the rejected
+  law. The query now uses the same rule as `LawsService.findFeaturedLawId`, which decides what the API serves for a
+  recorded day: the newest history row (`ORDER BY lod.rowid DESC`) whose law has `status = 'published'`. When no
+  published law is recorded for the day the report still says "No law of the day set for <date>". The tests run the
+  report's real query against a database built from the migrations: two rows for one day (the newest wins, even when
+  its law has the lower id), three rows recorded out of id order (the newest wins, not the first, lowest or highest
+  id), an unpublished pick recorded before and after its replacement, an unpublished-only day, a row for another day,
+  and an empty day. The other half of #356, the out-of-date `fetchLawOfTheDay` doc comment, shipped
+  with the web change for #347 (#361). Backend bumped to `2.3.97`; root to `2.6.259`.
 - Starting the API server on a port that is already taken no longer reports a fatal `Error: listen EADDRINUSE` to
   Sentry from a development machine (issue JAVASCRIPT-1C, environment `development`). `startApiServer` had no `error`
   listener on the HTTP server, so the failed `listen` escaped as an uncaught exception, which the Sentry SDK captures

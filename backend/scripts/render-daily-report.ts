@@ -1422,9 +1422,12 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
 
     sections.push(buildPendingApprovalsSection(countPendingApprovals(dbPath), env));
 
+    // Same rule as LawsService.findFeaturedLawId, so the report names the law visitors saw: the newest history
+    // row for the day whose law is still published (a day can have two rows after a pick was unpublished and
+    // replaced). `date` is the UTC day from `now.toISOString()`, so it is safe to interpolate.
     const lawOfDay = tryCommand('sqlite3', [
       dbPath,
-      `SELECT COALESCE(l.title || ': ', '') || l.text FROM law_of_the_day_history lod JOIN laws l ON lod.law_id = l.id WHERE lod.featured_date = '${date}' LIMIT 1;`,
+      `SELECT COALESCE(l.title || ': ', '') || l.text FROM law_of_the_day_history lod JOIN laws l ON l.id = lod.law_id WHERE lod.featured_date = '${date}' AND l.status = 'published' ORDER BY lod.rowid DESC LIMIT 1;`,
     ]);
     sections.push(
       section('MURPHY\'S LAW OF THE DAY', [
