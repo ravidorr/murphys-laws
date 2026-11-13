@@ -58,6 +58,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   deploy script is now about 15,000 characters. The test that fails above 20,000 characters stays, and a second one
   prints a warning, in its output and in the job summary of the run, without failing, above 18,000. Secrets still
   reach `backend/.env` the way they did. Backend bumped to `2.3.99`; root to `2.6.261`.
+- Registered the site for the WebMCP origin trial: `web/index.html` now carries the `origin-trial` token for
+  `https://murphys-laws.com` (first-party, subdomains included), so Chrome 149 and later offer the WebMCP tools without the
+  `enable-webmcp-testing` flag. The token expires on 2027-03-30. `origin-trial-token.test.ts` reads it and fails if it is
+  not a first-party WebMCP token for that origin, or has fewer than 14 days left, so the tools do not vanish unnoticed.
+  Web bumped to `3.4.132`; root to `2.6.267`.
 - The WebMCP `search_laws` tool now refuses while the signup or submit-a-law form holds input the visitor typed (a text
   field or text area with text, a ticked box or a changed choice), because opening the results leaves the page and those
   forms keep no draft. It returns an error telling the agent to ask the visitor first. Search forms (`role="search"`)
