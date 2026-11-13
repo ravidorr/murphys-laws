@@ -108,6 +108,9 @@ jobs:
         env:
           # npm run build:web migrates this copy, serves it from a local API and prerenders from that API
           MURPHYS_DB_PATH: ${{ runner.temp }}/prod-db-copy/murphys.db
+          # The release name of the bundle and of the uploaded source maps: the commit, never a timestamp, so the
+          # same commit always builds the same bundle file names (web/scripts/app-release.ts)
+          VITE_APP_VERSION: ${{ github.sha }}
           # Sentry configuration for frontend error tracking and source map upload
           VITE_SENTRY_DSN: ${{ secrets['SENTRY_DSN'] }}
           SENTRY_AUTH_TOKEN: ${{ secrets['SENTRY_AUTH_TOKEN'] }}

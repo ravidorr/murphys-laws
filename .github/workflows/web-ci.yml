@@ -105,6 +105,8 @@ jobs:
 
       - name: Build
         run: npm run build:web
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
 
       - name: Check generated web conformance
         run: npm run design:conformance
@@ -198,6 +200,8 @@ jobs:
       # Law of the Day has the same geometry as the app's, so the build has to exist before the suite runs.
       - name: Build the web app for the prerender layout spec
         run: npm run build:web
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
 
       - name: Run E2E tests
         run: npm run test:e2e
@@ -230,6 +234,8 @@ jobs:
       - run: npm run build:db
         working-directory: backend
       - name: Start production-like services
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
         run: |
           npm --prefix backend start > /tmp/murphys-backend.log 2>&1 &
           API_BASE_URL=http://127.0.0.1:8787 npm --prefix web run build

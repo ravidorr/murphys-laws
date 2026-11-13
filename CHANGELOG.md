@@ -8,6 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The web build is deterministic: one commit builds one set of bundle file names. The Sentry release name was
+  `murphys-laws-web@<Date.now()>`, and the Sentry plugin (which runs in the deploy build, where `SENTRY_UPLOAD` is
+  set) compiles it into the entry chunk, so every deploy build gave `index-*.js` and `index-legacy-*.js` (and with
+  them every prerendered page and `sw.js`) a new hash even when the same commit was built again (a re-run, a rollback
+  and redeploy): returning visitors re-downloaded the bundle, `dist/assets` grew by two files per build and the
+  service worker was replaced each time. The release is now one string resolved once (`web/scripts/app-release.ts`):
+  `VITE_APP_VERSION` (the commit SHA, set from `github.sha` in the deploy and the web CI builds; read from the
+  environment of the shell or the job, not from `web/.env`), else `git rev-parse HEAD`, else `<package version>-dev`
+  (with a warning; a build with `SENTRY_UPLOAD` set refuses it), never the clock. A `VITE_APP_VERSION` that is not a
+  valid Sentry release name stops the build. The release is passed both to the Sentry plugin (source map upload) and,
+  through `define`, to `Sentry.init({ release })`, so the browser and the uploaded maps are given the same name (a
+  deploy that has `SENTRY_UPLOAD` set but lacks a Sentry credential skips the plugin, as before, and uploads
+  nothing). Two builds of the same commit are byte-identical in `dist/`, with and without the Sentry plugin
+  (JavaScript, CSS, legacy bundle, polyfills, `sw.js`, HTML, `.gz` and `.br`); a new commit (or a source change) moves
+  only the entry chunks (and `sw.js` and the pages that reference them), because the commit SHA is part of the entry
+  chunk; the polyfills and the stylesheet keep their names until they change. Sentry's Releases list now shows the
+  40-character commit SHA instead of `murphys-laws-web@<timestamp>` (on a pull request, `github.sha` is the merge
+  commit, which only matters to builds that do not upload). Tests pin the release resolution, that the release the
+  Sentry plugin is given is the one compiled into the bundle, that the build files read no clock, random number or
+  host name and that every web build step of the workflows is given the commit. `sw.js` is still a hash of the whole
+  build output, so it changes when the prerendered pages change with the database (an existing test pins that); it no
+  longer changes on its own.
+  Web bumped to `3.4.121`; root to `2.6.245`.
 - The Law of the Day is picked at 00:00 UTC by a scheduled job again, instead of by the first request of the day. The
   nightly job had never run: its `>> logs/law-of-day.log` redirect pointed at `/root/murphys-laws/logs`, which the
   deploy's cleanup of old root-level files (`rm -rf ... logs`) deletes on every release, so the shell failed before
