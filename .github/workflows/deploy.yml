@@ -232,10 +232,11 @@ jobs:
             # rsync would bring them back). To turn it off, delete this block; adding --dry-run to the command only
             # reports. It deletes nothing when a safety check fails (including when no access log can be read,
             # because the glob below then stays literal) and must never block a release, so any non-zero exit only
-            # warns (a hang is cut off after 90 seconds, well inside the ssh action's own time limit). Node comes from root's nvm, as in the commands below.
+            # warns (a hang is cut off after 180 seconds, well inside the ssh action's own time limit of ten minutes, its default
+            # command_timeout; the first real run on the 1-vCPU server took about 69 seconds). Node comes from root's nvm, as in the commands below.
             echo "==> Deploy: pruning stale build assets"
             prune_rc=0
-            sudo env STAGING_DIR="$STAGING_DIR" TARGET_DIR="$TARGET_DIR" bash -c 'export NVM_DIR=/root/.nvm; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1; cd "$TARGET_DIR" && nvm use --silent >/dev/null 2>&1; node --version; timeout 90 node "$TARGET_DIR/backend/scripts/prune-stale-assets.mjs" $(for log in /var/log/nginx/access.log*; do printf -- "--access-log %s " "$log"; done) "$STAGING_DIR/web/dist" "$TARGET_DIR/web/dist" 2>&1' || prune_rc=$?
+            sudo env STAGING_DIR="$STAGING_DIR" TARGET_DIR="$TARGET_DIR" bash -c 'export NVM_DIR=/root/.nvm; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1; cd "$TARGET_DIR" && nvm use --silent >/dev/null 2>&1; node --version; timeout 180 node "$TARGET_DIR/backend/scripts/prune-stale-assets.mjs" $(for log in /var/log/nginx/access.log*; do printf -- "--access-log %s " "$log"; done) "$STAGING_DIR/web/dist" "$TARGET_DIR/web/dist" 2>&1' || prune_rc=$?
             if [ "$prune_rc" -ne 0 ]; then
               echo "WARNING: stale asset pruning did not complete (exit $prune_rc: 1 means a safety check stopped it before any deletion or the script could not run, 3 means some deletions failed, 124 means it timed out, anything else means it could not start, for example no node; see its output above); the deploy continues"
             fi
@@ -398,10 +399,58 @@ jobs:
             sudo cp "$TARGET_DIR/backend/scripts/log-analyzer.sh" /usr/local/bin/log-analyzer.sh 2>/dev/null || true
             sudo chmod +x /usr/local/bin/*.sh 2>/dev/null || true
 
-            # Disable standalone vulnerability scanner cron job (it's included in daily report)
-            echo "Disabling standalone vulnerability scanner cron job..."
-            sudo crontab -l | grep -v "vulnerability-scanner.sh" | sudo crontab - || true
-            echo "✓ Standalone vulnerability scanner cron job disabled"
+            # The daily report runs the vulnerability scanner, so a standalone cron entry for it is removed.
+            # Root's crontab is read into a variable and only rewritten from a read that succeeded: piping
+            # `crontab -l` into `crontab -` replaced the whole crontab with nothing whenever the read failed, and nothing reported it;
+            # `|| true` hid a failed write as well. "No crontab for root" is not a failure; any other failed read stops the deploy, and
+            # so does a grep that errors (exit 2), which must never look like "no match" or "nothing left". Like the
+            # script installs above, a failure here stops the deploy before PM2 is restarted (the files and migrations
+            # are already in place), and the crontab is never touched on any failure path.
+            echo "==> Removing the standalone vulnerability scanner cron job, if there is one"
+            scanner_script="vulnerability-scanner.sh"
+            crontab_error_file="$(mktemp)"
+            crontab_status=0
+            crontab_current="$(sudo env LC_ALL=C crontab -l 2>"$crontab_error_file" </dev/null)" || crontab_status=$?
+            crontab_error="$(cat "$crontab_error_file")"
+            rm -f "$crontab_error_file"
+            if [ "$crontab_status" -ne 0 ]; then
+              # sudo may print a line of its own first, so only the last line of the error is the crontab's answer
+              case "${crontab_error##*$'\n'}" in
+                "no crontab for "*) echo "Root has no crontab; nothing to remove" ;;
+                *)
+                  echo "ERROR: could not read root's crontab (exit $crontab_status: $crontab_error); it was left unchanged" >&2
+                  exit 1
+                  ;;
+              esac
+            else
+              [ -z "$crontab_error" ] || echo "WARNING: crontab -l printed: $crontab_error" >&2
+              # Each grep below exits 0 for "yes", 1 for "no" and 2 for an error, which is never read as "no". content_check
+              # is 0 when something other than blank lines remains and 1 when nothing does.
+              scanner_found=0
+              LC_ALL=C grep -aqF -- "$scanner_script" <<< "$crontab_current" || scanner_found=$?
+              crontab_filtered=""
+              scanner_removed=0
+              content_check=0
+              if [ "$scanner_found" -eq 0 ]; then
+                crontab_filtered="$(LC_ALL=C grep -avF -- "$scanner_script" <<< "$crontab_current")" || scanner_removed=$?
+                if [ "$scanner_removed" -le 1 ]; then
+                  LC_ALL=C grep -aq '[^[:space:]]' <<< "$crontab_filtered" || content_check=$?
+                fi
+              fi
+              if [ "$scanner_found" -gt 1 ] || [ "$scanner_removed" -gt 1 ] || [ "$content_check" -gt 1 ]; then
+                echo "ERROR: could not search root's crontab for $scanner_script; it was left unchanged" >&2
+                exit 1
+              elif [ "$scanner_found" -eq 1 ]; then
+                echo "No standalone vulnerability scanner cron job; the crontab was left unchanged"
+              elif [ "$content_check" -eq 1 ]; then
+                # Removing the entry would leave nothing, and an empty crontab is never written
+                echo "WARNING: the vulnerability scanner entry is the only entry in root's crontab; it was left in place" >&2
+              else
+                printf '%s\n' "$crontab_filtered" | sudo crontab - \
+                  || { echo "ERROR: could not write root's crontab" >&2; exit 1; }
+                echo "✓ Standalone vulnerability scanner cron job removed"
+              fi
+            fi
 
             echo "==> Restarting PM2"
             cd "$TARGET_DIR/backend"

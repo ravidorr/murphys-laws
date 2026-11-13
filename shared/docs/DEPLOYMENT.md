@@ -161,6 +161,17 @@ failed `nginx -t` there, copy the old file back before anything reloads or resta
 does not prove the reload took effect: `systemctl reload` only signals nginx, so look at `/var/log/nginx/error.log`
 after a release that changes the listeners.
 
+### Root's crontab during a deploy
+
+The vulnerability scanner runs from the daily report, so the GitHub Actions deploy removes any standalone
+`vulnerability-scanner.sh` entry from root's crontab. It reads the crontab first and only writes it back from a read
+that succeeded, and only when such a line was there. A server with no crontab for root is left alone. Any other failure
+to read it (for example a permissions error) fails the deploy at that step and leaves the crontab exactly as it was; a
+failed write fails it too. An empty result is never written: if the scanner entry is the only one, it is left in place
+with a warning and the deploy goes on. So a failed read can no longer delete the other scheduled jobs. If the deploy
+stops there (after the migrations, before the PM2 restart, so the old API process keeps running), run
+`sudo crontab -l` on the server to see why, then deploy again.
+
 ### Follow-up: enabling brotli (not active yet)
 
 nginx does not serve the `.br` files yet, because the brotli module is not installed on the droplet and nginx rejects
