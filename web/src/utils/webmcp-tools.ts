@@ -13,15 +13,36 @@ function readText(input: Record<string, unknown>, key: string): string {
 }
 
 /**
+ * True when a form other than a search form (the signup or submit-a-law form) holds something the visitor entered.
+ * Searching navigates away, and those forms keep no draft, so the input would be lost.
+ */
+function hasUnsavedFormInput(): boolean {
+  const fields = document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+    'form:not([role="search"]) :is(input, textarea, select)',
+  );
+  return Array.from(fields).some((field) => {
+    if (field instanceof HTMLSelectElement) {
+      // With no option marked selected, the browser picks the first one
+      const defaultIndex = Math.max(0, Array.from(field.options).findIndex((option) => option.defaultSelected));
+      return field.selectedIndex !== defaultIndex;
+    }
+    if (field instanceof HTMLInputElement && (field.type === 'checkbox' || field.type === 'radio')) return field.checked !== field.defaultChecked;
+    if (field instanceof HTMLInputElement && ['hidden', 'submit', 'button', 'reset'].includes(field.type)) return false;
+    return field.value.trim() !== '';
+  });
+}
+
+/**
  * `search_laws`: fills the archive search form and submits it, which opens the results in the visitor's tab.
- * Read-only: nothing is saved or sent anywhere except the search request the page makes itself.
+ * Read-only: nothing is saved or sent anywhere except the search request the page makes itself. It refuses while
+ * another form on the page holds the visitor's unsaved input, because opening the results would discard it.
  */
 export function registerSearchLawsTool(form: HTMLFormElement, field: HTMLInputElement): () => void {
   return registerWebMcpTool({
     name: 'search_laws',
     title: 'Search the Murphy\'s Law archive',
     description:
-      'Searches the Murphy\'s Law archive for a word or phrase and opens the results in the visitor\'s browser tab. Read-only: nothing is saved or changed.',
+      'Searches the Murphy\'s Law archive for a word or phrase and opens the results in the visitor\'s browser tab. Read-only: nothing is saved or changed. Refuses while the signup or submit-a-law form holds input the visitor typed, because leaving the page would lose it.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -33,6 +54,9 @@ export function registerSearchLawsTool(form: HTMLFormElement, field: HTMLInputEl
     execute: (input): WebMcpResult => {
       const query = readText(input, 'query');
       if (!query) return { error: 'query is required' };
+      if (hasUnsavedFormInput()) {
+        return { error: 'another form on this page has input the visitor typed, and searching would discard it; ask the visitor first' };
+      }
       field.value = query;
       // Submitting navigates, and the router then removes this tool; do it after execute has returned
       // so the tool is not unregistered in the middle of its own call

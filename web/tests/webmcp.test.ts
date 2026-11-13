@@ -172,6 +172,51 @@ describe('search_laws tool', () => {
     expect(result).toEqual({ error: 'query is required' });
     expect(submitted).toBeNull();
   });
+
+  describe('when another form holds input the visitor typed', () => {
+    const REFUSAL = /discard it; ask the visitor first/;
+    let other: HTMLFormElement;
+
+    beforeEach(() => {
+      other = document.createElement('form');
+      document.body.append(other);
+    });
+
+    afterEach(() => other.remove());
+
+    async function search() {
+      const result = await live.get('search_laws')!.tool.execute({ query: 'toast' });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return result;
+    }
+
+    it.each([
+      ['a text field', '<input type="email" name="e">', (f: HTMLFormElement) => { f.querySelector('input')!.value = 'a@b.co'; }],
+      ['a text area', '<textarea></textarea>', (f: HTMLFormElement) => { f.querySelector('textarea')!.value = 'My law'; }],
+      ['a ticked box', '<input type="checkbox">', (f: HTMLFormElement) => { f.querySelector('input')!.checked = true; }],
+      ['a chosen option', '<select><option value="">None</option><option value="2">Two</option></select>', (f: HTMLFormElement) => { f.querySelector('select')!.value = '2'; }],
+    ])('refuses and leaves the search field alone after %s', async (_name, html, fill) => {
+      other.innerHTML = html;
+      fill(other);
+      const result = await search();
+      expect(result).toEqual({ error: expect.stringMatching(REFUSAL) });
+      expect(field.value).toBe('');
+      expect(submitted).toBeNull();
+    });
+
+    it('searches when the other forms are untouched', async () => {
+      other.innerHTML = '<input type="hidden" value="x"><input type="submit" value="Go"><input type="email"><textarea>   </textarea>' +
+        '<input type="checkbox"><select><option value="">None</option><option value="2">Two</option></select>';
+      expect(await search()).toMatchObject({ success: true });
+      expect(submitted).not.toBeNull();
+    });
+
+    it('ignores other search forms, whose text is only a query', async () => {
+      other.setAttribute('role', 'search');
+      other.innerHTML = '<input type="search" value="earlier query">';
+      expect(await search()).toMatchObject({ success: true });
+    });
+  });
 });
 
 describe('subscribe_daily_email tool', () => {

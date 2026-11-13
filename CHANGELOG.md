@@ -40,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   deploy script is now about 15,000 characters. The test that fails above 20,000 characters stays, and a second one
   prints a warning, in its output and in the job summary of the run, without failing, above 18,000. Secrets still
   reach `backend/.env` the way they did. Backend bumped to `2.3.99`; root to `2.6.261`.
+- The WebMCP `search_laws` tool now refuses while the signup or submit-a-law form holds input the visitor typed (a text
+  field or text area with text, a ticked box or a changed choice), because opening the results leaves the page and those
+  forms keep no draft. It returns an error telling the agent to ask the visitor first. Search forms (`role="search"`)
+  are ignored, since their text is only a query. Web bumped to `3.4.131`; root to `2.6.265`.
 - The site now offers WebMCP tools to browser agents, so an agent can search, filter, calculate and draft a submission
   without scraping the page. WebMCP is Chrome's origin-trial API (`document.modelContext.registerTool`, the imperative
   form: the declarative `toolname` attributes only work on `<form>` elements and several of these controls are not one).
