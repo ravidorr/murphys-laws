@@ -2,6 +2,7 @@ import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
+import { createMigratedDb } from '../helpers/migrated-db.ts';
 import { scratchDir } from '../helpers/shell-sandbox.ts';
 import {
   ADMIN_UI_PATH,
@@ -286,6 +287,122 @@ describe('daily report pending approvals', () => {
     expect(renderPlainTextReport(report)).toContain('Count unavailable');
     expect(report.sections.some((entry) => entry.title === 'WEBSITE ACTIVITY')).toBe(true);
     expect(logged).toContain('[daily-report] pending approvals count failed: no such table: laws\n');
+  });
+});
+
+describe('daily report Law of the Day', () => {
+  const featuredDate = '2026-02-04';
+
+  /**
+   * Runs the report with the report's own `sqlite3` Law of the Day query executed against a real database built
+   * from the migrations, so the test checks which row the SQL picks, not just that a query was sent.
+   */
+  function lawOfDayFor(seed: (db: ReturnType<typeof createMigratedDb>) => void): string | undefined {
+    const queryErrors: unknown[] = [];
+    const db = createMigratedDb();
+    try {
+      seed(db);
+      const repoRoot = scratchDir('daily-report-law-of-day-');
+      mkdirSync(path.join(repoRoot, 'backend'));
+      writeFileSync(path.join(repoRoot, 'backend/murphys.db'), '');
+      vi.mocked(execFileSync).mockImplementation((command, args) => {
+        const sql = String(args?.[1]);
+        if (command === 'sqlite3' && sql.includes('law_of_the_day_history')) {
+          try {
+            const row = db.prepare(sql).raw().get() as [string] | undefined;
+            return row ? `${row[0]}\n` : '';
+          } catch (error) {
+            // The report swallows a failed command, which would read as "no law": remember it so the test fails.
+            queryErrors.push(error);
+            throw error;
+          }
+        }
+        return '';
+      });
+      vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+      const report = collectDailyReport({ repoRoot, now: new Date(`${featuredDate}T12:00:00Z`) });
+      expect(queryErrors).toEqual([]);
+      return report.sections.find((entry) => entry.title === "MURPHY'S LAW OF THE DAY")?.items[0]?.value;
+    } finally {
+      db.close();
+    }
+  }
+
+  function addLaw(db: ReturnType<typeof createMigratedDb>, text: string, status: string, title: string | null = null) {
+    return Number(db.prepare('INSERT INTO laws (title, text, status) VALUES (?, ?, ?)').run(title, text, status).lastInsertRowid);
+  }
+
+  function feature(db: ReturnType<typeof createMigratedDb>, lawId: number, date = featuredDate) {
+    db.prepare('INSERT INTO law_of_the_day_history (law_id, featured_date) VALUES (?, ?)').run(lawId, date);
+  }
+
+  it('names the title and text of the law recorded for the day', () => {
+    const value = lawOfDayFor((db) => {
+      feature(db, addLaw(db, 'If anything can go wrong, it will.', 'published', "Murphy's Law"));
+    });
+    expect(value).toBe("Murphy's Law: If anything can go wrong, it will.");
+  });
+
+  it('names the newest row when the day has two history rows, not the one with the highest law id', () => {
+    const value = lawOfDayFor((db) => {
+      // The law with the lower id is recorded last, so ordering by law id (or by date alone) would pick the other.
+      const lowId = addLaw(db, 'Recorded last, lower law id.', 'published');
+      const highId = addLaw(db, 'Recorded first, higher law id.', 'published');
+      feature(db, highId);
+      feature(db, lowId);
+    });
+    expect(value).toBe('Recorded last, lower law id.');
+  });
+
+  it('names the newest row, not the first recorded or the lowest or highest law id', () => {
+    const value = lawOfDayFor((db) => {
+      const a = addLaw(db, 'Law A.', 'published');
+      const b = addLaw(db, 'Law B.', 'published');
+      const c = addLaw(db, 'Law C.', 'published');
+      feature(db, c);
+      feature(db, a);
+      feature(db, b);
+    });
+    expect(value).toBe('Law B.');
+  });
+
+  it('skips a history row whose law is no longer published and names the replacement', () => {
+    const value = lawOfDayFor((db) => {
+      const replacement = addLaw(db, 'The replacement law.', 'published');
+      const rejected = addLaw(db, 'The rejected law.', 'rejected');
+      feature(db, replacement);
+      // Recorded after the replacement, so only the published check keeps it out.
+      feature(db, rejected);
+    });
+    expect(value).toBe('The replacement law.');
+  });
+
+  it('skips an unpublished pick recorded before the replacement', () => {
+    const value = lawOfDayFor((db) => {
+      const rejected = addLaw(db, 'The rejected law.', 'rejected');
+      const replacement = addLaw(db, 'The replacement law.', 'published');
+      feature(db, rejected);
+      feature(db, replacement);
+    });
+    expect(value).toBe('The replacement law.');
+  });
+
+  it('reports no law when the only recorded law is unpublished', () => {
+    const value = lawOfDayFor((db) => {
+      feature(db, addLaw(db, 'Back in review.', 'in_review'));
+    });
+    expect(value).toBe(`No law of the day set for ${featuredDate}`);
+  });
+
+  it('ignores history rows for other days', () => {
+    const value = lawOfDayFor((db) => {
+      feature(db, addLaw(db, 'Yesterday only.', 'published'), '2026-02-03');
+    });
+    expect(value).toBe(`No law of the day set for ${featuredDate}`);
+  });
+
+  it('reports no law when nothing is recorded for the day', () => {
+    expect(lawOfDayFor(() => {})).toBe(`No law of the day set for ${featuredDate}`);
   });
 });
 
