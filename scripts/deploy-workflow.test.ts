@@ -501,7 +501,7 @@ test('the pruning part of the deploy step is found where the tests expect it', (
   assert.ok(pruneBlockStart > -1 && pruneBlockStart < nginxBlockStart, 'pruning runs before nginx is tested and reloaded');
   assert.match(pruneBlock, /"\$STAGING_DIR\/web\/dist" "\$TARGET_DIR\/web\/dist" 2>&1'/, 'it covers the staging copy and the web root, both quoted');
   assert.doesNotMatch(pruneBlock, /--dry-run|rm -r/);
-  assert.match(pruneBlock, /timeout 90 node /, 'a hang is cut off well before the ssh action gives up');
+  assert.match(pruneBlock, /timeout 180 node /, 'a hang is cut off well before the ssh action gives up');
 });
 
 test('the pruning deletes the stale files of the staging copy and the web root, keeps the rest and the deploy goes on', () => {
@@ -562,4 +562,281 @@ test('a script that crashes on the server only warns', () => {
   assert.match(result.stdout, /AFTER_PRUNE/);
   assert.match(result.stdout, /WARNING: stale asset pruning did not complete \(exit 1:/);
   assertNothingDeleted(sandbox);
+});
+
+// ---------------------------------------------------------------------------------------------------------------
+// The crontab part of the same step, run with stand-ins for sudo and crontab (and sometimes grep)
+
+const cronBlockStart = deployScript.indexOf('echo "==> Removing the standalone vulnerability scanner cron job');
+const cronBlockEnd = deployScript.indexOf('echo "==> Restarting PM2"');
+const cronBlock = deployScript.slice(cronBlockStart, cronBlockEnd);
+const realGrep = spawnSync('sh', ['-c', 'command -v grep'], { encoding: 'utf8' }).stdout.trim();
+const realMktemp = spawnSync('sh', ['-c', 'command -v mktemp'], { encoding: 'utf8' }).stdout.trim();
+assert.ok(realGrep.startsWith('/') && realMktemp.startsWith('/'), 'the stand-ins can reach the real grep and mktemp');
+
+type CronSandbox = { directory: string; state: string; writes: string };
+
+/** `crontab` keeps root's crontab in a file and answers `-l` according to STUB_CRONTAB; `crontab -` replaces it. */
+function createCronSandbox(initial: string | null): CronSandbox {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'deploy-cron-'));
+  const bin = path.join(directory, 'bin');
+  const state = path.join(directory, 'root-crontab');
+  const writes = `${state}.writes`;
+  mkdirSync(bin);
+  if (initial !== null) writeFileSync(state, initial);
+  // sudo just runs the command, after the line it prints on a host whose name does not resolve (STUB_SUDO_NOISE)
+  writeFileSync(path.join(bin, 'sudo'), '#!/bin/sh\n[ -z "$STUB_SUDO_NOISE" ] || echo "$STUB_SUDO_NOISE" >&2\nexec "$@"\n');
+  // Without LC_ALL=C the "no crontab" answer comes in another language, which the step could not recognize.
+  // With STUB_CRONTAB=reads-stdin, `crontab -l` drains its standard input, as a careless command would.
+  writeFileSync(
+    path.join(bin, 'crontab'),
+    `#!/bin/sh
+case "$1" in
+  -l)
+    case "$STUB_CRONTAB" in
+      none) [ "$LC_ALL" = C ] || { echo "pas de crontab pour root" >&2; exit 1; }; echo "no crontab for root" >&2; exit 1 ;;
+      fail) echo "crontab: cannot read the spool directory: Permission denied" >&2; exit 1 ;;
+      fail-silent) exit 1 ;;
+      fail-two-lines) echo "no crontab for root (so it seems)" >&2; echo "crontab: the spool directory is gone" >&2; exit 1 ;;
+      noisy) echo "crontab: warning: something on stderr" >&2 ;;
+      reads-stdin) cat > /dev/null ;;
+    esac
+    cat "${state}" ;;
+  -)
+    cat > "${state}.new"
+    [ "$STUB_CRONTAB" = write-fails ] && { echo "crontab: errors in crontab file, can't install" >&2; exit 1; }
+    echo write >> "${writes}"
+    mv "${state}.new" "${state}" ;;
+esac
+`,
+  );
+  // macOS mktemp ignores TMPDIR when it has no template, GNU mktemp honors it: always create under TMPDIR, so a file
+  // that the step leaves behind shows in the sandbox.
+  writeFileSync(path.join(bin, 'mktemp'), `#!/bin/sh\nexec ${realMktemp} "$TMPDIR/crontab-error.XXXXXX"\n`);
+  for (const name of ['sudo', 'crontab', 'mktemp']) chmodSync(path.join(bin, name), 0o755);
+  return { directory, state, writes };
+}
+
+function cronEnv(sandbox: CronSandbox, mode: string, extraEnv: Record<string, string> = {}): Record<string, string> {
+  return { PATH: `${path.join(sandbox.directory, 'bin')}:${process.env.PATH}`, TMPDIR: sandbox.directory, STUB_CRONTAB: mode, ...extraEnv };
+}
+
+function runCronBlock(sandbox: CronSandbox, mode: string, extraEnv: Record<string, string> = {}) {
+  return spawnSync('bash', ['-e', '-c', `${cronBlock}\necho AFTER_CRONTAB`], { env: cronEnv(sandbox, mode, extraEnv), encoding: 'utf8' });
+}
+
+const writeCountOf = (sandbox: CronSandbox): number => (existsSync(sandbox.writes) ? readFileSync(sandbox.writes, 'utf8').trim().split('\n').length : 0);
+
+const rootCrontab = [
+  '# Backup',
+  '0 4 * * * /usr/local/bin/backup-murphys.sh >> /var/log/backup-murphys.log 2>&1',
+  '',
+  '0 5 * * * /usr/local/bin/daily-report.sh >> /var/log/daily-report.log 2>&1',
+  '*/5 * * * * /usr/local/bin/health-monitor.sh > /dev/null 2>&1',
+  '',
+].join('\n');
+const scannerLine = '0 3 * * 0 /usr/local/bin/vulnerability-scanner.sh >> /var/log/vulnerability-scanner.log 2>&1\n';
+
+test('the crontab part of the deploy step is found where the tests expect it, and never pipes a read into a write', () => {
+  assert.ok(cronBlockStart > -1 && cronBlockEnd > cronBlockStart, 'the block sits before the PM2 restart');
+  assert.ok(cronBlock.includes('vulnerability-scanner.sh'));
+  assert.doesNotMatch(cronBlock, /crontab -l[^\n]*[^|]\|(?!\|)/, 'crontab -l is read into a variable, not piped');
+  assert.doesNotMatch(cronBlock, /crontab -r/, 'the crontab is never removed');
+  assert.doesNotMatch(cronBlock, /\|\| true/, 'no failure of this step is ignored');
+  assert.doesNotMatch(deployScript, /crontab -l[^\n]*\|[^\n]*crontab -/, 'nowhere in the script is a read piped into a write');
+});
+
+test('a crontab that cannot be read fails the deploy and is left untouched, not emptied', () => {
+  const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  const result = runCronBlock(sandbox, 'fail');
+  assert.notEqual(result.status, 0, 'a failed read stops the step');
+  assert.doesNotMatch(result.stdout, /AFTER_CRONTAB/, 'nothing after the block runs');
+  assert.match(result.stderr, /ERROR: could not read root's crontab \(exit 1: crontab: cannot read the spool directory: Permission denied\); it was left unchanged/);
+  assert.equal(writeCountOf(sandbox), 0, 'crontab - was never run');
+  assert.equal(readFileSync(sandbox.state, 'utf8'), `${rootCrontab}${scannerLine}`);
+  assert.deepEqual(readdirSync(sandbox.directory).sort(), ['bin', 'root-crontab'], 'the temporary error file is removed');
+});
+
+test('a read that fails without a word, or whose last line is not "no crontab", is a failure too', () => {
+  for (const mode of ['fail-silent', 'fail-two-lines']) {
+    const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+    const result = runCronBlock(sandbox, mode);
+    assert.notEqual(result.status, 0, mode);
+    assert.doesNotMatch(result.stdout, /AFTER_CRONTAB/, mode);
+    assert.match(result.stderr, /ERROR: could not read root's crontab \(exit 1: /, mode);
+    assert.equal(writeCountOf(sandbox), 0, mode);
+    assert.equal(readFileSync(sandbox.state, 'utf8'), `${rootCrontab}${scannerLine}`, mode);
+  }
+});
+
+test('a server with no crontab for root is left alone and the deploy goes on', () => {
+  const sandbox = createCronSandbox(null);
+  const result = runCronBlock(sandbox, 'none');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Root has no crontab; nothing to remove\nAFTER_CRONTAB/);
+  assert.equal(writeCountOf(sandbox), 0, 'no crontab was created');
+  assert.ok(!existsSync(sandbox.state));
+});
+
+test('a crontab with the scanner entry loses only that line, written once', () => {
+  const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  const result = runCronBlock(sandbox, 'ok');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Standalone vulnerability scanner cron job removed\nAFTER_CRONTAB/);
+  assert.equal(writeCountOf(sandbox), 1);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), rootCrontab, 'every other line is kept, including the comment and the interior blank line');
+  assert.deepEqual(readdirSync(sandbox.directory).sort(), ['bin', 'root-crontab', 'root-crontab.writes'], 'the temporary error file is removed');
+});
+
+test('every scanner line goes, wherever it sits, and the other lines keep their order', () => {
+  const sandbox = createCronSandbox(`# Weekly scan\n${scannerLine}${rootCrontab}${scannerLine}0 6 * * * /usr/local/bin/other.sh\n`);
+  const result = runCronBlock(sandbox, 'ok');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(writeCountOf(sandbox), 1);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), `# Weekly scan\n${rootCrontab.replace(/\n$/, '')}\n0 6 * * * /usr/local/bin/other.sh\n`);
+});
+
+test('a crontab with Windows line endings and no final newline is written back with the other lines intact', () => {
+  const sandbox = createCronSandbox('0 4 * * * /usr/local/bin/backup-murphys.sh\r\n0 3 * * 0 /usr/local/bin/vulnerability-scanner.sh\r\n0 5 * * * /usr/local/bin/daily-report.sh');
+  const result = runCronBlock(sandbox, 'ok');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), '0 4 * * * /usr/local/bin/backup-murphys.sh\r\n0 5 * * * /usr/local/bin/daily-report.sh\n');
+});
+
+test('a very large crontab is rewritten without losing a line', () => {
+  const lines = Array.from({ length: 20000 }, (_, index) => `${index % 60} 4 * * * /usr/local/bin/job-${index}.sh`);
+  const sandbox = createCronSandbox(`${lines.join('\n')}\n${scannerLine}`);
+  const result = runCronBlock(sandbox, 'ok');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(writeCountOf(sandbox), 1);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), `${lines.join('\n')}\n`);
+});
+
+test('a crontab without the scanner entry is not written at all', () => {
+  const sandbox = createCronSandbox(rootCrontab);
+  const result = runCronBlock(sandbox, 'ok');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /No standalone vulnerability scanner cron job; the crontab was left unchanged\nAFTER_CRONTAB/);
+  assert.equal(writeCountOf(sandbox), 0);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), rootCrontab);
+});
+
+test('an empty result is never written: a crontab that holds only the scanner entry keeps it and the deploy goes on', () => {
+  for (const initial of [scannerLine, `${scannerLine}${scannerLine}`, `\n${scannerLine}  \n\t\n`]) {
+    const sandbox = createCronSandbox(initial);
+    const result = runCronBlock(sandbox, 'ok');
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stderr, /WARNING: the vulnerability scanner entry is the only entry in root's crontab; it was left in place/);
+    assert.match(result.stdout, /AFTER_CRONTAB/);
+    assert.equal(writeCountOf(sandbox), 0);
+    assert.equal(readFileSync(sandbox.state, 'utf8'), initial);
+  }
+});
+
+test('an empty or blank crontab is not written either', () => {
+  for (const initial of ['', '\n\n', '  \n']) {
+    const sandbox = createCronSandbox(initial);
+    const result = runCronBlock(sandbox, 'ok');
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(writeCountOf(sandbox), 0);
+    assert.equal(readFileSync(sandbox.state, 'utf8'), initial);
+  }
+});
+
+test('text that crontab -l prints to stderr on success never ends up in the crontab', () => {
+  const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  const result = runCronBlock(sandbox, 'noisy');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /WARNING: crontab -l printed: crontab: warning: something on stderr/, 'the deploy log shows it');
+  assert.equal(readFileSync(sandbox.state, 'utf8'), rootCrontab);
+});
+
+test('a line that sudo prints first does not hide "no crontab for root", and does not excuse a real failure', () => {
+  const noise = { STUB_SUDO_NOISE: 'sudo: unable to resolve host web1: Name or service not known' };
+  const none = createCronSandbox(null);
+  const noCrontab = runCronBlock(none, 'none', noise);
+  assert.equal(noCrontab.status, 0, noCrontab.stderr);
+  assert.match(noCrontab.stdout, /Root has no crontab; nothing to remove\nAFTER_CRONTAB/);
+  assert.equal(writeCountOf(none), 0);
+
+  const failing = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  const failed = runCronBlock(failing, 'fail', noise);
+  assert.notEqual(failed.status, 0);
+  assert.match(failed.stderr, /could not read root's crontab/);
+  assert.equal(writeCountOf(failing), 0);
+  assert.equal(readFileSync(failing.state, 'utf8'), `${rootCrontab}${scannerLine}`);
+});
+
+test('a grep that errors is neither "no scanner line" nor "nothing left": the deploy fails and the crontab is untouched', () => {
+  // The first stand-in fails every search; each other one fails only one of the three: the search for the line,
+  // the one that drops it, the one that looks for what is left.
+  for (const script of [
+    'exit 2',
+    `case "$*" in *-aqF*) exit 2 ;; *) exec ${realGrep} "$@" ;; esac`,
+    `case "$*" in *-avF*) exit 2 ;; *) exec ${realGrep} "$@" ;; esac`,
+    `case "$*" in *'[^[:space:]]'*) exit 2 ;; *) exec ${realGrep} "$@" ;; esac`,
+  ]) {
+    const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+    writeFileSync(path.join(sandbox.directory, 'bin', 'grep'), `#!/bin/sh\n${script}\n`);
+    chmodSync(path.join(sandbox.directory, 'bin', 'grep'), 0o755);
+    const result = runCronBlock(sandbox, 'ok');
+    assert.notEqual(result.status, 0, script);
+    assert.doesNotMatch(result.stdout, /AFTER_CRONTAB/, script);
+    assert.match(result.stderr, /ERROR: could not search root's crontab for vulnerability-scanner\.sh; it was left unchanged/, script);
+    assert.equal(writeCountOf(sandbox), 0, script);
+    assert.equal(readFileSync(sandbox.state, 'utf8'), `${rootCrontab}${scannerLine}`, script);
+  }
+});
+
+test('a crontab that cannot be written fails the deploy and keeps the previous one', () => {
+  const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  const result = runCronBlock(sandbox, 'write-fails');
+  assert.notEqual(result.status, 0);
+  assert.doesNotMatch(result.stdout, /AFTER_CRONTAB/);
+  assert.match(result.stderr, /ERROR: could not write root's crontab/);
+  assert.match(result.stderr, /errors in crontab file/);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), `${rootCrontab}${scannerLine}`);
+});
+
+test('the step still works when the deploy script is read from standard input, as `sudo bash <<INNER` does', () => {
+  // A command that reads standard input would swallow the lines of the script that follow it.
+  const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  const result = spawnSync('bash', ['-e'], { env: cronEnv(sandbox, 'reads-stdin'), input: `${cronBlock}\necho AFTER_CRONTAB\n`, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Standalone vulnerability scanner cron job removed\nAFTER_CRONTAB/);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), rootCrontab);
+});
+
+test('under the shell options of the deploy script (set -e and an ERR trap), with or without pipefail, every outcome is handled by the step itself and the trap stays silent', () => {
+  const header = "set -e\ntrap 'echo \"==> Script failed at line $LINENO\"' ERR\n";
+  for (const options of ['', 'set -o pipefail\n']) {
+    for (const [mode, initial, status] of [
+      ['ok', `${rootCrontab}${scannerLine}`, 0],
+      ['ok', rootCrontab, 0],
+      ['ok', scannerLine, 0],
+      ['none', null, 0],
+      ['fail', `${rootCrontab}${scannerLine}`, 1],
+      ['write-fails', `${rootCrontab}${scannerLine}`, 1],
+    ] as const) {
+      const sandbox = createCronSandbox(initial);
+      const result = spawnSync('bash', ['-c', `${header}${options}${cronBlock}\necho AFTER_CRONTAB`], { env: cronEnv(sandbox, mode), encoding: 'utf8' });
+      const label = `${mode} ${options.trim()}`;
+      assert.equal(result.status, status, `${label}: ${result.stderr}`);
+      assert.equal(result.stdout.includes('AFTER_CRONTAB'), status === 0, label);
+      const trapped = (result.stdout + result.stderr).includes('Script failed at line');
+      assert.equal(trapped, false, `${label}: every failure is handled by the step itself, so the ERR trap stays silent`);
+    }
+  }
+});
+
+test('the pruning timeout is longer than the last measured run and shorter than the ssh action allows', () => {
+  const measuredSeconds = 69;
+  const [, seconds] = /timeout (\d+) node /.exec(pruneBlock) ?? [];
+  assert.ok(Number(seconds) >= 2 * measuredSeconds, `a timeout of ${seconds} s leaves room above the 69 s the first run took`);
+  const sshStep = deploySteps[indexOfStep('Deploy and restart services')];
+  const commandTimeout = String(sshStep?.with?.command_timeout ?? '10m'); // appleboy/ssh-action's default is ten minutes
+  const [, amount, unit] = /^(\d+)(s|m|h)$/.exec(commandTimeout) ?? [];
+  assert.ok(amount, `command_timeout ${commandTimeout} is a number of seconds, minutes or hours`);
+  const limitSeconds = Number(amount) * { s: 1, m: 60, h: 3600 }[unit as 's' | 'm' | 'h'];
+  assert.ok(limitSeconds >= 3 * Number(seconds), `the ssh action's ${limitSeconds} s limit leaves room for the rest of the deploy next to ${seconds} s of pruning`);
 });
