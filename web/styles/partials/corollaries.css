@@ -94,12 +94,13 @@
   }
 }
 
-/* "Corollary of" banner above the title on a corollary's own page */
+/* "Corollary of" banner between the law card and the In context section on a corollary's own page. It takes the
+   spacing of the corollary list, which sits in the same place on a parent law's page. */
 .parent-banner {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-12);
   padding: var(--space-4) var(--space-5);
   border: 1px solid var(--border);
   border-radius: var(--rounded-xl);

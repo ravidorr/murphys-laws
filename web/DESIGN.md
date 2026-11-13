@@ -466,8 +466,8 @@ typography, and size tokens to the shipped primitives:
   linked title, the text, and the vote group; the static site shows plain
   vote counts), under the law card and above
   Related laws. A corollary titled just "Corollary" is named from its text. The
-  parent-banner is the "Corollary of" link above the title on a corollary's own
-  page. All three render from `web/src/utils/corollaries.ts`, so the app and the
+  parent-banner is the "Corollary of" link under the law card and above the "In
+  context" section on a corollary's own page. All three render from `web/src/utils/corollaries.ts`, so the app and the
   static site share one structure.
 - Corollaries in the submit form: corollary-fieldset and corollary-field. The
   fieldset is the optional "Corollaries" group on the submit form; each

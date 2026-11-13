@@ -724,8 +724,7 @@ function buildStaticLawDetailContent(law: Law, relatedLaws: Law[] = [], corollar
           <li aria-current="page">${escapeHtml(parent ? corollaryDisplayTitle({ ...law, text: law.text ?? '' }) : title)}</li>
         </ol>
       </nav>
-      ${parent ? renderParentBanner(parent) : ''}
-      <article class="card card--section law-detail-card">
+      <article class="card card--section law-detail-card mb-12">
         <header class="card-header">
           <h1 class="card-title">${escapeHtml(title)}</h1>
           <p class="small">Source status: ${sourceStatus}</p>
@@ -739,6 +738,7 @@ function buildStaticLawDetailContent(law: Law, relatedLaws: Law[] = [], corollar
           </div>
         </div>
       </article>
+      ${parent ? renderParentBanner(parent) : ''}
       ${renderCorollarySection(corollaries, { interactive: false })}
       <section class="section card card--section section-card mb-12" aria-labelledby="law-context-heading">
         <div class="section-header">

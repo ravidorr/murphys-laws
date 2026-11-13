@@ -833,6 +833,30 @@ describe('SSG SEO output', () => {
       expect(html.indexOf('corollary-list')).toBeLessThan(html.indexOf('related-laws-heading'));
     });
 
+    it('prerenders the parent page in the order the app shows: card, Corollaries, context, related laws', () => {
+      const html = buildStaticLawDetailContent(parent, [], index.get(10));
+      const order = ['<article class="card card--section law-detail-card', 'class="corollary-list', 'aria-labelledby="law-context-heading"', 'aria-labelledby="related-laws-heading"'].map((marker) => html.indexOf(marker));
+      expect(order.every((position) => position > -1)).toBe(true);
+      expect(order).toEqual([...order].sort((a, b) => a - b));
+    });
+
+    it('prerenders the "Corollary of" banner after the law card and before the context, as the app does', () => {
+      const html = buildStaticLawDetailContent({ ...first, category_slug: 'cars', category_name: 'Cars' }, [], index.get(11));
+      const card = html.indexOf('<article class="card card--section law-detail-card');
+      const banner = html.indexOf('<a class="parent-banner"');
+      const context = html.indexOf('aria-labelledby="law-context-heading"');
+      expect(card).toBeGreaterThan(-1);
+      expect(banner).toBeGreaterThan(card);
+      expect(context).toBeGreaterThan(banner);
+      // Neither the card's own markup nor the context section holds the banner
+      expect(html.slice(card, html.indexOf('</article>', card))).not.toContain('parent-banner');
+      expect(html.indexOf('</article>', card)).toBeLessThan(banner);
+    });
+
+    it('gives the prerendered law card the mb-12 class the app card has, so the gap below it matches', () => {
+      expect(buildStaticLawDetailContent({ ...first }, [], index.get(11))).toMatch(/<article class="[^"]*\blaw-detail-card\b[^"]*\bmb-12\b/);
+    });
+
     it('renders the parent banner and breadcrumb into a corollary page', () => {
       const html = buildStaticLawDetailContent({ ...first, category_slug: 'cars', category_name: 'Cars' }, [], index.get(11));
       expect(html).toContain('<a class="parent-banner" href="/law/10"');
