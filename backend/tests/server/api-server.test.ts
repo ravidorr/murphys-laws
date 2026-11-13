@@ -36,25 +36,49 @@ describe('api-server', () => {
   });
 
   describe('initSentry', () => {
-    it('should not call Sentry.init when SENTRY_DSN is unset', async () => {
-      const { initSentry } = await import('../../src/server/api-server.ts');
-      const saved = process.env.SENTRY_DSN;
-      delete process.env.SENTRY_DSN;
-      mockSentryInit.mockClear();
-      initSentry();
-      expect(mockSentryInit).not.toHaveBeenCalled();
-      if (saved !== undefined) process.env.SENTRY_DSN = saved;
+    const originalNodeEnv = process.env.NODE_ENV;
+    const dsn = 'https://key@o1.ingest.sentry.io/1';
+
+    afterEach(() => {
+      process.env.NODE_ENV = originalNodeEnv;
     });
 
-    it('should call Sentry.init with expected config when SENTRY_DSN is set', async () => {
-      process.env.SENTRY_DSN = 'https://key@o1.ingest.sentry.io/1';
+    it('should not call Sentry.init when SENTRY_DSN is unset in production', async () => {
+      process.env.NODE_ENV = 'production';
+      const { initSentry } = await import('../../src/server/api-server.ts');
+      initSentry();
+      expect(mockSentryInit).not.toHaveBeenCalled();
+    });
+
+    it('should call Sentry.init with expected config in production when SENTRY_DSN is set', async () => {
+      process.env.NODE_ENV = 'production';
+      process.env.SENTRY_DSN = dsn;
       const { initSentry } = await import('../../src/server/api-server.ts');
       initSentry();
       expect(mockSentryInit).toHaveBeenCalledWith({
-        dsn: 'https://key@o1.ingest.sentry.io/1',
-        environment: 'test',
+        dsn,
+        environment: 'production',
         tracesSampleRate: 0.1,
       });
+    });
+
+    it.each(['development', 'test', ''])(
+      'should not call Sentry.init outside production (NODE_ENV=%j) even when SENTRY_DSN is set',
+      async (nodeEnv) => {
+        process.env.NODE_ENV = nodeEnv;
+        process.env.SENTRY_DSN = dsn;
+        const { initSentry } = await import('../../src/server/api-server.ts');
+        initSentry();
+        expect(mockSentryInit).not.toHaveBeenCalled();
+      },
+    );
+
+    it('should not call Sentry.init when NODE_ENV is unset even when SENTRY_DSN is set', async () => {
+      delete process.env.NODE_ENV;
+      process.env.SENTRY_DSN = dsn;
+      const { initSentry } = await import('../../src/server/api-server.ts');
+      initSentry();
+      expect(mockSentryInit).not.toHaveBeenCalled();
     });
   });
 

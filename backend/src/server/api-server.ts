@@ -55,15 +55,14 @@ dotenv.config({ path: rootEnvPath });
 dotenv.config({ path: backendEnvPath });
 
 export function initSentry(): void {
-  if (!process.env.SENTRY_DSN) {
+  // Report only from production, so a developer machine whose .env carries the production DSN stays quiet.
+  if (process.env.NODE_ENV !== 'production' || !process.env.SENTRY_DSN) {
     return;
   }
 
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
-    /* v8 ignore start -- NODE_ENV is always set in test/production; 'development' fallback unreachable */
-    environment: process.env.NODE_ENV || 'development',
-    /* v8 ignore stop */
+    environment: 'production',
     tracesSampleRate: 0.1,
   });
 }

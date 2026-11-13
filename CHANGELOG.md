@@ -825,6 +825,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The backend no longer sends Sentry events from local development or tests (issue #359). What was wrong: `initSentry`
+  initialised Sentry whenever `SENTRY_DSN` was set, so a developer machine whose root `.env` carried the production DSN
+  reported its own crashes as real errors (a fatal `EADDRINUSE` from a local run paged the team). It now returns early
+  unless `NODE_ENV` is `production`, which production sets in `backend/.env`; the web bundle was already guarded the
+  same way. The `NODE_ENV || 'development'` fallback and its `v8 ignore` block are gone, since only production reaches
+  `Sentry.init`. `.env.example` says the backend reports only in production, and the `initSentry` tests cover the
+  production and non-production branches. Backend bumped to `2.3.102`, root to `2.6.268`.
+
 ### Added
 
 - A "Crane's Law: No Free Lunch" article at `/cranes-law`, for readers who search for Crane's law. Crane's law is the name
