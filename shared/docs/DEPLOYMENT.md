@@ -319,37 +319,54 @@ ssh root@167.99.53.90 "namei -l /root/murphys-laws/web/dist/index.html"
 
 ### Law of the Day Selection
 
-The Law of the Day feature requires a daily cron job to pre-select tomorrow's law at midnight UTC:
+A daily job picks the day's Law of the Day at midnight UTC, so it is chosen on a schedule and not by the first visitor of the day. **The deploy installs it; do not add it to a crontab by hand.** The schedule is the repository file `backend/config/cron.d/murphys-laws-law-of-day`, and both `deploy.yml` and `npm run deploy` run `backend/scripts/install-law-of-day-cron.sh` after the dependencies are installed and the migrations ran, on every deploy (it is safe to repeat). It:
+- stops with an error, before changing anything, when the job could not start: the schedule file, `backend/scripts/select-law-of-day.ts`, `backend/node_modules/tsx`, `.nvmrc` or `crontab` is missing, or `/usr/bin/node` is missing, cannot report its version, is not the major Node version of `.nvmrc` or cannot load `better-sqlite3` (the job runs it, and `better-sqlite3` is built for the `.nvmrc` one; `/usr/bin/node` must be a symlink to the nvm node, see `PREVENTING-502-ERRORS.md`)
+- replaces `/etc/cron.d/murphys-laws-law-of-day` in one step (a temporary file in `/etc/cron.d`, then a rename), mode 644 and owned by root, as cron requires; cron ignores a file there whose name contains a dot, so the name has none, and any edit made on the server is overwritten
+- creates `backend/logs`, which the job's log is in (the deploy's cleanup of old root-level files removes `/root/murphys-laws/logs`, not this one)
+- removes the old `select-law-of-day.mjs` line from root's crontab, so the job does not run twice, and the old `.mjs` script. The crontab is read into a variable and written back only from a successful read, only when that line was there and only when something other than blank lines remains: root's crontab is never emptied, and when the old line is its only entry it stays and the deploy prints a warning
+- warns when the server's time zone is not UTC: cronie honors the `CRON_TZ=UTC` line of the file, but the Debian and Ubuntu `cron` package does not document it (Ubuntu 22.04's `crontab(5)` has only `TZ`, which affects the job's environment and not its schedule), so there the job runs in the server's time zone, at 00:00 local time. On a server east of UTC that is before 00:00 UTC, so the job only finds the day before already picked and the first visitor picks again. The pick is for the current UTC day whenever it runs, so it is still the right law
+
+A failure of the installer is only a warning in the deploy (`WARNING: the Law of the Day schedule was not installed ...`) and never holds back a release, because the API picks the law on the first request of the day when the job is not installed. Look for that line in the deploy log when the pick time (below) is late.
+
+The job is:
 
 ```cron
-0 0 * * * cd /root/murphys-laws && /usr/bin/node backend/scripts/select-law-of-day.mjs >> logs/law-of-day.log 2>&1
+0 0 * * * root { cd /root/murphys-laws/backend && /usr/bin/node node_modules/tsx/dist/cli.mjs scripts/select-law-of-day.ts; } >> /root/murphys-laws/backend/logs/law-of-day.log 2>&1
 ```
 
 **What it does:**
-- Runs daily at 00:00 UTC
-- Selects highest-voted law not featured in last 365 days
-- Alphabetical tiebreaker if multiple laws have same votes
-- Stores selection in `law_of_the_day_history` table
-- Logs output to `logs/law-of-day.log`
+- Runs daily at 00:00 UTC and picks today's (UTC) law
+- Selects highest-voted law not featured in last 365 days, with an alphabetical tiebreaker
+- Stores selection in `law_of_the_day_history` table, through the same `LawService.selectLawOfTheDay` the API uses
+- Keeps one live pick per UTC day, however often it runs and even when it meets a request at midnight: the check and the insert are one `BEGIN IMMEDIATE` transaction, so the second to arrive finds the first one's pick. (A replacement pick is added for the same date only when the law picked was unpublished since.) The API still picks on a request if the job did not run
+- Logs a timestamped line to `backend/logs/law-of-day.log` (`Picked law ...`, `Already picked ...`, or an error and a non-zero exit), after the untimestamped `Database connected` line of the database service
+- Nothing alerts when the job fails or does not run, because the API quietly picks instead: look at the log and at `created_at` (below) now and then; a pick made after about 00:05 UTC means the job did not do it
 
 **Verification:**
 ```bash
-# Check if cron job exists
+# The schedule is installed, and the old crontab line is gone (the grep prints nothing)
+cat /etc/cron.d/murphys-laws-law-of-day
 sudo crontab -l | grep select-law-of-day
 
-# Check recent selections
-tail -20 /root/murphys-laws/logs/law-of-day.log
+# Cron started the job at midnight (this shows only that it started; the log line below says what it did)
+sudo journalctl -u cron --since "yesterday" --no-pager | grep select-law-of-day
+tail -5 /root/murphys-laws/backend/logs/law-of-day.log
 
-# Manually trigger selection (for testing)
-cd /root/murphys-laws && sudo /usr/bin/node backend/scripts/select-law-of-day.mjs
+# Today's pick was made at 00:00, not by a visitor (created_at is UTC)
+sudo sqlite3 -readonly /root/murphys-laws/backend/murphys.db "SELECT featured_date, law_id, created_at FROM law_of_the_day_history ORDER BY id DESC LIMIT 3"
+
+# Run it by hand (safe at any time: it only picks if today has no pick)
+cd /root/murphys-laws/backend && sudo /usr/bin/node node_modules/tsx/dist/cli.mjs scripts/select-law-of-day.ts
 ```
+
+To stop the schedule, delete `/etc/cron.d/murphys-laws-law-of-day` and the repository file together (the deploy reinstalls it otherwise); the API then picks on the first request of each day.
 
 ### Daily Law of the Day Email
 
 Subscribers who confirmed their address get the day's law by email. Run this after the selection job (SMTP must be configured in the backend `.env`):
 
 ```cron
-15 6 * * * cd /root/murphys-laws/backend && /usr/bin/npm run email:daily >> ../logs/daily-email.log 2>&1
+15 6 * * * cd /root/murphys-laws/backend && /usr/bin/npm run email:daily >> logs/daily-email.log 2>&1
 ```
 
 **What it does:**
@@ -368,7 +385,7 @@ cd /root/murphys-laws/backend && npx web-push generate-vapid-keys
 Keep the pair: changing it drops every existing browser subscription. Then schedule the send after the selection job:
 
 ```cron
-20 6 * * * cd /root/murphys-laws/backend && /usr/bin/npm run push:daily >> ../logs/daily-push.log 2>&1
+20 6 * * * cd /root/murphys-laws/backend && /usr/bin/npm run push:daily >> logs/daily-push.log 2>&1
 ```
 
 **What it does:**

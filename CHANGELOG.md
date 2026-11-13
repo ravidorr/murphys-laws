@@ -8,6 +8,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The Law of the Day is picked at 00:00 UTC by a scheduled job again, instead of by the first request of the day. The
+  nightly job had never run: its `>> logs/law-of-day.log` redirect pointed at `/root/murphys-laws/logs`, which the
+  deploy's cleanup of old root-level files (`rm -rf ... logs`) deletes on every release, so the shell failed before
+  `node` started (cron logged the start every night), and the first request to `/api/v1/law-of-day` after midnight
+  picked the law instead: of the 12 picks from Nov 1 to Nov 12, none came before 00:03 UTC and 10 fell between
+  00:22 and 00:26. Behind it, the server kept running a Feb 22 copy of `select-law-of-day.mjs`, because the upload to
+  the staging directory never deletes and each deploy synced that copy back. Now:
+  the schedule is a file in the repository, `backend/config/cron.d/murphys-laws-law-of-day`, that every deploy
+  (`deploy.yml` and `npm run deploy`) installs to `/etc/cron.d` through `backend/scripts/install-law-of-day-cron.sh`,
+  after the dependencies are installed and the migrations ran. The script is idempotent, replaces the file in one
+  step (a dot-named temporary file in `/etc/cron.d`, which cron ignores, then a rename; mode 644, owned by root; a hand
+  edit is overwritten), creates `backend/logs` (the job's log is `backend/logs/law-of-day.log`, in a directory the
+  deploy keeps), and removes the old `select-law-of-day.mjs` line from root's crontab so the job cannot run twice, and
+  the stale `.mjs` (the workflow also removes it from staging). It refuses to install, before changing anything, a
+  job that could not start: no schedule file, `select-law-of-day.ts`, `backend/node_modules/tsx`, `.nvmrc` or
+  `crontab`, or a `/usr/bin/node` (which the job runs) that is missing, cannot report its version, is not the major
+  version of `.nvmrc` or cannot load `better-sqlite3`. The crontab edit follows the rule of the
+  scanner cleanup above: root's crontab is read into a variable and written back only from a successful read, only
+  when the old line was there and only when something other than blank lines remains, so it is never emptied (an old
+  line that is the only entry stays, with a warning); every other failure leaves it as it was and only prints a
+  `WARNING:` line. Both deploy paths treat a failed install as a warning and go on with the release, since the API
+  picks the law on the first request of the day when the job is not installed; in `deploy.yml` the install step sits
+  after the crontab cleanup and before the PM2 restart (outside the "testing nginx and reloading" step), in
+  `npm run deploy` after the migrations and before the restart. The file sets `CRON_TZ=UTC`, which cronie honors and
+  the Debian and Ubuntu cron package does not document, so the installer warns when the server's time zone is not UTC
+  (the pick is for the current UTC day whenever the job runs, but a run before 00:00 UTC no longer picks ahead of the
+  first visitor). The cron command is grouped in braces so that a failing `cd` is logged too. The job runs `select-law-of-day.ts` through the
+  `tsx` that PM2 uses for the API. The script no longer carries its own copy of the pick logic through the `sqlite3`
+  command line: it calls the new `LawService.selectLawOfTheDay`, which `getLawOfTheDay` now uses too, with the same
+  query as before (highest-voted law not featured in the last 365 days, alphabetical tiebreak, any published law when
+  all were featured). The check and the insert run in one `BEGIN IMMEDIATE` transaction that takes SQLite's write
+  lock first (the 5 s busy timeout covers a wait), so when the job and a request meet at midnight, or two jobs start
+  together, exactly one picks and the others use that pick; the replacement pick for a law unpublished during the day
+  is kept. Every run logs one timestamped result line (picked, already picked, or an error with a non-zero exit), after the
+  database service's own untimestamped connection line, and a missing database file is an error instead of a new,
+  empty one. Tests
+  cover the pick with two real connections to one database file (the lock, and finding the other process's pick), the
+  tiebreak, the script, the exact cron command run through `sh -c` against a real database (twice in a row, and three
+  at the same moment), the installer (crontab with and without the old line, only the old line, no crontab, every
+  failing step, the checks of tsx, `.nvmrc` and Node, the time zone, mode and temporary files of the cron file), the
+  schedule file, and both deploy paths, including the install step of the deploy script run with an installer that
+  fails. The documented daily email and notification jobs wrote to `../logs` (the same missing directory); their docs
+  now use `backend/logs`, but they are still not installed on the server and stay that way until SMTP and the VAPID
+  keys are set. Backend bumped to `2.3.91`; root to `2.6.243`.
 - The deploy can no longer empty root's crontab, and the asset pruning gets more time. The deploy step that removes the
   retired standalone vulnerability scanner cron job ran
   `sudo crontab -l | grep -v vulnerability-scanner.sh | sudo crontab - || true`: when `crontab -l` failed for any reason

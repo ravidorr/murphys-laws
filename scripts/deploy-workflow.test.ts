@@ -568,7 +568,8 @@ test('a script that crashes on the server only warns', () => {
 // The crontab part of the same step, run with stand-ins for sudo and crontab (and sometimes grep)
 
 const cronBlockStart = deployScript.indexOf('echo "==> Removing the standalone vulnerability scanner cron job');
-const cronBlockEnd = deployScript.indexOf('echo "==> Restarting PM2"');
+// The block ends where the comment of the next step, the install of the Law of the Day schedule, begins
+const cronBlockEnd = deployScript.indexOf('# The Law of the Day schedule (/etc/cron.d, from backend/config/cron.d).');
 const cronBlock = deployScript.slice(cronBlockStart, cronBlockEnd);
 const realGrep = spawnSync('sh', ['-c', 'command -v grep'], { encoding: 'utf8' }).stdout.trim();
 const realMktemp = spawnSync('sh', ['-c', 'command -v mktemp'], { encoding: 'utf8' }).stdout.trim();
@@ -860,4 +861,90 @@ test('the pruning timeout is longer than the last measured run and shorter than 
   assert.ok(amount, `command_timeout ${commandTimeout} is a number of seconds, minutes or hours`);
   const limitSeconds = Number(amount) * { s: 1, m: 60, h: 3600 }[unit as 's' | 'm' | 'h'];
   assert.ok(limitSeconds >= 3 * Number(seconds), `the ssh action's ${limitSeconds} s limit leaves room for the rest of the deploy next to ${seconds} s of pruning`);
+});
+
+// ---------------------------------------------------------------------------------------------------------------
+// The Law of the Day schedule: installed by the deploy step, and by `npm run deploy`
+
+const deployTsSource = readFileSync(path.join(rootDirectory, 'backend/scripts/deploy.ts'), 'utf8');
+const installer = 'install-law-of-day-cron.sh';
+const lawOfDayMarker = 'echo "==> Installing the Law of the Day schedule"';
+const restartMarker = 'echo "==> Restarting PM2"';
+
+/** The position of a needle that must be in the text, so an order check cannot pass because an anchor was renamed. */
+const at = (text: string, needle: string): number => {
+  const index = text.indexOf(needle);
+  assert.ok(index >= 0, `${needle} is in the text`);
+  return index;
+};
+
+test('the stale select-law-of-day.mjs is dropped from staging before the scripts are synced from it', () => {
+  // The upload never deletes, so the Feb 22 copy in staging would be rsynced back to the server on every deploy
+  const removal = deployScript.indexOf('rm -f "$STAGING_DIR/backend/scripts/select-law-of-day.mjs"');
+  const sync = deployScript.indexOf('rsync -a --delete "$STAGING_DIR/backend/scripts/"');
+  assert.ok(removal >= 0, 'the stale script is removed from staging');
+  assert.ok(sync > removal, 'and that happens before the scripts are synced');
+});
+
+test('the deploy installs the Law of the Day schedule once the files and the dependencies are in place', () => {
+  const install = at(deployScript, installer);
+  const nginxStart = at(deployScript, 'echo "==> Deploy: testing nginx and reloading"');
+  const rootPart = at(deployScript, "<<'INNER'");
+  assert.ok(install > rootPart, 'it runs in the part of the script that runs as root');
+  assert.ok(install > at(deployScript, 'npm run migrate'), 'after the dependencies are installed and the migrations ran');
+  assert.ok(install > at(deployScript, 'echo "✓ Standalone vulnerability scanner cron job removed"'), 'after the crontab cleanup');
+  assert.ok(install < at(deployScript, restartMarker), 'before the restart, where a failure would only be a warning');
+  assert.ok(!deployScript.slice(nginxStart, rootPart).includes(installer), 'the nginx guard does not run it');
+});
+
+/** The install step of the deploy script, run with a stand-in for the installer that exits with the given status. */
+function runInstallStep(installerStatus: number) {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'deploy-law-of-day-'));
+  const scripts = path.join(directory, 'backend/scripts');
+  mkdirSync(scripts, { recursive: true });
+  writeFileSync(path.join(scripts, installer), `echo "installer ran with: $*"\n[ "${installerStatus}" -eq 0 ] || echo "installer says no" >&2\nexit ${installerStatus}\n`);
+  const step = deployScript.slice(at(deployScript, lawOfDayMarker), at(deployScript, restartMarker));
+  return spawnSync('bash', ['-e', '-c', `TARGET_DIR="${directory}"\n${step}\necho AFTER_INSTALL`], { encoding: 'utf8' });
+}
+
+test('the install step passes the release directory to the installer and prints no warning when it succeeds', () => {
+  const result = runInstallStep(0);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /installer ran with: \/[^\n]*deploy-law-of-day-[^\n]*\nAFTER_INSTALL/);
+  assert.doesNotMatch(result.stderr, /WARNING/);
+});
+
+test('a failed install of the schedule only warns, and the deploy goes on to restart the API', () => {
+  const result = runInstallStep(3);
+  assert.equal(result.status, 0, 'the step never ends the script under set -e');
+  assert.match(result.stdout, /AFTER_INSTALL/);
+  assert.match(result.stderr, /installer says no/);
+  assert.match(result.stderr, /^WARNING: the Law of the Day schedule was not installed \(exit 3, see the message above\); the first request of each day picks the law until a deploy installs it, and the deploy continues$/m);
+  const step = deployScript.slice(at(deployScript, lawOfDayMarker), at(deployScript, restartMarker));
+  const commands = step.split('\n').filter((line) => !line.trim().startsWith('#')).join('\n');
+  assert.doesNotMatch(commands, /(^|[;&|{)]|\bthen|\belse)\s*(exit|return)\b/m, 'the step has no exit of its own');
+});
+
+test('the old law-of-day crontab line is left to the installer: the scanner cleanup does not touch it or call the installer', () => {
+  const cleanup = deployScript.slice(cronBlockStart, cronBlockEnd);
+  assert.doesNotMatch(cleanup, /select-law-of-day/);
+  assert.ok(!cleanup.includes(installer));
+});
+
+test('npm run deploy installs the schedule too, as root, before it restarts PM2, and only warns when that fails', () => {
+  const install = at(deployTsSource, installer);
+  assert.ok(install > at(deployTsSource, "'Applying database migrations'"), 'after the dependencies and the migrations');
+  assert.ok(install < at(deployTsSource, 'pm2 restart ecosystem.config.cjs'), 'and a failure is handled before the restart');
+  assert.match(deployTsSource, /ssh \$\{DROPLET_HOST\} "sudo bash \$\{DROPLET_PATH\}\/backend\/scripts\/install-law-of-day-cron\.sh \$\{DROPLET_PATH\}"/);
+  const handler = deployTsSource.slice(install, at(deployTsSource, "log('\\nRestarting PM2 services...'"));
+  assert.match(handler, /catch \(error\) \{[\s\S]*?WARNING: the Law of the Day schedule was not installed[\s\S]*?the deployment continues`,\s*'yellow'/, 'the failure is logged as a warning, not rethrown');
+  assert.doesNotMatch(handler, /\bthrow\b/);
+});
+
+test('the log directory of the job is created by the deploy and is not the one its cleanup removes', () => {
+  // The job writes to backend/logs; the cleanup of old root-level files only removes /root/murphys-laws/logs
+  assert.match(deployScript, /sudo install -d -m 755 "\$TARGET_DIR\/backend\/logs"/);
+  assert.match(deployScript, /rm -rf config modules scripts utils logs/);
+  assert.ok(at(deployScript, 'rm -rf config modules scripts utils logs') < at(deployScript, 'cd "$TARGET_DIR/backend"'), 'the cleanup runs in the release root, before it moves into backend');
+  assert.match(readFileSync(path.join(rootDirectory, 'backend/config/cron.d/murphys-laws-law-of-day'), 'utf8'), /\/backend\/logs\/law-of-day\.log/);
 });

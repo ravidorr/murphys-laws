@@ -209,6 +209,10 @@ jobs:
                 || { echo "ERROR: $script.sh is missing from the uploaded release; nothing was changed on the server" >&2; exit 1; }
             done
 
+            # The upload never deletes, so a script that left the repository stays in staging and the rsync below
+            # would copy it back to the server. select-law-of-day.mjs was replaced by select-law-of-day.ts.
+            sudo rm -f "$STAGING_DIR/backend/scripts/select-law-of-day.mjs"
+
             sudo rsync -a --delete "$STAGING_DIR/web/dist/" "$TARGET_DIR/web/dist/"
             sudo rsync -a --delete "$STAGING_DIR/backend/src/" "$TARGET_DIR/backend/src/"
             sudo rsync -a --delete "$STAGING_DIR/backend/scripts/" "$TARGET_DIR/backend/scripts/"
@@ -454,6 +458,18 @@ jobs:
                   echo "WARNING: could not write root's crontab; it was left as it was and the deploy continues" >&2
                 fi
               fi
+            fi
+
+            # The Law of the Day schedule (/etc/cron.d, from backend/config/cron.d). The release files and the locked
+            # dependencies are in place, and the job first runs at 00:00 UTC, so this does not wait for the restart.
+            # It also removes the old select-law-of-day line from root's crontab, never writing an empty one. Like the
+            # cleanup above it must never block a release (the API picks the law on the first request of the day when
+            # the job is not installed), so a failure only prints a WARNING and the deploy goes on.
+            echo "==> Installing the Law of the Day schedule"
+            law_of_day_status=0
+            bash "$TARGET_DIR/backend/scripts/install-law-of-day-cron.sh" "$TARGET_DIR" || law_of_day_status=$?
+            if [ "$law_of_day_status" -ne 0 ]; then
+              echo "WARNING: the Law of the Day schedule was not installed (exit $law_of_day_status, see the message above); the first request of each day picks the law until a deploy installs it, and the deploy continues" >&2
             fi
 
             echo "==> Restarting PM2"
