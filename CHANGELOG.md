@@ -8,6 +8,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Built web assets no longer pile up on the server. The deploy uploads `web/dist/` into a persistent staging
+  directory with no delete and mirrors that directory into the web root with `rsync --delete`, so every release left
+  its hashed bundles behind (1,185 files and about 650 MB in `assets/` after nine months), and the `.gz` and `.br`
+  copies the build now writes would make it grow faster. A new `backend/scripts/prune-stale-assets.mjs` runs in the
+  deploy after the sync and before nginx is reloaded, on the staging copy and the web root (pruning only the web
+  root would be undone by the next rsync, and pruning only staging would leave the files in the web root until the
+  next release). It keeps every file whose name appears in a text file of the current build outside `assets/` (the
+  prerendered pages, the manifest, `sw.js` with the precache list inside it), every file named by any kept script or
+  stylesheet (imports, `__vite__mapDeps` lists, CSS `url()` references, including old files kept by another rule),
+  everything modified in the last 30 days, every file the retained nginx access logs (about 14 days with the
+  server's logrotate rule) show being requested successfully, and the `.gz`, `.br` and `.map` siblings of a kept
+  file. It deletes only older files that none of that keeps, one named file at a time, never a directory, link or
+  anything that is not a regular file. It deletes nothing when a check fails: no `index.html` or `assets/`, an
+  `index.html` that names no entry script, an entry script or stylesheet it names that is missing, an unreadable
+  file or access log (or one that does not look like an nginx access log, such as an `.xz` rotation), no access log
+  that exists or no asset request in them (the glob passes the literal pattern when no log matches, so a missing log
+  stops the run instead of switching the log rule off), fewer than five files kept, or a plan that would delete more
+  than 90% of the files (on the first deploy after the backlog this may stop the run: the log says so, and
+  `--dry-run` shows the plan). All directories are planned before the first deletion, and only regular files outside
+  `assets/` are read (a named pipe would block it). `--dry-run` reports without deleting, a second run finds nothing,
+  and a file that cannot be deleted is named and counted (exit code 3) without stopping the rest. The deploy only
+  warns, with the exit code and as a `::warning::` annotation, when the script does not complete (it is cut off after
+  5 minutes): it never blocks a release. Tests cover the keep rules, the age limit to the millisecond, each abort,
+  the deletion failures and the deploy wiring; the script reaches 100% line and branch coverage in its own test file
+  (the backend coverage gate only covers `src/`). The deploy step's pruning block is also run as written, with
+  stand-ins for `sudo` and `timeout`, against throwaway staging and web-root copies in
+  `scripts/deploy-workflow.test.ts`: stale files go from both, and a missing access log, a failed safety check, a
+  `node` that exits 127 (as a missing one does) or a crashing script (exit 1, 3 or 127) only warn while the deploy
+  goes on. The script also starts when it is reached through a symbolic link (its entry-point check compares real
+  paths).
+  Root bumped to `2.6.235` and backend to `2.3.88`.
 - The root scripts tests (`scripts/*.test.ts`, `npm run test:scripts`) now run in CI on every pull request and every
   push to `main`. Only four of them (the workflow and lockfile contract tests) ran before, so a fixture dated 2026-10-10
   went stale on 2026-11-09 (the metrics analyzers only read the last 30 days) and failed unnoticed for days. They run in

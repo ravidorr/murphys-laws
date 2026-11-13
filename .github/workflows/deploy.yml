@@ -225,6 +225,21 @@ jobs:
 
             sudo chown -R root:root "$TARGET_DIR"
 
+            # Retention: scp-action never deletes from the staging copy and rsync --delete mirrors it, so old hashed
+            # bundles piled up (about 650 MB). Drop the ones that are older than 30 days, that nothing in the
+            # current build reaches and that the retained nginx access logs (about 14 days with the server's
+            # logrotate rule) show nobody requesting, from the staging copy as well as the web root (or the next
+            # rsync would bring them back). To turn it off, delete this block; adding --dry-run to the command only
+            # reports. It deletes nothing when a safety check fails (including when no access log can be read,
+            # because the glob below then stays literal) and must never block a release, so any non-zero exit only
+            # warns (a hang is cut off after 5 minutes). Node comes from root's nvm, as in the commands below.
+            echo "==> Deploy: pruning stale build assets"
+            prune_rc=0
+            sudo env STAGING_DIR="$STAGING_DIR" TARGET_DIR="$TARGET_DIR" bash -c 'export NVM_DIR=/root/.nvm; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1; cd "$TARGET_DIR" && nvm use --silent >/dev/null 2>&1; node --version; timeout 300 node "$TARGET_DIR/backend/scripts/prune-stale-assets.mjs" $(for log in /var/log/nginx/access.log*; do printf -- "--access-log %s " "$log"; done) "$STAGING_DIR/web/dist" "$TARGET_DIR/web/dist" 2>&1' || prune_rc=$?
+            if [ "$prune_rc" -ne 0 ]; then
+              echo "::warning::Stale asset pruning did not complete (exit $prune_rc: 1 means a safety check stopped it before any deletion or the script could not run, 3 means some deletions failed, 124 means it timed out, anything else means it could not start, for example no node; see its output above); the deploy continues"
+            fi
+
             # "sudo nginx -t && sudo systemctl reload nginx" does not stop this script under set -e (a failure
             # inside an && list that is not its last command is ignored), so install and test explicitly: keep the
             # previous site file, put it back when the new one cannot be installed or nginx rejects it, and fail the
