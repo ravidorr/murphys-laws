@@ -212,16 +212,10 @@ jobs:
                 || { echo "ERROR: $script.sh is missing from the uploaded release; nothing was changed on the server" >&2; exit 1; }
             done
 
-            # A bad nginx.conf must stop the deploy before anything on the live tree is replaced, or the new frontend
-            # would run next to the old backend until the next deploy. nginx only tests the files under /etc/nginx, so
-            # the uploaded copy is installed as the site file here and tested; when nginx rejects it (or it cannot be
-            # installed) the previous site file is put back and the deploy fails. Install and test explicitly: a
-            # failure inside an && list that is not its last command does not stop a set -e script. A typical cause is
-            # a directive from a module that the server lacks (an unknown directive fails nginx -t); see
-            # shared/docs/DEPLOYMENT.md, "Compression and HTTP/2". The reload comes after the release is in place
-            # (below), and until then the previous site file is kept: if the release fails in between, the exit trap
-            # puts it back, so on any failure the script can see the new file does not wait on disk for an unrelated
-            # reload to load it (a killed connection skips the trap; the previous copy is then in the mktemp file).
+            # A rejected nginx.conf must stop the deploy before anything on the live tree is replaced. nginx only
+            # tests /etc/nginx, so the uploaded copy is installed as the site file and tested here; the previous file
+            # is put back on rejection, and by the exit trap if the release fails before the reload. No `cmd && nginx
+            # -t` list: set -e ignores a failure in it. See shared/docs/DEPLOYMENT.md, "A rejected nginx configuration".
             echo "==> Deploy: testing nginx.conf before the release replaces anything"
             NGINX_SITE=/etc/nginx/sites-available/murphys-laws
             NGINX_PREVIOUS=""
@@ -255,10 +249,8 @@ jobs:
 
             sudo rsync -a --delete "$STAGING_DIR/web/dist/" "$TARGET_DIR/web/dist/"
             sudo rsync -a --delete "$STAGING_DIR/backend/src/" "$TARGET_DIR/backend/src/"
-            # select-law-of-day.mjs was replaced by select-law-of-day.ts. The upload never deletes, so the old copy
-            # stays in staging, and the exclusion keeps rsync from copying it back to the server. The same exclusion
-            # also protects the copy on the server from --delete: it is removed by the Law of the Day installer
-            # below, together with the old root crontab line that runs it, and only once the new job is installed.
+            # select-law-of-day.mjs became .ts. The exclusion keeps the stale staging copy from coming back and keeps
+            # --delete from removing the server's copy, which the Law of the Day installer removes below with its cron line.
             sudo rsync -a --delete --exclude='select-law-of-day.mjs' "$STAGING_DIR/backend/scripts/" "$TARGET_DIR/backend/scripts/"
             sudo rsync -a --delete "$STAGING_DIR/backend/db/" "$TARGET_DIR/backend/db/"
             sudo rsync -a --delete "$STAGING_DIR/backend/config/" "$TARGET_DIR/backend/config/"
@@ -273,15 +265,12 @@ jobs:
 
             sudo chown -R root:root "$TARGET_DIR"
 
-            # Retention: scp-action never deletes from the staging copy and rsync --delete mirrors it, so old hashed
-            # bundles piled up (about 650 MB). Drop the ones that are older than 30 days, that nothing in the
-            # current build reaches and that the retained nginx access logs (about 14 days with the server's
-            # logrotate rule) show nobody requesting, from the staging copy as well as the web root (or the next
-            # rsync would bring them back). To turn it off, delete this block; adding --dry-run to the command only
-            # reports. It deletes nothing when a safety check fails (including when no access log can be read,
-            # because the glob below then stays literal) and must never block a release, so any non-zero exit only
-            # warns (a hang is cut off after 180 seconds, well inside the ssh action's own time limit of ten minutes, its default
-            # command_timeout; the first real run on the 1-vCPU server took about 69 seconds). Node comes from root's nvm, as in the commands below.
+            # Retention: staging and web root pile up old hashed bundles (about 650 MB). Drop those older than 30 days
+            # that nothing in the current build reaches and the retained nginx access logs show nobody requesting, from
+            # staging too (or rsync brings them back). It deletes nothing when a safety check fails (also when no access
+            # log can be read: the glob then stays literal) and never blocks a release: a non-zero exit only warns. A hang
+            # is cut off after 180 s, well inside the ssh action's ten minute command_timeout (the first run took 69 s).
+            # Node comes from root's nvm. To turn it off, delete this block; --dry-run only reports.
             echo "==> Deploy: pruning stale build assets"
             prune_rc=0
             sudo env STAGING_DIR="$STAGING_DIR" TARGET_DIR="$TARGET_DIR" bash -c 'export NVM_DIR=/root/.nvm; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1; cd "$TARGET_DIR" && nvm use --silent >/dev/null 2>&1; node --version; timeout 180 node "$TARGET_DIR/backend/scripts/prune-stale-assets.mjs" $(for log in /var/log/nginx/access.log*; do printf -- "--access-log %s " "$log"; done) "$STAGING_DIR/web/dist" "$TARGET_DIR/web/dist" 2>&1' || prune_rc=$?
@@ -289,16 +278,12 @@ jobs:
               echo "WARNING: stale asset pruning did not complete (exit $prune_rc: 1 means a safety check stopped it before any deletion or the script could not run, 3 means some deletions failed, 124 means it timed out, anything else means it could not start, for example no node; see its output above); the deploy continues"
             fi
 
-            # The new site file was installed and accepted by nginx -t before the release replaced anything (see
-            # "Deploy: testing nginx.conf" above), so only the reload is left. It waits until the new files are in
-            # place so that nginx does not serve the new configuration next to the old web build (the backend runs
-            # its old process until the PM2 restart below). A reload that fails fails the deploy, and the exit trap
-            # puts the previous site file back; once nginx is reloaded the trap is disarmed and the backup removed.
+            # nginx.conf was tested before the release replaced anything, so only the reload is left; it waits for
+            # the new files. A failed reload fails the deploy and the exit trap restores the previous site file.
             echo "==> Deploy: reloading nginx"
             sudo systemctl reload nginx
             trap - EXIT
-            # Only bookkeeping is left, and nginx already runs the new file: a backup that cannot be removed warns
-            # instead of stopping the deploy before the migrations and the restart.
+            # Only the backup is left: failing to remove it must not stop the migrations and the restart.
             [ -z "$NGINX_PREVIOUS" ] || sudo rm -f "$NGINX_PREVIOUS" \
               || echo "WARNING: could not remove the backup $NGINX_PREVIOUS of the previous site file" >&2
 
