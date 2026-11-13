@@ -121,7 +121,12 @@ describe('early Law of the Day script in index.html', () => {
       return fetchMock.mock.calls[0]![1] as RequestInit;
     }
 
-    beforeEach(() => localStorage.clear());
+    // Only Date is frozen (the snippet needs no timers): the vote times below are offsets from Date.now(), and the
+    // minute is an exclusive limit (`< 60000` in index.html), so 60 s ago must fall exactly on it
+    beforeEach(() => {
+      localStorage.clear();
+      vi.useFakeTimers({ toFake: ['Date'] });
+    });
     afterEach(() => localStorage.clear());
 
     it('uses the HTTP cache when this browser has not voted', () => {
