@@ -70,6 +70,11 @@ test.describe('category cards', () => {
     expect(second!.y).toBeGreaterThanOrEqual(first!.y + first!.height);
     expect(Math.abs(second!.width - first!.width)).toBeLessThan(1);
 
+    // The space between clusters is a margin (the Kindle browser ignores flex gap), 3rem, and the wrapper has no gap
+    expect(Math.round(second!.y - (first!.y + first!.height))).toBe(48);
+    await expect(clusters.nth(1)).toHaveCSS('margin-top', '48px');
+    await expect(page.locator('.category-clusters')).toHaveCSS('row-gap', 'normal');
+
     // Group the first cluster's cards by row; in each row the footers must share one top edge
     const rows = await clusters.nth(0).locator('.category-card').evaluateAll((cards) => {
       const byTop = new Map<number, number[]>();
