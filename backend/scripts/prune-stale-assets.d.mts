@@ -22,3 +22,9 @@ export function run(
   argv: string[],
   options?: { log?: (line: string) => void; error?: (line: string) => void; now?: number },
 ): number;
+export function isEntryPoint(metaUrl: string, argv1: string | undefined): boolean;
+export function runCli(
+  metaUrl: string,
+  argv: string[],
+  options?: { log?: (line: string) => void; error?: (line: string) => void; now?: number },
+): number | null;

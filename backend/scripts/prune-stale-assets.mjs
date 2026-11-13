@@ -141,7 +141,14 @@ export function requestedNames(logPaths) {
     if (text.length > 0 && !/"[A-Z]+ \S+ HTTP\/[\d.]+" \d{3} /.test(text)) abort(`${file} does not look like an nginx access log`);
     readable += 1;
     for (const match of text.matchAll(/"(?:GET|HEAD) \/assets\/([^ ?"]+)[^"]*" [23]\d\d /g)) {
+      // nginx logs the path as the client sent it, percent-encoded (my%20file.png): keep the raw name and the
+      // decoded one. A malformed escape is left raw; nothing is decoded twice. Both only add kept names.
       requested.add(basename(match[1]));
+      try {
+        requested.add(basename(decodeURIComponent(match[1])));
+      } catch {
+        // malformed escape (%ZZ): the raw form above is all there is
+      }
       requests += 1;
     }
   }
@@ -391,12 +398,31 @@ export function run(argv, { log = console.log, error = console.error, now = Date
   return failed > 0 ? 3 : 0;
 }
 
-/* v8 ignore start -- command-line entry point; run() is covered through its arguments */
-// import.meta.url is the real path of the file (the typed one with --preserve-symlinks-main), process.argv[1] the path
-// as it was typed: accept either, or a run through a symbolic link (a web root that is one, a temporary directory
-// under /var on macOS) would do nothing and still exit 0.
-const here = process.argv[1] && fileURLToPath(import.meta.url);
-if (here && (here === realpathSync(process.argv[1]) || here === resolve(process.argv[1]))) {
-  process.exit(run(process.argv.slice(2)));
+/**
+ * True when the module whose URL is `metaUrl` (import.meta.url) is the script that `argv1` (process.argv[1]) started.
+ * import.meta.url is the real path of the file (the typed one with --preserve-symlinks-main) and argv[1] the path as it
+ * was typed: accept either, or a run through a symbolic link (a web root that is one, a temporary directory under /var
+ * on macOS) would do nothing and still exit 0.
+ */
+export function isEntryPoint(metaUrl, argv1) {
+  if (!argv1) return false;
+  const here = fileURLToPath(metaUrl);
+  let real = null;
+  try {
+    real = realpathSync(argv1);
+  } catch {
+    // A path that does not exist (a script piped in, an eval) is not this file.
+  }
+  return here === real || here === resolve(argv1);
 }
-/* v8 ignore stop */
+
+/** The command line: returns the exit code of run() when this module was started as a script, null when it was imported. */
+export function runCli(metaUrl, argv, options = {}) {
+  return isEntryPoint(metaUrl, argv[1]) ? run(argv.slice(2), options) : null;
+}
+
+const exitCode = runCli(import.meta.url, process.argv);
+// The only line that cannot run in-process: it applies the exit code when the file was started as a script. Everything
+// it depends on (isEntryPoint, runCli, run) is tested directly, and the command-line tests start the real script.
+/* v8 ignore next */
+if (exitCode !== null) process.exitCode = exitCode;
