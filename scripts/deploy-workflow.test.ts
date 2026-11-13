@@ -1546,3 +1546,11 @@ test('a warning is printed, and added to the job summary when GitHub Actions pro
 test(`the workflow strings that contain an expression and are longer than ${warningLimit} characters are reported as a warning, without failing`, () => {
   for (const warning of lengthWarnings(workflowStrings())) reportLengthWarning(warning, process.env.GITHUB_STEP_SUMMARY);
 });
+
+test('the backend .env names the commit as the Sentry release, like the web build', () => {
+  // Without it API events carry no release: no "resolve in release", no regression detection, no suspect commits.
+  const script = String(deploySteps[indexOfStep('Deploy and restart services')]?.with?.script ?? '');
+  assert.notEqual(script, '', 'the deploy script was found');
+  assert.match(script, /^\s*SENTRY_RELEASE=\$\{\{ github\.sha \}\}$/m, 'SENTRY_RELEASE is written into the backend .env');
+  assert.equal(buildStep?.env?.VITE_APP_VERSION, '${{ github.sha }}', 'the web bundle and the API use the same release name');
+});

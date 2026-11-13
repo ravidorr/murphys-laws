@@ -60,9 +60,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reach `backend/.env` the way they did. Backend bumped to `2.3.99`; root to `2.6.261`.
 - Registered the site for the WebMCP origin trial: `web/index.html` now carries the `origin-trial` token for
   `https://murphys-laws.com` (first-party, subdomains included), so Chrome 149 and later offer the WebMCP tools without the
-  `enable-webmcp-testing` flag. The token expires on 2027-03-30. `origin-trial-token.test.ts` reads it and fails if it is
-  not a first-party WebMCP token for that origin, or has fewer than 14 days left, so the tools do not vanish unnoticed.
-  Web bumped to `3.4.132`; root to `2.6.267`.
+  `enable-webmcp-testing` flag. The token expires on 2027-03-30. `origin-trial-token.test.ts` reads it, fails if it is
+  not a first-party WebMCP token for that origin (subdomains included), warns from 45 days before it expires and fails
+  below 7 days, so the tools do not vanish unnoticed. The renewal is in `TODO.md`.
+  Web bumped to `3.4.133`; root to `2.6.269`.
 - The WebMCP `search_laws` tool now refuses while the signup or submit-a-law form holds input the visitor typed (a text
   field or text area with text, a ticked box or a changed choice), because opening the results leaves the page and those
   forms keep no draft. It returns an error telling the agent to ask the visitor first. Search forms (`role="search"`)
@@ -856,6 +857,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   production and non-production branches. Backend bumped to `2.3.102`, root to `2.6.268`.
 
 ### Added
+
+- The backend now names its Sentry release (issue #360). What was missing: the web bundle sets `release` from
+  `VITE_APP_VERSION` (the commit SHA) and uploads its source maps to it, but `initSentry` set none, so an API error
+  could only be resolved outright (no "resolve in next release"), and Sentry could not say which deploy introduced or
+  reopened it. `initSentry` now passes `release` from `SENTRY_RELEASE` (trimmed; unset or blank leaves it undefined),
+  and `deploy.yml` writes `SENTRY_RELEASE=${{ github.sha }}` into the backend `.env` beside `SENTRY_DSN`: the name the
+  web build gets from `resolveAppRelease` when `VITE_APP_VERSION` is the SHA, so web and API releases line up. Tests
+  cover a set, a blank and an unset variable, and that the deploy writes it and uses the same name as the web build.
+  Not done: creating the release and associating commits from the deploy (suspect commits), which needs a Sentry
+  step with `sentry-cli`. Backend bumped to `2.3.103`, root to `2.6.269`.
 
 - A "Crane's Law: No Free Lunch" article at `/cranes-law`, for readers who search for Crane's law. Crane's law is the name
   Arthur Bloch's 1977 Murphy's Law collection gives to "there is no such thing as a free lunch", and the archive already

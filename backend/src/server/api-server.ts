@@ -63,6 +63,10 @@ export function initSentry(): void {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
     environment: 'production',
+    // The deploy writes the commit SHA here, the same name the web build uses as its release (web/scripts/app-release.ts),
+    // so web and API events line up in Sentry. Unset leaves the release out; the SDK would otherwise guess one from its
+    // own environment.
+    release: process.env.SENTRY_RELEASE?.trim() || undefined,
     tracesSampleRate: 0.1,
   });
 }
