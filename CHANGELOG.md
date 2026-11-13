@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Removed a leftover `>>>>>>> Stashed changes` line from this file, between two entries in the 2.6.136 section; it came in
+  with the PM2 log-name entry. Root bumped to `2.6.270`.
 - Stopped the deploy from printing "Errors detected in logs" after every healthy release (issue #349). What was wrong:
   the deploy piped `pm2 logs murphys-api --lines 20 --nostream` into `grep -i "error\|module.*version"`, and PM2 prints
   a header before the lines of each log file, so the header of the error log
@@ -25,7 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `api-error-N.log` files was not confirmed: the lead is that `backend/ecosystem.config.cjs` sets `error_file` and `out_file` without `merge_logs`, so PM2
   adds the process id to the names, and the deploy runs `pm2 delete all` and `pm2 start`; the ecosystem file is unchanged.
   Backend bumped to `2.3.101`; root to `2.6.266`.
->>>>>>> Stashed changes
 - The health monitor now runs a check that could not run again, twice and 45 seconds apart, before it emails "Health
   Check Could Not Run". What was wrong: the 2026-11-13 07:40 UTC mail (`Cannot find package .../dotenv/index.js`) was not
   a broken install. The deploy of 07:37 UTC was inside `npm ci`, which empties `backend/node_modules` for about 20 to 60
