@@ -228,6 +228,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `/var/log/nginx/*.log` logrotate rule covers it.
 
 ### Fixed
+- The web test "gives the retry the whole 10 s when the early request failed at once" no longer fails now and then
+  with 9999 where it expects 10000. It read the real clock: `setEarly()` stamps the early request's start with
+  `Date.now()`, and the retry subtracts the time that has passed since from the 10 s window, so a tick of 1 ms between
+  the two calls left 9999 ms. It failed once in the web CI `test-and-build` job and in two local pre-commit runs. The
+  test now freezes the clock with fake timers, so the elapsed time is exactly 0 and the assertion is unchanged
+  (`AbortSignal.timeout` called with `10_000`). Other tests that depended on the real clock are frozen the same way:
+  "keeps the cache bypass on the retry..." asserted that the retry got more than 6000 and at most 7000 ms, and now
+  asserts exactly 7000; and the `right after a vote` tests of the inline script, whose vote times are offsets from
+  `Date.now()` (59 s ago must bypass the cache, and a stall of over a second under load could break that; 60 s ago, the
+  boundary, now falls exactly on it instead of just past it). Verified by making `Date.now` advance by 1 ms on every
+  call: the old test fails with 9999 and the new one passes, and `api.test.ts`, `early-law-of-day.test.ts` and
+  `home.test.ts` passed 40 of 40 runs (and 20 of 20 with `--pool=threads`). No production code changed. Root bumped to
+  `2.6.238` and web to `3.4.118`.
 - `analyze-resource-peaks.sh` no longer skips the previous month's metrics file, or reads the current month's twice, on
   the days when the previous month is too short, and its 30-day cutoff is now UTC. It found the previous month with
   `date -d "1 month ago"`, which GNU date resolves to the current month when the day does not exist a month earlier (in

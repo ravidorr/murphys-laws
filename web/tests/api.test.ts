@@ -567,6 +567,7 @@ describe('API utilities', () => {
     afterEach(() => {
       localStorage.clear();
       delete window.__earlyLawOfDay;
+      vi.useRealTimers();
     });
 
     it('uses the HTTP cache when the visitor has not voted lately', async () => {
@@ -623,6 +624,8 @@ describe('API utilities', () => {
     });
 
     it('keeps the cache bypass on the retry that gets only what is left of the shared 10 s', async () => {
+      // A frozen clock, so the 3 s that went by before the retry is exactly 3 s
+      vi.useFakeTimers();
       const timeoutSignal = vi.spyOn(AbortSignal, 'timeout');
       window.__earlyLawOfDay = { law: null, url: '/api/v1/law-of-day', error: '503', startedAt: Date.now() - 3_000, promise: Promise.resolve(null) };
       localStorage.setItem(LAST_VOTE_AT_KEY, String(Date.now() - 5_000));
@@ -630,8 +633,7 @@ describe('API utilities', () => {
       await fetchLawOfTheDay();
 
       expect(fetchSpy.mock.calls[0]![1]).toMatchObject({ cache: 'no-cache' });
-      expect(timeoutSignal.mock.calls[0]![0]).toBeGreaterThan(6_000);
-      expect(timeoutSignal.mock.calls[0]![0]).toBeLessThanOrEqual(7_000);
+      expect(timeoutSignal).toHaveBeenCalledWith(7_000);
     });
 
     it('still adopts a fresh early result when localStorage cannot be read', () => {
@@ -857,6 +859,9 @@ describe('API utilities', () => {
       });
 
       it('gives the retry the whole 10 s when the early request failed at once', async () => {
+        // A frozen clock: with the real one, a 1 ms tick between setEarly (which stamps the start) and the retry
+        // leaves 9_999 ms
+        vi.useFakeTimers();
         const timeoutSignal = vi.spyOn(AbortSignal, 'timeout');
         setEarly({ law: null, error: 'network', promise: Promise.resolve(null) });
 
