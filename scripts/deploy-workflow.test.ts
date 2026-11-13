@@ -1164,3 +1164,48 @@ test('the log directory of the job is created by the deploy and is not the one i
   assert.ok(at(deployScript, 'rm -rf config modules scripts utils logs') < at(deployScript, 'cd "$TARGET_DIR/backend"'), 'the cleanup runs in the release root, before it moves into backend');
   assert.match(readFileSync(path.join(rootDirectory, 'backend/config/cron.d/murphys-laws-law-of-day'), 'utf8'), /\/backend\/logs\/law-of-day\.log/);
 });
+
+// ---------------------------------------------------------------------------------------------------------------
+// GitHub's limit on the length of an expression
+
+// A workflow string that contains `${{ ... }}` is compiled into one expression, and GitHub rejects a workflow whose
+// expression is longer than 21,000 characters: the whole file is refused ("workflow file issue"), every run ends in
+// failure with no job, and no deploy can start. actionlint does not know this limit. The 'Deploy and restart services'
+// script holds a few `${{ secrets[...] }}` lines, so its whole text counts, comments included.
+const expressionLimit = 21000;
+const stringLimit = 20000; // leaves room, so that a few added lines do not make the next pull request the one that breaks it
+
+function workflowStrings(): { where: string; text: string }[] {
+  const found: { where: string; text: string }[] = [];
+  for (const file of readdirSync(workflowsDirectory).filter((name) => /\.ya?ml$/.test(name))) {
+    const workflow = readWorkflow(file);
+    for (const [jobId, job] of Object.entries(workflow.jobs ?? {})) {
+      for (const step of job.steps ?? []) {
+        const label = `${file} > ${jobId} > ${step.name ?? step.uses ?? '(unnamed step)'}`;
+        if (typeof step.run === 'string') found.push({ where: `${label} > run`, text: step.run });
+        for (const [key, value] of Object.entries(step.with ?? {})) {
+          if (typeof value === 'string') found.push({ where: `${label} > with.${key}`, text: value });
+        }
+        for (const [key, value] of Object.entries(step.env ?? {})) {
+          if (typeof value === 'string') found.push({ where: `${label} > env.${key}`, text: value });
+        }
+      }
+    }
+  }
+  return found;
+}
+
+test('the deploy script still holds expressions, which is why its length is limited', () => {
+  assert.ok(deployScript.length > 10000, 'the deploy script is found');
+  assert.ok(deployScript.includes('${{ secrets['), 'it contains `${{ secrets[...] }}` expressions, so GitHub compiles the whole string into one expression');
+});
+
+test(`no workflow string that contains an expression is longer than ${stringLimit} characters (GitHub's limit for an expression is ${expressionLimit})`, () => {
+  for (const { where, text } of workflowStrings()) {
+    if (!text.includes('${{')) continue;
+    assert.ok(
+      text.length <= stringLimit,
+      `${where} is ${text.length} characters and contains \${{ }} expressions: GitHub compiles the whole string into one expression and refuses a workflow whose expression is longer than ${expressionLimit} characters ("workflow file issue", every run fails with no job, no deploy can start). Shorten the comments, or move code into a script file in the repository. The limit for this test is ${stringLimit}.`,
+    );
+  }
+});

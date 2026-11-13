@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The deploy workflow was rejected by GitHub ("workflow file issue": the runs for the nginx guard commits ended in failure
+  with no job, so no deploy could start). The `script` of the "Deploy and restart services" step contains
+  `${{ secrets[...] }}` expressions, so GitHub compiles the whole script into one expression, and an expression may be at
+  most 21,000 characters; the script had grown from 19,162 to 21,292 characters with the nginx guard and its comments
+  (actionlint does not know the limit). The comments of the script are shortened (the nginx guard, the reload, the
+  `select-law-of-day.mjs` exclusion and the asset retention), with no change to any command, to 19,765 characters. A
+  new test in `scripts/deploy-workflow.test.ts` fails when any workflow string that contains `${{` is longer than 20,000
+  characters, with a message that explains the limit; it fails on the previous `deploy.yml` (21,292) and the largest
+  other such string is 645 characters. The long reasoning of the guard stays in `shared/docs/DEPLOYMENT.md`. Root
+  bumped to `2.6.250`.
 - A bad `nginx.conf` can no longer be half-deployed. (1) CI: a new `nginx config` job in `lockfile-sync.yml` (a `needs`
   of the required `lockfile-sync` gate, whose name and the names of the other jobs are unchanged, so a failing nginx
   check fails that check) runs `scripts/check-nginx-config.sh` in an `ubuntu:24.04` container, the server's
