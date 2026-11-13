@@ -1,0 +1,16 @@
+# Picks the Law of the Day at 00:00 UTC, so it is chosen on a schedule and not by the first visitor of the day.
+# The deploy installs this file as /etc/cron.d/murphys-laws-law-of-day (backend/scripts/install-law-of-day-cron.sh),
+# so change it in the repository: an edit made on the server is overwritten by the next deploy. A name in
+# /etc/cron.d must not contain a dot, or cron ignores the file.
+# The log is in backend/logs, which the deploy creates and keeps. The job starts the same tsx entry point as PM2 does
+# for the API. The installer writes the absolute path of the node the deploy runs with (the nvm node, LAW_OF_DAY_NODE_BIN)
+# in place of /usr/bin/node below, which stays the default, and refuses to install this file when that node is not the
+# major Node version of .nvmrc or cannot load better-sqlite3.
+# CRON_TZ is honored by cronie; the Debian and Ubuntu cron package does not document it, and would run the job in the
+# server's time zone (expected to be UTC; the installer warns when it is not). The pick is always for the
+# current UTC day either way, so a run at another hour still picks the right law. The braces put a failing `cd` in
+# the log too.
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=UTC
+0 0 * * * root { cd /root/murphys-laws/backend && /usr/bin/node node_modules/tsx/dist/cli.mjs scripts/select-law-of-day.ts; } >> /root/murphys-laws/backend/logs/law-of-day.log 2>&1

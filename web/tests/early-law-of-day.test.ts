@@ -1,6 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@sentry/browser', () => ({
+  addBreadcrumb: vi.fn(),
+  captureException: vi.fn(),
+  captureMessage: vi.fn(),
+}));
+
+import { FETCH_TIMEOUT_MS } from '../src/utils/constants.ts';
 import { LawOfTheDay } from '../src/components/law-of-day.ts';
 import { API_BASE_PLACEHOLDER, injectEarlyApiBase } from '../scripts/early-api-base.ts';
 import { LAST_VOTE_AT_KEY } from '../src/utils/recent-vote.ts';
@@ -113,7 +121,12 @@ describe('early Law of the Day script in index.html', () => {
       return fetchMock.mock.calls[0]![1] as RequestInit;
     }
 
-    beforeEach(() => localStorage.clear());
+    // Only Date is frozen (the snippet needs no timers): the vote times below are offsets from Date.now(), and the
+    // minute is an exclusive limit (`< 60000` in index.html), so 60 s ago must fall exactly on it
+    beforeEach(() => {
+      localStorage.clear();
+      vi.useFakeTimers({ toFake: ['Date'] });
+    });
     afterEach(() => localStorage.clear());
 
     it('uses the HTTP cache when this browser has not voted', () => {
@@ -271,15 +284,22 @@ describe('early Law of the Day script in index.html', () => {
     expect(zone.querySelector('.lod-link')).toBe(link);
   });
 
+  const abortError = () => new DOMException('Aborted', 'AbortError');
+
   it.each([
-    ['a failed response', () => Promise.resolve(jsonResponse({ error: 'down' }, false))],
-    ['a network error', () => Promise.reject(new TypeError('Failed to fetch'))],
-    ['invalid JSON', () => Promise.resolve({ ok: true, json: async () => { throw new SyntaxError('bad json'); } })],
-    ['an empty payload', () => Promise.resolve(jsonResponse(null))],
-    ['a payload without a law', () => Promise.resolve(jsonResponse({ law: null }))],
-    ['a law without text', () => Promise.resolve(jsonResponse({ law: { id: 1 } }))],
-    ['a law without an id', () => Promise.resolve(jsonResponse({ law: { text: 'No id' } }))],
-  ])('resolves to null instead of rejecting on %s', async (_name, respond) => {
+    ['a failed response', () => Promise.resolve(jsonResponse({ error: 'down' }, false)), '503'],
+    ['a network error', () => Promise.reject(new TypeError('Failed to fetch')), 'network'],
+    ['a request that fetch aborts', () => Promise.reject(abortError()), 'abort'],
+    ['a fetch that throws at once', () => { throw new TypeError('Invalid URL'); }, 'error'],
+    ['invalid JSON', () => Promise.resolve({ ok: true, json: async () => { throw new SyntaxError('bad json'); } }), 'parse'],
+    ['a connection lost while the body is read', () => Promise.resolve({ ok: true, json: async () => { throw new TypeError('network error'); } }), 'network'],
+    ['an abort while the body is read', () => Promise.resolve({ ok: true, json: async () => { throw abortError(); } }), 'abort'],
+    ['a response that cannot be read at all', () => Promise.resolve({ ok: true }), 'error'],
+    ['an empty payload', () => Promise.resolve(jsonResponse(null)), 'shape'],
+    ['a payload without a law', () => Promise.resolve(jsonResponse({ law: null })), 'shape'],
+    ['a law without text', () => Promise.resolve(jsonResponse({ law: { id: 1 } })), 'shape'],
+    ['a law without an id', () => Promise.resolve(jsonResponse({ law: { text: 'No id' } })), 'shape'],
+  ])('resolves to null instead of rejecting on %s, and records why', async (_name, respond, reason) => {
     const zone = mountPrerenderedZone();
     vi.stubGlobal('fetch', vi.fn().mockImplementation(respond));
 
@@ -287,16 +307,35 @@ describe('early Law of the Day script in index.html', () => {
 
     await expect(window.__earlyLawOfDay!.promise).resolves.toBeNull();
     expect(window.__earlyLawOfDay!.law).toBeNull();
+    expect(window.__earlyLawOfDay!.error).toBe(reason);
     expect(zone.querySelector('.law-card-mini')).toBeTruthy();
   });
 
-  it('aborts a request that hangs for ten seconds', async () => {
+  it('uses the same timeout as the app', () => {
+    const declared = /var TIMEOUT_MS = (\d+);/.exec(readEarlySnippet());
+
+    expect(Number(declared?.[1])).toBe(FETCH_TIMEOUT_MS);
+  });
+
+  it('records no error for a good answer', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ law: LAW })));
+
+    runSnippet();
+    await window.__earlyLawOfDay!.promise;
+
+    expect(window.__earlyLawOfDay!.error).toBeNull();
+  });
+
+  it('aborts a request that hangs for ten seconds, and records the timeout', async () => {
     vi.useFakeTimers();
-    vi.stubGlobal('fetch', vi.fn().mockImplementation((_url: string, init: RequestInit) =>
-      new Promise((_resolve, reject) => {
-        init.signal!.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
-      })
-    ));
+    let signal: AbortSignal | undefined;
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((_url: string, init: RequestInit) => {
+      const requestSignal = init.signal!;
+      signal = requestSignal;
+      return new Promise((_resolve, reject) => {
+        requestSignal.addEventListener('abort', () => reject(abortError()));
+      });
+    }));
 
     runSnippet();
     const settled = vi.fn();
@@ -306,6 +345,57 @@ describe('early Law of the Day script in index.html', () => {
     expect(settled).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
     expect(settled).toHaveBeenCalledWith(null);
+    expect(signal!.aborted).toBe(true);
+    // The abort that follows the timeout does not overwrite why it ended
+    expect(window.__earlyLawOfDay!.error).toBe('timeout');
+  });
+
+  it('times out a body that hangs after the headers arrived', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((_url: string, init: RequestInit) =>
+      Promise.resolve({
+        ok: true,
+        json: () => new Promise((_resolve, reject) => {
+          init.signal!.addEventListener('abort', () => reject(abortError()));
+        })
+      })
+    ));
+
+    runSnippet();
+    const settled = vi.fn();
+    void window.__earlyLawOfDay!.promise.then(settled);
+
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(settled).toHaveBeenCalledWith(null);
+    expect(window.__earlyLawOfDay!.error).toBe('timeout');
+  });
+
+  it('times out a hung request even where fetch cannot be aborted, and ignores its late answer', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('AbortController', undefined);
+    const zone = mountPrerenderedZone();
+    let answer!: (response: unknown) => void;
+    const fetchMock = vi.fn().mockImplementation(() => new Promise((resolve) => { answer = resolve; }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    runSnippet();
+    const settled = vi.fn();
+    void window.__earlyLawOfDay!.promise.then(settled);
+
+    expect(fetchMock.mock.calls[0]![1].signal).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(9_999);
+    expect(settled).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(settled).toHaveBeenCalledWith(null);
+    expect(window.__earlyLawOfDay!.error).toBe('timeout');
+
+    // The request answers after the app gave up on it: the state and the page stay as they were
+    answer(jsonResponse({ law: LAW }));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(window.__earlyLawOfDay!.law).toBeNull();
+    expect(window.__earlyLawOfDay!.error).toBe('timeout');
+    expect(zone.querySelector('.lod-link')).toBeNull();
   });
 
   it('cancels the timeout once the response arrived', async () => {
@@ -327,5 +417,245 @@ describe('early Law of the Day script in index.html', () => {
 
     await expect(window.__earlyLawOfDay!.promise).resolves.toEqual(LAW);
     expect(fetchMock.mock.calls[0]![1].signal).toBeUndefined();
+  });
+
+  it('does nothing in a browser without Promise', () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    // Parsing the page needs Promise (jsdom), so the script is read first and only its run happens without it
+    const script = injectEarlyApiBase(readEarlySnippet(), '');
+    vi.stubGlobal('Promise', undefined);
+    try {
+      new Function(script)();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(window.__earlyLawOfDay).toBeUndefined();
+  });
+
+  it.each(['#/law/7', '#/calculators/sods-law'])('does nothing on the legacy hash route %s, which the router rewrites', (hash) => {
+    history.replaceState(null, '', `/${hash}`);
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    runSnippet();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(window.__earlyLawOfDay).toBeUndefined();
+  });
+
+  it.each(['/?utm_source=x#top', '/#/'])('still runs on the home page at %s', (location) => {
+    history.replaceState(null, '', location);
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ law: LAW }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    runSnippet();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  describe('when painting fails', () => {
+    function failQuerySelector() {
+      const original = document.querySelector.bind(document);
+      return vi.spyOn(document, 'querySelector').mockImplementation((selector: string) => {
+        if (selector.includes('data-prerendered')) throw new Error('paint exploded');
+        return original(selector);
+      });
+    }
+
+    it('keeps the law, records the failure and lets nothing escape when the page is already parsed', async () => {
+      const onError = vi.fn();
+      window.addEventListener('error', onError);
+      failQuerySelector();
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ law: LAW })));
+
+      try {
+        runSnippet();
+        // The promise and the state agree: both hold the law, and the paint failure is the only error
+        await expect(window.__earlyLawOfDay!.promise).resolves.toEqual(LAW);
+        expect(window.__earlyLawOfDay!.law).toEqual(LAW);
+        expect(window.__earlyLawOfDay!.error).toBe('paint');
+        expect(onError).not.toHaveBeenCalled();
+      } finally {
+        window.removeEventListener('error', onError);
+      }
+    });
+
+    it('keeps the law and records the failure when the paint cannot even be scheduled', async () => {
+      setReadyState('loading');
+      const addListener = vi.spyOn(document, 'addEventListener').mockImplementation(() => { throw new Error('no listeners'); });
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ law: LAW })));
+
+      runSnippet();
+
+      await expect(window.__earlyLawOfDay!.promise).resolves.toEqual(LAW);
+      addListener.mockRestore();
+      expect(window.__earlyLawOfDay!.law).toEqual(LAW);
+      expect(window.__earlyLawOfDay!.error).toBe('paint');
+    });
+
+    it('does not let a throwing readystatechange listener reach the error banner', async () => {
+      const onError = vi.fn();
+      window.addEventListener('error', onError);
+      setReadyState('loading');
+      failQuerySelector();
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ law: LAW })));
+
+      try {
+        runSnippet();
+        await window.__earlyLawOfDay!.promise;
+        expect(window.__earlyLawOfDay!.error).toBeNull();
+
+        setReadyState('interactive');
+        document.dispatchEvent(new Event('readystatechange'));
+
+        expect(onError).not.toHaveBeenCalled();
+        expect(window.__earlyLawOfDay!.law).toEqual(LAW);
+        expect(window.__earlyLawOfDay!.error).toBe('paint');
+      } finally {
+        window.removeEventListener('error', onError);
+      }
+    });
+  });
+});
+
+describe('the app adopting what the early script fetched', () => {
+  const OTHER_LAW: Law = { id: 99, text: 'Fetched by the app itself.', upvotes: 0, downvotes: 0 };
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    history.replaceState(null, '', '/');
+    delete window.__earlyLawOfDay;
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    vi.resetModules();
+    delete window.__earlyLawOfDay;
+    document.body.innerHTML = '';
+  });
+
+  /** The app's api module, loaded after the environment was set, with the Sentry mock it reports to */
+  async function loadApp() {
+    const api = await import('../src/utils/api.ts');
+    const Sentry = await import('@sentry/browser');
+    return { api, Sentry };
+  }
+
+  const appResponse = () => ({
+    ok: true,
+    status: 200,
+    headers: new Headers({ 'content-type': 'application/json' }),
+    json: async () => ({ law: OTHER_LAW }),
+  });
+
+  it.each([
+    ['the same origin', ''],
+    ['a configured API', 'https://api.example.com'],
+  ])('peeks, consumes and fetches the script\'s law for %s without a second request', async (_name, base) => {
+    vi.stubEnv('VITE_API_URL', base);
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ law: LAW }));
+    vi.stubGlobal('fetch', fetchMock);
+    const { api } = await loadApp();
+
+    runSnippet(base);
+    await window.__earlyLawOfDay!.promise;
+
+    expect(api.peekEarlyLawOfTheDay()).toEqual(LAW);
+    // Peeking does not use it up
+    expect(window.__earlyLawOfDay).toBeDefined();
+    await expect(api.consumeEarlyLawOfTheDay()).resolves.toEqual(LAW);
+    expect(window.__earlyLawOfDay).toBeUndefined();
+
+    // Another page load: the same script result is adopted by fetchLawOfTheDay as well
+    runSnippet(base);
+    await expect(api.fetchLawOfTheDay()).resolves.toMatchObject({ data: [LAW] });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([`${base}/api/v1/law-of-day`, `${base}/api/v1/law-of-day`]);
+  });
+
+  it('does not adopt a result the script fetched from another API than the app uses', async () => {
+    vi.stubEnv('VITE_API_URL', 'https://api.example.com');
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse({ law: LAW })).mockResolvedValue(appResponse());
+    vi.stubGlobal('fetch', fetchMock);
+    const { api } = await loadApp();
+
+    // A build made without VITE_API_URL: the script asked the page's own origin
+    runSnippet('');
+    await window.__earlyLawOfDay!.promise;
+
+    expect(api.peekEarlyLawOfTheDay()).toBeNull();
+    await expect(api.fetchLawOfTheDay()).resolves.toMatchObject({ data: [OTHER_LAW] });
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/api/v1/law-of-day', 'https://api.example.com/api/v1/law-of-day']);
+  });
+
+  it('falls back to its own request and reports why when the script\'s request failed', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse({ error: 'down' }, false)).mockResolvedValue(appResponse());
+    vi.stubGlobal('fetch', fetchMock);
+    const { api, Sentry } = await loadApp();
+
+    runSnippet();
+    await window.__earlyLawOfDay!.promise;
+
+    expect(api.peekEarlyLawOfTheDay()).toBeNull();
+    await expect(api.fetchLawOfTheDay()).resolves.toMatchObject({ data: [OTHER_LAW] });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('Early Law of the Day failed: 503', expect.objectContaining({ level: 'warning' }));
+  });
+
+  it('shows the error state 10 s after the page started when the API hangs, with no second request', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi.fn()
+        .mockImplementationOnce((_url: string, init: RequestInit) => new Promise((_resolve, reject) => {
+          init.signal!.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+        }))
+        .mockResolvedValue(appResponse());
+      vi.stubGlobal('fetch', fetchMock);
+      const { api, Sentry } = await loadApp();
+
+      runSnippet();
+      // The bundle runs 4 s after the page started and asks for the law
+      await vi.advanceTimersByTimeAsync(4_000);
+      const pending = api.fetchLawOfTheDay();
+      const outcome = expect(pending).rejects.toMatchObject({ name: 'TimeoutError' });
+      await vi.advanceTimersByTimeAsync(5_999);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1);
+
+      // The early request used the whole window, so there is nothing left for a second one
+      await outcome;
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(Sentry.addBreadcrumb).toHaveBeenCalledWith(expect.objectContaining({ message: 'Early Law of the Day failed: timeout' }));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('retries a quickly failed script request with the rest of the 10 s, so a dead API also ends 10 s after the start', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi.fn()
+        .mockResolvedValueOnce(jsonResponse({ error: 'down' }, false))
+        .mockReturnValue(new Promise(() => {}));
+      vi.stubGlobal('fetch', fetchMock);
+      const { api } = await loadApp();
+
+      runSnippet();
+      await vi.advanceTimersByTimeAsync(2_000);
+      const pending = api.fetchLawOfTheDay();
+      const outcome = expect(pending).rejects.toMatchObject({ name: 'TimeoutError' });
+      await vi.advanceTimersByTimeAsync(7_999);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(1);
+
+      await outcome;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

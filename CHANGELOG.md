@@ -8,6 +8,284 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The iOS app version is now the same in every file that records it, and a check keeps it so. It was written in three
+  places that had drifted: `ios/project.yml` and `ios/MurphysLaws/Info.plist` said `1.2.14 (30)`, but the committed
+  `ios/MurphysLaws.xcodeproj/project.pbxproj` (which a local Xcode build uses; the iOS CI regenerates it from
+  `project.yml` with XcodeGen) still said `1.2.4 (20)` in both its Debug and Release configurations (the project-level
+  `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION`, which the app and both test targets inherit; no target sets its
+  own). Nobody noticed because `npm run check:versions` only checked that a change bumped `Info.plist` and
+  `project.yml`, never that the files agree. The project file now says `1.2.14 (30)`, edited in those four lines only:
+  regenerating it with XcodeGen was tried and not used, because it also rewrites unrelated parts of the file (it drops
+  the entries of the generated, gitignored `DesignSystem/Tokens.swift` and adds `cranes-law.md`). The iOS version is
+  not bumped: a change to the project file alone does not call for an iOS bump under `check:versions`, because the
+  project file is one of the version files, not a trigger. `npm run check:versions` (and so the pre-commit hook) now
+  also fails when `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`, `CFBundleShortVersionString` /
+  `CFBundleVersion` in `Info.plist` and every `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.pbxproj` are
+  not all the same, naming the values each file has. It fails, and does not skip, when one of the three files cannot
+  be read, has no version, has a version line it cannot read (rather than dropping that line from the comparison) or
+  has fewer than two of each version (the Debug and Release configurations). Tests in `scripts/check-version-bumps.test.ts` cover agreement,
+  each kind of drift, the unreadable and unparseable cases and the command's exit status on a staged scratch
+  repository, and run the same check on the files of the repository, so `npm run test:scripts` (which CI runs) catches
+  a drift that a commit made without the hook would bring in. Root bumped to `2.6.247`.
+- nginx now serves the precompressed brotli copies of the hashed assets (`brotli_static on;` in the `/assets/` location,
+  next to `gzip_static on;`). A client that sends `Accept-Encoding: br` gets the `.br` file the build already writes
+  next to each `.js`, `.css` and `.svg` file (measured on a build of the web app: the main bundle, 429 KB raw, is
+  108 KB instead of 131 KB as the `.gz` file; the three JavaScript bundles and the stylesheet together go from 360 KB
+  to 294 KB), gzip-only clients still get the `.gz` file and the rest the plain file. There is no dynamic brotli: every
+  other response keeps gzip. The directive needs the `libnginx-mod-http-brotli-static` package (Ubuntu 24.04 universe,
+  `1.0.0~rc-5build1`, for the distribution's nginx 1.24), which was installed on the production server on 2026-11-13
+  (`/etc/nginx/modules-enabled/50-mod-http-brotli-static.conf` is in place and `nginx -t` passes), so this release can
+  be deployed; the filter package is not needed and not installed. A new droplet gets the package with nginx
+  (`DISASTER-RECOVERY.md`), and the module must stay installed until a release that removes `brotli_static` is
+  deployed (`DEPLOYMENT.md`, section "Brotli for the precompressed assets", has the install, verification and
+  rollback order). Checked in an `ubuntu:24.04` container with nginx 1.24.0, the package above and this `nginx.conf`:
+  a browser's `Accept-Encoding` gets `content-encoding: br` with a body that decodes to the original, `gzip` gets the
+  `.gz` file, no header gets the plain file, each with one `Cache-Control` and `Vary: Accept-Encoding` (from
+  `gzip_vary on;`, which must stay), a script outside `/assets/` is never sent as br, and without the module
+  `nginx -t` fails with `unknown directive "brotli_static"`. The nginx test requires exactly the one brotli directive,
+  in the hashed-assets location, `gzip_vary on;` at the server level and the module in the disaster-recovery install
+  line. Web bumped to `3.4.122`; root to `2.6.246`.
+- The web build is deterministic: one commit builds one set of bundle file names. The Sentry release name was
+  `murphys-laws-web@<Date.now()>`, and the Sentry plugin (which runs in the deploy build, where `SENTRY_UPLOAD` is
+  set) compiles it into the entry chunk, so every deploy build gave `index-*.js` and `index-legacy-*.js` (and with
+  them every prerendered page and `sw.js`) a new hash even when the same commit was built again (a re-run, a rollback
+  and redeploy): returning visitors re-downloaded the bundle, `dist/assets` grew by two files per build and the
+  service worker was replaced each time. The release is now one string resolved once (`web/scripts/app-release.ts`):
+  `VITE_APP_VERSION` (the commit SHA, set from `github.sha` in the deploy and the web CI builds; read from the
+  environment of the shell or the job, not from `web/.env`), else `git rev-parse HEAD`, else `<package version>-dev`
+  (with a warning; a build with `SENTRY_UPLOAD` set refuses it), never the clock. A `VITE_APP_VERSION` that is not a
+  valid Sentry release name stops the build. The release is passed both to the Sentry plugin (source map upload) and,
+  through `define`, to `Sentry.init({ release })`, so the browser and the uploaded maps are given the same name (a
+  deploy that has `SENTRY_UPLOAD` set but lacks a Sentry credential skips the plugin, as before, and uploads
+  nothing). Two builds of the same commit are byte-identical in `dist/`, with and without the Sentry plugin
+  (JavaScript, CSS, legacy bundle, polyfills, `sw.js`, HTML, `.gz` and `.br`); a new commit (or a source change) moves
+  only the entry chunks (and `sw.js` and the pages that reference them), because the commit SHA is part of the entry
+  chunk; the polyfills and the stylesheet keep their names until they change. Sentry's Releases list now shows the
+  40-character commit SHA instead of `murphys-laws-web@<timestamp>` (on a pull request, `github.sha` is the merge
+  commit, which only matters to builds that do not upload). Tests pin the release resolution, that the release the
+  Sentry plugin is given is the one compiled into the bundle, that the build files read no clock, random number or
+  host name and that every web build step of the workflows is given the commit. `sw.js` is still a hash of the whole
+  build output, so it changes when the prerendered pages change with the database (an existing test pins that); it no
+  longer changes on its own.
+  Web bumped to `3.4.121`; root to `2.6.245`.
+- The Law of the Day is picked at 00:00 UTC by a scheduled job again, instead of by the first request of the day. The
+  nightly job had never run: its `>> logs/law-of-day.log` redirect pointed at `/root/murphys-laws/logs`, which the
+  deploy's cleanup of old root-level files (`rm -rf ... logs`) deletes on every release, so the shell failed before
+  `node` started (cron logged the start every night), and the first request to `/api/v1/law-of-day` after midnight
+  picked the law instead: of the 12 picks from Nov 1 to Nov 12, none came before 00:03 UTC and 10 fell between
+  00:22 and 00:26. Behind it, the server kept running a Feb 22 copy of `select-law-of-day.mjs`, because the upload to
+  the staging directory never deletes and each deploy synced that copy back. Now:
+  the schedule is a file in the repository, `backend/config/cron.d/murphys-laws-law-of-day`, that every deploy
+  (`deploy.yml` and `npm run deploy`) installs to `/etc/cron.d` through `backend/scripts/install-law-of-day-cron.sh`,
+  after the dependencies are installed and the migrations ran. The script is idempotent, replaces the file in one
+  step (a dot-named temporary file in `/etc/cron.d`, which cron ignores, then a rename; mode 644, owned by root; a hand
+  edit is overwritten), creates `backend/logs` (the job's log is `backend/logs/law-of-day.log`, in a directory the
+  deploy keeps), and removes the old `select-law-of-day.mjs` line from root's crontab so the job cannot run twice, and
+  the old `.mjs` itself, but only after the new job is installed and the old line is gone: both deploy paths keep rsync
+  from deleting the old script (`--exclude`, which also keeps the stale staging copy from being copied back), so a
+  refused install, or an old line that could not be removed, leaves the line and the file it runs as they were. The job runs the node that the deploy runs with, not a fixed
+  `/usr/bin/node`: both paths pass it as `LAW_OF_DAY_NODE_BIN` (`deploy.yml`: the nvm node on the PATH of the root
+  part of the script; `npm run deploy`: the nvm node on the server, not `process.execPath`, which is the node of the
+  machine running the deploy) and the installer writes that absolute path into the job's command in place of
+  `/usr/bin/node` (the default when none is given), so a Node upgrade is picked up by the next deploy; the path must be
+  plain characters (an empty one, from a deploy that could not find its node, is refused, not replaced by the default),
+  and the written file is checked (final newline, no `%` outside the comments, the node on the script in a line that
+  is not a comment) before it replaces anything. The installer is run with stdin closed. It refuses to install, before changing anything, a
+  job that could not start: no schedule file, `select-law-of-day.ts`, `backend/node_modules/tsx`, `.nvmrc` or
+  `crontab`, or a node (the one the job runs) that is missing, cannot report its version, is not the major
+  version of `.nvmrc` or cannot load `better-sqlite3`. The crontab edit follows the rule of the
+  scanner cleanup above (including its warning when `crontab -l` prints something): root's crontab is read into a variable and written back only from a successful read, only
+  when the old line was there and only when something other than blank lines remains, so it is never emptied (an old
+  line that is the only entry stays, with a warning); every other failure leaves it as it was and only prints a
+  `WARNING:` line. Both deploy paths treat a failed install as a warning and go on with the release, since the API
+  picks the law on the first request of the day when the job is not installed; in `deploy.yml` the install step sits
+  after the crontab cleanup and before the PM2 restart (outside the "testing nginx and reloading" step), in
+  `npm run deploy` after the migrations and before the restart. The file sets `CRON_TZ=UTC`, which cronie honors and
+  the Debian and Ubuntu cron package does not document, so the installer warns when the server's time zone is not UTC
+  (the pick is for the current UTC day whenever the job runs, but a run before 00:00 UTC no longer picks ahead of the
+  first visitor). The cron command is grouped in braces so that a failing `cd` is logged too. The job runs `select-law-of-day.ts` through the
+  `tsx` that PM2 uses for the API. The script no longer carries its own copy of the pick logic through the `sqlite3`
+  command line: it calls the new `LawService.selectLawOfTheDay`, which `getLawOfTheDay` now uses too, with the same
+  query as before (highest-voted law not featured in the last 365 days, alphabetical tiebreak, any published law when
+  all were featured). The check and the insert run in one `BEGIN IMMEDIATE` transaction that takes SQLite's write
+  lock first (the 5 s busy timeout covers a wait), so when the job and a request meet at midnight, or two jobs start
+  together, exactly one picks and the others use that pick; the replacement pick for a law unpublished during the day
+  is kept. Every run logs one timestamped result line (picked, already picked, or an error with a non-zero exit), after the
+  database service's own untimestamped connection line, and the database is opened the way the API does
+  (`resolveDatabasePath`, so a missing file is an error instead of a new, empty one). Tests
+  cover the pick with two real connections to one database file (the lock, and finding the other process's pick), the
+  tiebreak, the script, the exact cron command run through `sh -c` against a real database (twice in a row, and three
+  at the same moment), the installer (crontab with and without the old line, only the old line, no crontab, every
+  failing step, the checks of tsx, `.nvmrc` and Node, the node written into the job and the paths refused, the time
+  zone, mode and temporary files of the cron file), the schedule file, a pick that waits for a held write lock, and both
+  deploy paths, including the real scripts rsync and the install step of the deploy script run with an installer that
+  fails. The documented daily email and notification jobs wrote to `../logs` (the same missing directory); their docs
+  now use `backend/logs`, but they are still not installed on the server and stay that way until SMTP and the VAPID
+  keys are set. Backend bumped to `2.3.92`; root to `2.6.244`.
+- The deploy can no longer empty root's crontab, and the asset pruning gets more time. The deploy step that removes the
+  retired standalone vulnerability scanner cron job ran
+  `sudo crontab -l | grep -v vulnerability-scanner.sh | sudo crontab - || true`: when `crontab -l` failed for any reason
+  other than "no crontab for root" (permissions, an I/O error, a transient failure), `grep` printed nothing and
+  `crontab -` replaced the whole crontab with an empty one, which would delete every scheduled job on the server
+  (backup, daily report, health monitor, performance tracker, Law of the Day selection), and nothing reported it
+  (`|| true` also hid a failed write). `grep -v` also exits 1 when it filters out every line, which nothing reported
+  either, and the empty result was written anyway. The step now reads the crontab into a variable and writes it back
+  only from a successful read, only when a scanner line was actually there, and only when something other than blank
+  lines remains: an empty or blank result is never written, so a crontab whose only entry is the scanner line is left
+  as it is. "No crontab for root" is left alone (a line that `sudo` prints first does not hide it, and `LC_ALL=C`
+  keeps the message recognizable). The cleanup is housekeeping and must never block a release (a failure after the
+  migrations and before the PM2 restart would leave the old API running against the new schema), so every problem
+  only prints a plain `WARNING:` line and the deploy goes on, and the step never calls `exit`: any other failed read,
+  a `grep` that errors (exit 2) in any of the three searches, a temporary file that cannot be created, a failed write
+  and a crontab whose only entry is the scanner line all leave the crontab as it was (`crontab -` replaces it
+  atomically), and a temporary file that cannot be removed only warns. Other lines are kept byte for byte (a rewrite drops trailing blank lines and adds a missing final
+  newline). Text that `crontab -l` prints to stderr on success never reaches the crontab, and `crontab -l` reads no
+  standard input, so it cannot swallow the lines of the script that `sudo bash <<'INNER'` is reading. Twenty new
+  tests in `scripts/deploy-workflow.test.ts` (49 in all) cover this: eighteen run that part of the deploy script as
+  written, with stand-ins for `sudo`, `crontab`, `mktemp`, `rm` and `grep`, and each failure asserts the crontab untouched,
+  the warning printed and the lines after the block still running: a failed read (with a message, without one, and
+  with a last line that is not "no crontab"), no crontab, one or several scanner lines, no scanner line, only the
+  scanner line, an empty and a blank crontab, Windows line endings without a final newline, a 20000-line crontab,
+  stderr noise, `sudo` noise, a `grep` error in each of the three searches, a failed write, a failed `mktemp` and a failed `rm`, a
+  script read from standard input, and the shell options of the deploy script (`set -e` and an ERR trap, with and without
+  `pipefail`); the other two check where the block sits (no `exit`, no `|| true`, no read piped into a write) and the
+  pruning timeout. `shared/docs/DEPLOYMENT.md` describes the behavior.
+  The asset pruning block of the same script (`timeout 90 node .../prune-stale-assets.mjs`) took about 69 seconds on
+  the 1-vCPU production server in its first real run, because it parses 14 days of nginx logs. That is too close to its
+  90-second limit: a timeout only warns and never fails the deploy, but it would quietly turn pruning off. The limit is
+  now 180 seconds, still well inside the ten minutes that `appleboy/ssh-action` allows the whole script (its default
+  `command_timeout`, which `deploy.yml` does not set). A test keeps the limit above twice the measured run and at
+  most a third of the ssh action's. Root bumped to `2.6.242`.
+- The home page now holds the app bundle until the Law of the Day answer has arrived. On a cold HTTP/2 connection the
+  0.6 KB answer of the early request queued behind the bundle (173 KB over the wire): the answer reached the browser
+  300 to 400 ms after the stylesheet (nginx's own log showed 80 to 300 ms between the request and the sent response
+  while Node took 5 to 8 ms), so the law, the largest contentful paint, painted that much later than it could. The SSG
+  (`holdAppEntry` in `web/scripts/ssg.ts`) turns the module script of the built `dist/index.html` into an inert
+  `#app-entry` placeholder, and a separate inline ES5 block in `index.html`, before the stylesheet, starts the bundle by
+  adding the module script once the early request has settled (with the law, or without it: a failed request resolves
+  to null, and the app still reports the failure from `window.__earlyLawOfDay.error` as before). The hold ends at the
+  latest 1000 ms after the block ran, so a slow, failed or hung API cannot keep the app from loading, and a loader that
+  throws starts it at once; an add that fails leaves the later trigger a retry. The hold only decides when the bundle
+  starts: the early request keeps its shared 10 s window, and the app's own fallback request gets what is left of it.
+  The module is added only once parsing has ended, which is when the browser would run an ordinary deferred module
+  script, because `main.ts` needs `#app`. The block starts the bundle at once when there is no early request: on a path
+  other than `/` and `/index.html` (the service worker answers navigations it cannot fetch with the home page, and the
+  backend builds the runtime pages of laws and categories published after the last build from `dist/index.html`, so
+  those carry the placeholder too), on a legacy `/#/...` hash route, and in a browser without `fetch` or `Promise`. The
+  pages the SSG builds from the shell, the 404 page and the nomodule legacy entry are unchanged, and the app still
+  adopts the early answer (`consumeEarlyLawOfTheDay`), with the cache bypass after a vote untouched. The build fails if
+  the shell has not exactly one such module script, and `validateHomePage` fails it when the home page lacks the
+  placeholder (in the form the loader accepts) or the loader, keeps an ordinary entry script, or preloads an asset with
+  a `modulepreload` link (which would fetch chunks while the bundle is held back; there is none today); its tag
+  patterns read case and whitespace as a browser does, and the loader is taken only from an inline script (no `src`, no
+  `type`). The loader trusts the element with the id `app-entry` as a script source only if it is a `script` of type
+  `text/plain` whose `data-src` is a file name in `/assets/` ending in `.js` (no scheme, host, `..` or subdirectory), so
+  injected markup that takes the id cannot make the page load a script from somewhere else. `scripts/check-web-budgets.mjs` reads the
+  bundle from the placeholder. Trade-off, measured on the real network (about 142 ms RTT to production) with 4x CPU
+  throttling and cold loads, comparing production's page with and without the change (medians of 14 runs per arm,
+  repeated with 8 runs after the change was rebased): largest contentful paint 1112 ms to 664 ms (450 ms earlier;
+  390 ms in the repeat) with no bandwidth cap, and 948 ms to 768 ms (180 ms earlier; 170 ms in the repeat) with the
+  network capped at 1.6 Mbps; total blocking time unchanged (within 10 ms); but the app mounts and the bundle finishes
+  later, by 185 to 245 ms with no cap and 135 to 175 ms at 1.6 Mbps, because the bundle is requested after the answer
+  instead of with it. The prerendered page is readable and its links work in that window, but search, votes and the
+  calculators need the bundle. Tests: `web/tests/app-entry-loader.test.ts` runs the real loader (every path above, the
+  parser ordering, a throwing promise, a failing add, each kind of untrusted placeholder) and then together with the real early script (the answer, a
+  failure, a hung request, other paths, a hash route, no `fetch`, one request with the vote cache bypass);
+  `web/tests/ssg.test.ts` covers `holdAppEntry` and `validateHomePage`. The e2e suite covers the answer, a failed request, a 503, a hung API, an API
+  slower than the cap, a route without a page of its own and an untouched other page. Web bumped to `3.4.120`; root to
+  `2.6.240`.
+- Built web assets no longer pile up on the server. The deploy uploads `web/dist/` into a persistent staging
+  directory with no delete and mirrors that directory into the web root with `rsync --delete`, so every release left
+  its hashed bundles behind (1,185 files and about 650 MB in `assets/` after nine months), and the `.gz` and `.br`
+  copies the build now writes would make it grow faster. A new `backend/scripts/prune-stale-assets.mjs` runs in the
+  deploy after the sync and before nginx is reloaded, on the staging copy and the web root (pruning only the web
+  root would be undone by the next rsync, and pruning only staging would leave the files in the web root until the
+  next release). It keeps every file whose name appears in a text file of the current build outside `assets/` (the
+  prerendered pages, the manifest, `sw.js` with the precache list inside it), every file named by any kept script or
+  stylesheet (imports, `__vite__mapDeps` lists, CSS `url()` references, including old files kept by another rule),
+  everything modified in the last 30 days, every file the retained nginx access logs (about 14 days with the
+  server's logrotate rule) show being requested successfully, and the `.gz`, `.br` and `.map` siblings of a kept
+  file. It deletes only older files that none of that keeps, one named file at a time, never a directory, link or
+  anything that is not a regular file. It deletes nothing when a check fails: no `index.html` or `assets/`, an
+  `index.html` that names no entry script, an entry script or stylesheet it names that is missing, an unreadable
+  file or access log (or one that does not look like an nginx access log, such as an `.xz` rotation), no access log
+  that exists or no asset request in them (the glob passes the literal pattern when no log matches, so a missing log
+  stops the run instead of switching the log rule off), fewer than five files kept, or a plan that would delete more
+  than 90% of the files. A run over a big backlog that the limit would stop can be allowed by hand with
+  `--max-delete-fraction <0 to 1>` (look at a `--dry-run` first); the deploy never passes it. All directories are
+  planned before the first deletion, and only regular files outside `assets/` are read (a named pipe would block it;
+  a dangling link among the text files stops the run, which deletes nothing). A name counts as mentioned whatever its
+  extension (`.mp3`, `.eot`) and however it is written (`logo@2x-HASH.webp`, a name with a space, written out or as `%20`), and kept SVG,
+  JSON and HTML files in `assets/` are traced like scripts, so none of these depends on the 30-day
+  rule. `--dry-run` reports without deleting, a second run finds nothing, and a file that cannot be deleted is named
+  and counted (exit code 3) without stopping the rest. The deploy only warns, with a plain `WARNING:` line in the
+  deploy log that has the exit code, when the script does not complete (it is cut off after 180 seconds): it never
+  blocks a release. Tests cover the keep rules, the age limit to the millisecond, each abort, the deletion failures,
+  the new flag and the deploy wiring; the script reaches 100% line and branch coverage in its own test file (the
+  backend coverage gate only covers `src/`). The deploy step's pruning block is also run as written, with stand-ins
+  for `sudo` and `timeout`, against throwaway staging and web-root copies in `scripts/deploy-workflow.test.ts`:
+  stale files go from both, and a missing access log, a failed safety check, a `node` that exits 127 (as a missing
+  one does) or a crashing script (exit 1, 3 or 127) only warn while the deploy goes on. The script also starts when it
+  is reached through a symbolic link (its entry-point check, `isEntryPoint`, compares real paths and, like `runCli`
+  and `run`, is tested in-process; only the one line that applies the exit code is excluded from coverage). A file whose
+  name has a space or another escaped character is also kept when the access log shows it requested, because the logged
+  path is read both as written (`my%20file.png`) and decoded once.
+  Root bumped to `2.6.237` and backend to `2.3.90`.
+- The root scripts tests (`scripts/*.test.ts`, `npm run test:scripts`) now run in CI on every pull request and every
+  push to `main`. Only four of them (the workflow and lockfile contract tests) ran before, so a fixture dated 2026-10-10
+  went stale on 2026-11-09 (the metrics analyzers only read the last 30 days) and failed unnoticed for days. They run in
+  the `Root checks` workflow (`lockfile-sync.yml`, no path filter; the suite itself takes about 20 seconds) as a new
+  `Scripts tests` job next to `Lockfile versions`; the `lockfile-sync` check that the repository already requires is now
+  reported by a gate job that needs both, so a failing scripts test blocks the merge without any change to the
+  repository ruleset. The job installs `bc` (the cost report script needs it, the runner image may not have it, the
+  server does), retrying the apt mirror three times with every apt call bounded and the failing exit status reported,
+  and `npm run ci` runs the suite too. A newer push to a pull request cancels the older run, but a run on `main` has a
+  group of its own and is never cancelled by the next merge. The workflow contract tests that `lockfile-sync` used to
+  run by name are part of the suite, and a new `lockfile-sync-workflow.test.ts` pins the triggers, runs the gate script
+  and the `bc` step against every outcome, forbids the common ways of swallowing or skipping a failure, and pins the
+  required check name. Root bumped to `2.6.233`.
+- The web app now samples every Sentry transaction for the performance measurement window: `tracesSampleRate` in
+  `web/src/main.ts` goes from `0.1` to `1.0`. Only about 9 pageloads a day were being sampled, too few for the
+  scheduled performance reports of 2026-11-15 and 2026-11-19, and traffic is small, so the Sentry quota cost of 100% is
+  expected to be trivial. The rate applies to the pageload and navigation transactions the browser tracing integration
+  creates. A new test (`web/tests/sentry-sampling.test.ts`) pins the rate in the source of `main.ts`, which is the entry
+  point and cannot be imported in a unit test. The backend's `initSentry` is unchanged: its own rate stays `0.1`.
+  `TODO.md` gets an item to revisit the web rate after the 2026-11-19 report. Web bumped to `3.4.117`; root to `2.6.232`.
+- The early Law of the Day request is bounded to one shared 10 s window and its failures are reported. A dead or hung
+  API now reaches the error card about 10 s after the page started, not about 20 s. The early request and the app's own
+  request share one 10 s window that begins when the early request starts: the app waits for the early request only
+  until that window ends, even if its promise never settles, and its own fallback request gets what is left of it
+  (`max(0, 10 s - elapsed)`, never more than 10 s, passed to `fetchAPI` as `timeoutMs` and also enforced with a timer, so
+  it holds without `AbortController`). If the early request timed out, or ran out the clock, nothing is left and the app
+  goes straight to the error card with no second try; a request that failed quickly (503, network, parse or shape error)
+  leaves nearly the whole window, so the fallback request stays useful. The error card's button and a page without an
+  early request still get a full 10 s. Where a slow bundle arrives after the window has ended there is no fallback
+  request either, only the error card, whose button fetches again. The inline script also bounds its
+  request with its own timer, which covers browsers that have `fetch` but no `AbortController` (there it had no timeout
+  at all). A failure is no longer invisible: the script records why on
+  `window.__earlyLawOfDay.error` (the HTTP status, `timeout`, `abort`, `network` (including a connection lost while the
+  body is read), `parse`, `shape`, `error` (including a `fetch` that throws before any request is made) or `paint`)
+  while its promise still never rejects, so nothing reaches the unhandled-rejection banner: it resolves to `null`, or to
+  the law when only the paint failed. When the app falls back, adopts a law whose early paint failed, or drops an early
+  result (another API than the app uses, older than a minute, or started before the last vote), it adds a Sentry
+  breadcrumb and, except for the outcomes it already treats as noise (`timeout`, `abort`, `network`, `stale`, `voted`),
+  sends one warning message. A throwing paint (also inside the `readystatechange` listener, or while scheduling it) is
+  caught and recorded instead of reaching the error banner, and the law and the
+  promise are settled in one step, so they cannot disagree. The script is skipped on legacy `/#/...` hash routes, which
+  the router rewrites to another path (a bare `/#/` still runs it). The build now fails when `__API_BASE_URL__` survives in `dist/index.html`, in `404.html`
+  or in any generated page checked by the SSG (a missing `earlyApiBasePlugin`), and the prerender e2e spec asserts that the
+  page requests exactly `<origin>/api/v1/law-of-day` once, and the app makes no second request (its `**/api/**` mock used to
+  answer a wrong URL as well). New tests run the real inline script and then the app's `peekEarlyLawOfTheDay`,
+  `consumeEarlyLawOfTheDay` and `fetchLawOfTheDay` against it, for the same origin and for a configured
+  `VITE_API_URL`, and cover every failure reason, a hung body, a late answer after the timeout, and a failing paint. Comment
+  fixes: the index.html comment now cites the measured real-user P75 LCP of 13.4 s, the 60 s adoption window is documented
+  as a bound on staleness only (a result inside it is used even across midnight UTC), and `peekEarlyLawOfTheDay` documents
+  when it returns null. `web/DESIGN.md` records the layout contract between the prerendered home skeleton and the app's
+  Search the Archive card and Law of the Day zone, with the e2e guard that enforces it. The Law of the Day error path in
+  the home view now goes through the same `onDailyLawShown` helper as the success path. The fresh fetch for a minute
+  after a vote is unchanged: the early script and the app's own fallback request (with its shorter window) both still send
+  `cache: 'no-cache'` inside that minute, and `fetchAPI` takes the cache mode and the timeout as one options object.
+  Web bumped to `3.4.116`; root to `2.6.228`.
 - Scripts and stylesheets without a content hash are no longer cached for a year. `nginx.conf` applied its one-year rule
   (`Expires` in 2027 plus `Cache-Control: max-age=31536000` and `public, no-transform`) to every `.js`, `.css` and image
   file, so `/sw.js`, `/offline.js` and `/styles/*` (including `variables.css`, which every build regenerates) kept their
@@ -96,8 +374,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   never rejects, 10 s timeout, paints text as text) and check its markup against the component's for every attribution
   shape. Two guards keep the prerendered and app layouts together: a unit test compares the prerendered home skeleton
   with the app's, and a Playwright spec (`e2e/prerender-law-of-day.spec.ts`, run against the production build, which the
-  e2e CI job now builds first) checks at four phone and desktop sizes, for short, long, titled and multi-attribution
-  laws, that the early quote has the app quote's x, width and height, is never lower, and is the last LCP entry.
+  e2e CI job now builds first) checks at four phone and desktop sizes, for short, medium, long and titled
+  (multi-attribution) laws, that the early quote has the app quote's x, width and height, is never lower, and is the last LCP entry.
   Web bumped to `3.4.110`; root to `2.6.219`.
 - Both deploy paths (`npm run deploy` and the Deploy to Production workflow) now run
   `backend/scripts/verify-installed-dependencies.mjs` right after `npm ci`. It resolves every runtime dependency in
@@ -120,9 +398,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `web/scripts/precompress-assets.ts`, which writes `.gz` (level 9) and `.br` (quality 11) copies of the JS, CSS and SVG files under
   `web/dist/assets/`; nginx serves the `.gz` copies with `gzip_static`, so the 1 vCPU server compresses nothing for
   them (measured on the real files: 559 KB to 173 KB gzip and 144 KB brotli, 119 KB to 18 KB gzip and 15 KB brotli).
-  Brotli is not enabled yet: its nginx module is not installed on the server and an unknown directive would fail
-  `nginx -t` during the deploy; the `.br` files are ready, and `shared/docs/DEPLOYMENT.md` has the install, enable,
-  verify and rollback steps. Content-hashed files under `/assets/` now carry one
+  Brotli was left off at first: its nginx module was not installed on the server and an unknown directive would fail
+  `nginx -t` during the deploy (the first entry of this section enables it). Content-hashed files under `/assets/` now carry one
   `Cache-Control: public, max-age=31536000, immutable` header instead of two (`max-age=31536000` from `expires` plus
   `public, no-transform`) and no longer an `Expires` header; the other static files keep their current headers. Both TLS server blocks now
   `listen 443 ssl http2;`. Checked against nginx 1.24.0 with a self-signed certificate: ALPN selects h2, `return 444`
@@ -136,6 +413,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `/var/log/nginx/*.log` logrotate rule covers it.
 
 ### Fixed
+- The web test "gives the retry the whole 10 s when the early request failed at once" no longer fails now and then
+  with 9999 where it expects 10000. It read the real clock: `setEarly()` stamps the early request's start with
+  `Date.now()`, and the retry subtracts the time that has passed since from the 10 s window, so a tick of 1 ms between
+  the two calls left 9999 ms. It failed once in the web CI `test-and-build` job and in two local pre-commit runs. The
+  test now freezes the clock with fake timers, so the elapsed time is exactly 0 and the assertion is unchanged
+  (`AbortSignal.timeout` called with `10_000`). Other tests that depended on the real clock are frozen the same way:
+  "keeps the cache bypass on the retry..." asserted that the retry got more than 6000 and at most 7000 ms, and now
+  asserts exactly 7000; and the `right after a vote` tests of the inline script, whose vote times are offsets from
+  `Date.now()` (59 s ago must bypass the cache, and a stall of over a second under load could break that; 60 s ago, the
+  boundary, now falls exactly on it instead of just past it). Verified by making `Date.now` advance by 1 ms on every
+  call: the old test fails with 9999 and the new one passes, and `api.test.ts`, `early-law-of-day.test.ts` and
+  `home.test.ts` passed 40 of 40 runs (and 20 of 20 with `--pool=threads`). No production code changed. Root bumped to
+  `2.6.238` and web to `3.4.118`.
+- `analyze-resource-peaks.sh` no longer skips the previous month's metrics file, or reads the current month's twice, on
+  the days when the previous month is too short, and its 30-day cutoff is now UTC. It found the previous month with
+  `date -d "1 month ago"`, which GNU date resolves to the current month when the day does not exist a month earlier (in
+  a year that is not a leap year Mar 29 -> "Feb 29" -> Mar 1, and Mar 30 and 31 roll over too; in a leap year only Mar 30
+  and 31; plus the 31st of May, July, October and December). On Mar 29 and 30 (only Mar 30 in a leap year) the peaks of
+  the last days of February were left out of the 30-day window, and on all of those days the current month's file was
+  listed twice, so its rows were counted double (`sampleCount`, "Total records analyzed"). The daily report runs the
+  script only on the 15th, so this hit manual runs. The previous month is now worked out from the current month's
+  number, which works the same with GNU and BSD `date`. The cutoff string was built with `date -d "-30 days"` and
+  printed with a literal `Z`, but without `-u` it carried the local wall-clock time, while the CSV timestamps are UTC
+  (`performance-tracker.sh` writes them with `date -u`); the 30-day window was shifted by the host's zone offset (up to
+  14 hours, nothing on a host set to UTC). It now uses `date -u`, with the BSD form `date -u -v-30d` as the fallback.
+  The month in the file name stays local, as the collector names the file with a local `date +%Y-%m`. The only other
+  month arithmetic in the scripts is the "Next review" date (`+1 month`) of `cost-optimization-report.sh`, which the
+  daily report runs on the 1st (UTC), so it is safe there on a host set to UTC; a manual run on the 29th to 31st can
+  still roll over. `analyze-resource-peaks-month-boundary.test.ts` pins the days around month ends, leap years, the
+  months 08 and 09, the year change, the `n8n` role, the file name's local month, and the cutoff in UTC, UTC+14 and
+  UTC-11 with both GNU and BSD `date`, using a stand-in `date` that rolls months over the way GNU date does, honours
+  `-u` and `TZ`, and fails the test on any call it does not understand. The peaks test in
+  `operational-email-rendering.test.ts` asserts an exact sample count (`1`) again, which the entry below had to loosen
+  until this fix. Root bumped to `2.6.234` and backend to `2.3.87`.
+- The `analyze-resource-peaks --format json` test no longer fails once its fixture is a month old, and the
+  `cost-optimization-report` one beside it no longer passes on a stale fixture. `scripts/operational-email-rendering.test.ts`
+  wrote a metrics row dated `2026-10-10`, but `analyze-resource-peaks.sh` reads only the current and the previous month's
+  CSV, and it and the capacity analyzer behind the cost report only count rows from the last 30 days, measured from the
+  real clock. From 9 November 2026 the row fell outside the window, the script printed `{"sampleCount":0,"metrics":[]}` and
+  the assertions failed. The cost test had kept passing because it accepted "Collecting baseline" whatever the sample
+  count; it now asserts that decision and that exactly one sample is counted, and the peaks test asserts the sample count
+  and one metric's value and timestamp. The fixture is dated one day before the test runs. The scripts are unchanged in
+  this entry. The peaks test asserted at least one sample rather than exactly one at the time, because on day 29, 30 or
+  31 of a month whose predecessor is shorter, `analyze-resource-peaks.sh` computed the previous month with
+  `date -d "1 month ago"`, which landed in the current month, and read the same CSV twice; the entry above fixes the
+  script and makes that count exact again. Root bumped to `2.6.231`.
 - `health-check.sh` no longer sends a false "[CRITICAL] Frontend/API Error - HTTP" alert with an empty status for a
   healthy site (the Nov 12 10:16 UTC alerts). It passed `-w` to curl twice and curl keeps only the last, so the status
   code was never printed and the empty value never equalled `200`. It now reads the status and the time from one

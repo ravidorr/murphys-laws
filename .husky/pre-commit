@@ -15,7 +15,7 @@ if [ "$SKIP_CHANGELOG_CHECK" != "1" ]; then
 fi
 
 # A package.json version and the lockfiles that record it must agree. Sync them and stage the result rather than
-# blocking the commit; the Lockfile sync CI check catches anything that still slips through.
+# blocking the commit; the required `lockfile-sync` CI check catches anything that still slips through.
 if git diff --cached --name-only | grep -qE '(^|/)package\.json$'; then
   npm run lockfiles:sync -- --stage || echo "Could not sync the lockfile versions; CI will check them."
 fi

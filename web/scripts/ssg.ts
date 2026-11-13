@@ -15,6 +15,7 @@ import {
   renderInternalLinkList
 } from '../src/utils/internal-links.ts';
 import { ARCHIVE_SEARCH_HTML } from '../src/views/home-archive-search.ts';
+import { unreplacedEarlyApiBase } from './early-api-base.ts';
 import { renderNotFoundContent, renderNotFoundLaws } from '../src/utils/not-found-content.ts';
 import { externalLinkRenderer } from '../src/utils/markdown-links.ts';
 import { insertContentFigure } from '../src/utils/content-figures.ts';
@@ -853,6 +854,23 @@ function injectJsonLd(html: string, jsonLd: string): string {
   return html.replace('</head>', `${jsonLd}\n</head>`);
 }
 
+const APP_ENTRY_SCRIPT = /<script type="module" crossorigin src="([^"]+)"><\/script\b[^>]*>/gi;
+
+/**
+ * Turns the app bundle's module script of dist/index.html into an inert placeholder (`#app-entry`, with the bundle URL
+ * in `data-src`) that the inline loader in index.html reads to add a real module script once the Law of the Day request
+ * has settled (or after its 1000 ms cap), so the bundle does not queue the small answer behind it. The pages the SSG
+ * builds from the shell keep the ordinary tag; the backend's runtime pages for laws and categories published after the
+ * build are made from dist/index.html itself and so carry the placeholder, which the loader starts at once because
+ * those paths make no early request. Throws when the shell has no single such tag (a Vite output change), because a
+ * build that silently kept the bundle in the way would lose the gain unnoticed.
+ */
+function holdAppEntry(html: string): string {
+  const found = html.match(APP_ENTRY_SCRIPT)?.length ?? 0;
+  if (found !== 1) throw new Error(`Expected one app module script in the page shell, found ${found}`);
+  return html.replace(APP_ENTRY_SCRIPT, (_tag, src: string) => `<script type="text/plain" id="app-entry" data-src="${src}"></script>`);
+}
+
 /**
  * Breadcrumb trail for a content page. Example subpages sit under /examples.
  */
@@ -884,6 +902,8 @@ function validateGeneratedPage(html: string, expectations: GeneratedPageExpectat
   const failures: string[] = [];
   const h1Count = (html.match(/<h1\b/gi) || []).length;
   if (h1Count !== 1) failures.push(`expected one h1, found ${h1Count}`);
+  const placeholder = unreplacedEarlyApiBase(html);
+  if (placeholder) failures.push(placeholder);
   if (expectations.forbidContactDetails) {
     // `mailto` without the colon catches a link cut in the middle (`[by Name](mailto`).
     if (/mailto/i.test(html)) failures.push('contains a public mailto link');
@@ -911,11 +931,32 @@ function validateGeneratedPage(html: string, expectations: GeneratedPageExpectat
   return failures;
 }
 
+/**
+ * The built home page must hold the bundle: one placeholder naming it (in the form the loader accepts: type text/plain,
+ * data-src a file of /assets/), no ordinary entry tag, the loader in an inline script of its own (a script with a src
+ * or a type is not it), and no preload of an asset (a modulepreload link would fetch chunks while the bundle is held
+ * back). Script tags are matched as a browser reads them: in any case, with attributes or whitespace on the end tag. The placeholder is matched exactly as the loader accepts it (lower case).
+ */
+function validateHomePage(html: string): string[] {
+  const failures: string[] = [];
+  const placeholders = html.match(/<script type="text\/plain" id="app-entry" data-src="\/assets\/index-[\w.-]+\.js"><\/script\b[^>]*>/g)?.length ?? 0;
+  if (placeholders !== 1) failures.push(`expected one app entry placeholder, found ${placeholders}`);
+  if (/<script type="module" crossorigin src="\/assets\/index-/i.test(html)) failures.push('still has an ordinary app module script');
+  const inlineScripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)]
+    .filter((match) => !/\b(?:src|type)\s*=/i.test(match[1]!))
+    .map((match) => match[2]!);
+  if (!inlineScripts.some((script) => script.includes("getElementById('app-entry')"))) failures.push('missing the app bundle loader');
+  if (/<link\b[^>]*\brel="modulepreload"[^>]*>/i.test(html)) failures.push('preloads the app bundle or its chunks, which defeats holding it back');
+  return failures;
+}
+
 function validateNotFoundPage(html: string): string[] {
   const failures: string[] = [];
   if (!html.includes('<meta name="robots" content="noindex">')) failures.push('missing noindex');
   if (!html.includes('class="not-found-code"')) failures.push('missing 404 content');
   if ((html.match(/<h1\b/gi) || []).length !== 1) failures.push('expected one h1');
+  const placeholder = unreplacedEarlyApiBase(html);
+  if (placeholder) failures.push(placeholder);
   return failures;
 }
 
@@ -940,6 +981,13 @@ async function validateGeneratedOutput(): Promise<void> {
       });
     }
   }
+
+  // The home page carries the inline early Law of the Day script, so it is the page where an unreplaced __API_BASE_URL__ shows first
+  const homeHtml = await fs.readFile(path.join(DIST_DIR, 'index.html'), 'utf-8');
+  const homePlaceholder = unreplacedEarlyApiBase(homeHtml);
+  if (homePlaceholder) throw new Error(`Invalid generated page index.html: ${homePlaceholder}`);
+  const homeFailures = validateHomePage(homeHtml);
+  if (homeFailures.length > 0) throw new Error(`Invalid generated page index.html: ${homeFailures.join('; ')}`);
 
   const notFoundFailures = validateNotFoundPage(await fs.readFile(path.join(DIST_DIR, '404.html'), 'utf-8'));
   if (notFoundFailures.length > 0) throw new Error(`Invalid generated page 404.html: ${notFoundFailures.join('; ')}`);
@@ -1277,6 +1325,8 @@ function buildStaticHomeContent(featuredLaw?: Law): string {
     ? `${renderStaticLawCards([featuredLaw], '')}
           <p class="text-muted-fg small">A featured law from the archive; the daily rotating law loads with JavaScript. <a href="/browse">Browse the full archive</a> for more.</p>`
     : '<p>Today\'s rotating law could not be loaded. <a href="/browse">Browse the full archive</a> instead.</p>';
+  // data-prerendered marks the zone the inline script in index.html may paint the daily law into; the app's own render
+  // replaces the whole page and gives the zone data-daily-law-state instead, so the script never touches the app's DOM.
   return `
     <div class="container page pt-0 min-h-400">
       ${ARCHIVE_SEARCH_HTML.trim()}
@@ -1897,6 +1947,7 @@ ${articleArchive.submitAction}
   });
   
   homeHtml = injectJsonLd(homeHtml, homeJsonLd);
+  homeHtml = holdAppEntry(homeHtml);
 
   await fs.writeFile(path.join(DIST_DIR, 'index.html'), homeHtml);
   console.log('Updated index.html with static content.');
@@ -2004,11 +2055,13 @@ export {
   buildStaticArticleArchive,
   buildNotFoundPage,
   validateNotFoundPage,
+  validateHomePage,
   applyPageMetadata,
   generateLawPage,
   buildSitemapXml,
   validateGeneratedPage,
   injectBreadcrumbJsonLd,
+  holdAppEntry,
   buildContentBreadcrumbTrail,
   fetchWithRetry,
   fetchAllCategories,

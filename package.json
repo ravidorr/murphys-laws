@@ -1,6 +1,6 @@
 {
   "name": "murphys-laws-monorepo",
-  "version": "2.6.227",
+  "version": "2.6.247",
   "description": "Murphy's Laws - Monorepo for Web, iOS, and Android apps",
   "private": true,
   "workspaces": [
@@ -42,7 +42,7 @@
     "ci:sdk": "cd sdk && npm run typecheck && npm run lint && npm run build && npm run test:coverage",
     "ci:cli": "cd cli && npm run typecheck && npm run lint && npm run test:coverage",
     "ci:mcp": "cd mcp && npm run typecheck && npm run lint && npm run test:coverage && npm run build",
-    "ci": "npm run ci:backend && npm run ci:web && npm run ci:sdk && npm run ci:cli && npm run ci:mcp",
+    "ci": "npm run test:scripts && npm run ci:backend && npm run ci:web && npm run ci:sdk && npm run ci:cli && npm run ci:mcp",
     "deploy": "npx tsx backend/scripts/deploy.ts",
     "validate:node": "cd backend && npm run validate:node",
     "validate:node-server": "cd backend && npm run validate:node-server",

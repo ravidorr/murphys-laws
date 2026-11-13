@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, utimesSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -424,4 +424,556 @@ test('a new file that cannot be installed restores the previous one and fails th
   assert.equal(readFileSync(sandbox.site, 'utf8'), 'old config\n');
   assert.deepEqual(callsOf(sandbox), [], 'nginx was not reloaded');
   assert.deepEqual(readdirSync(sandbox.temp), []);
+});
+
+// ---------------------------------------------------------------------------------------------------------------
+// The stale-asset pruning part of the same step, run with a stand-in for sudo against throwaway directories
+
+const pruneBlockStart = deployScript.indexOf('echo "==> Deploy: pruning stale build assets"');
+const pruneBlock = deployScript.slice(pruneBlockStart, nginxBlockStart);
+const liveLogs = '/var/log/nginx/access.log*';
+const rootNvm = '/root/.nvm';
+const pruneScript = path.join(rootDirectory, 'backend/scripts/prune-stale-assets.mjs');
+// Without the live paths the sandbox would not redirect the block, and it would read the real nginx logs.
+assert.ok(pruneBlock.includes(liveLogs) && pruneBlock.includes(rootNvm), 'the pruning block of the deploy step names the live logs and nvm');
+
+type PruneSandbox = { directory: string; staging: string; target: string; logs: string; bin: string };
+
+const longAgo = new Date('2020-01-01T00:00:00Z');
+
+function writeDist(dist: string): void {
+  const assets = path.join(dist, 'assets');
+  mkdirSync(assets, { recursive: true });
+  writeFileSync(path.join(dist, 'index.html'), '<script type="module" src="/assets/index-NEW.js"></script>');
+  writeFileSync(path.join(dist, 'sw.js'), 'precache("/assets/referenced-OLD.js")');
+  // Five recent files are kept by age, referenced-OLD.js by sw.js and requested-OLD.js by the access log; the three
+  // old ones that nothing names are the stale ones.
+  for (const name of ['index-NEW.js', 'a-NEW.js', 'b-NEW.js', 'c-NEW.js', 'd-NEW.js']) writeFileSync(path.join(assets, name), '// new');
+  for (const name of ['referenced-OLD.js', 'requested-OLD.js', 'stale-1-OLD.js', 'stale-2-OLD.js', 'stale-3-OLD.css']) {
+    writeFileSync(path.join(assets, name), '// old');
+    utimesSync(path.join(assets, name), longAgo, longAgo);
+  }
+}
+
+function createPruneSandbox({ withLog = true }: { withLog?: boolean } = {}): PruneSandbox {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'deploy-prune-'));
+  const staging = path.join(directory, 'staging');
+  const target = path.join(directory, 'target');
+  const logs = path.join(directory, 'logs');
+  const bin = path.join(directory, 'bin');
+  for (const folder of [logs, bin, path.join(target, 'backend/scripts')]) mkdirSync(folder, { recursive: true });
+  writeDist(path.join(staging, 'web/dist'));
+  writeDist(path.join(target, 'web/dist'));
+  copyFileSync(pruneScript, path.join(target, 'backend/scripts/prune-stale-assets.mjs'));
+  if (withLog) {
+    writeFileSync(path.join(logs, 'access.log'), '1.2.3.4 - - [01/Nov/2026:10:00:00 +0000] "GET /assets/requested-OLD.js HTTP/2.0" 200 5 "-" "ua"\n');
+  }
+  writeFileSync(path.join(bin, 'sudo'), '#!/bin/sh\nexec "$@"\n');
+  // macOS has no timeout(1): run the command without a limit, as GNU timeout does when it is not reached.
+  writeFileSync(path.join(bin, 'timeout'), '#!/bin/sh\nshift\nexec "$@"\n');
+  for (const name of ['sudo', 'timeout']) chmodSync(path.join(bin, name), 0o755);
+  return { directory, staging, target, logs, bin };
+}
+
+function runPruneBlock(sandbox: PruneSandbox) {
+  const block = pruneBlock.replaceAll(liveLogs, `${sandbox.logs}/access.log*`).replaceAll(rootNvm, path.join(sandbox.directory, 'no-nvm'));
+  return spawnSync('bash', ['-e', '-c', `${block}\necho AFTER_PRUNE`], {
+    env: { PATH: `${sandbox.bin}:${process.env.PATH}`, STAGING_DIR: sandbox.staging, TARGET_DIR: sandbox.target },
+    encoding: 'utf8',
+  });
+}
+
+const staleFiles = ['stale-1-OLD.js', 'stale-2-OLD.js', 'stale-3-OLD.css'];
+const keptFiles = ['index-NEW.js', 'a-NEW.js', 'b-NEW.js', 'c-NEW.js', 'd-NEW.js', 'referenced-OLD.js', 'requested-OLD.js'];
+const presentIn = (sandbox: PruneSandbox, root: 'staging' | 'target', files: string[]): boolean[] =>
+  files.map((name) => existsSync(path.join(sandbox[root], 'web/dist/assets', name)));
+const assertNothingDeleted = (sandbox: PruneSandbox) => {
+  for (const root of ['staging', 'target'] as const) {
+    assert.deepEqual(presentIn(sandbox, root, [...staleFiles, ...keptFiles]), Array(10).fill(true), `${root} keeps every file`);
+  }
+};
+
+test('the pruning part of the deploy step is found where the tests expect it', () => {
+  const rsync = deployScript.indexOf('sudo rsync -a --delete "$STAGING_DIR/web/dist/" "$TARGET_DIR/web/dist/"');
+  const scriptsRsync = deployScript.indexOf(`sudo rsync -a --delete --exclude='select-law-of-day.mjs' "$STAGING_DIR/backend/scripts/" "$TARGET_DIR/backend/scripts/"`);
+  assert.ok(rsync > -1 && scriptsRsync > -1, 'the web root and the scripts are synced');
+  assert.ok(pruneBlockStart > rsync && pruneBlockStart > scriptsRsync, 'pruning runs after both rsyncs, so the script and the new build are in place');
+  assert.ok(pruneBlockStart > -1 && pruneBlockStart < nginxBlockStart, 'pruning runs before nginx is tested and reloaded');
+  assert.match(pruneBlock, /"\$STAGING_DIR\/web\/dist" "\$TARGET_DIR\/web\/dist" 2>&1'/, 'it covers the staging copy and the web root, both quoted');
+  assert.doesNotMatch(pruneBlock, /--dry-run|rm -r/);
+  assert.match(pruneBlock, /timeout 180 node /, 'a hang is cut off well before the ssh action gives up');
+});
+
+test('the pruning deletes the stale files of the staging copy and the web root, keeps the rest and the deploy goes on', () => {
+  const sandbox = createPruneSandbox();
+  const result = runPruneBlock(sandbox);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /AFTER_PRUNE/);
+  assert.doesNotMatch(result.stdout + result.stderr, /WARNING/);
+  assert.match(result.stdout, /Deleted 6 stale asset files/);
+  for (const root of ['staging', 'target'] as const) {
+    assert.deepEqual(presentIn(sandbox, root, staleFiles), [false, false, false], `${root} lost its stale files`);
+    assert.deepEqual(presentIn(sandbox, root, keptFiles), Array(7).fill(true), `${root} keeps what is named, requested or recent`);
+    assert.ok(existsSync(path.join(sandbox[root], 'web/dist/index.html')) && existsSync(path.join(sandbox[root], 'web/dist/sw.js')));
+  }
+});
+
+test('without any existing access log nothing is deleted, the exit code is reported and the deploy goes on', () => {
+  const sandbox = createPruneSandbox({ withLog: false });
+  const result = runPruneBlock(sandbox);
+  assert.equal(result.status, 0, 'a failing prune never fails the step');
+  assert.match(result.stdout, /AFTER_PRUNE/);
+  assert.match(result.stdout, /Asset retention aborted, nothing deleted: none of the 1 access log files exists/, 'the reason is in the same stream as the warning');
+  assert.match(result.stdout, /WARNING: stale asset pruning did not complete \(exit 1:/);
+  assertNothingDeleted(sandbox);
+});
+
+test('a web root that fails a safety check stops the pruning of the staging copy too', () => {
+  const sandbox = createPruneSandbox();
+  writeFileSync(path.join(sandbox.target, 'web/dist/index.html'), '<html>no entry script</html>');
+  const result = runPruneBlock(sandbox);
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /AFTER_PRUNE/);
+  assert.match(result.stdout, /exit 1:/);
+  assertNothingDeleted(sandbox);
+});
+
+for (const [label, nodeExit] of [
+  ['node exits 127, as it does when it is missing', 127],
+  ['the script reports failed deletions (exit 3)', 3],
+] as const) {
+  test(`when ${label}, the deploy only warns with the exit code`, () => {
+    const sandbox = createPruneSandbox();
+    writeFileSync(path.join(sandbox.bin, 'node'), `#!/bin/sh\n[ "$1" = --version ] && echo v0.0.0 && exit 0\nexit ${nodeExit}\n`);
+    chmodSync(path.join(sandbox.bin, 'node'), 0o755);
+    const result = runPruneBlock(sandbox);
+    assert.equal(result.status, 0, 'the step goes on under set -e');
+    assert.match(result.stdout, /AFTER_PRUNE/);
+    assert.ok(result.stdout.includes(`WARNING: stale asset pruning did not complete (exit ${nodeExit}:`), result.stdout);
+    assertNothingDeleted(sandbox);
+  });
+}
+
+test('a script that crashes on the server only warns', () => {
+  const sandbox = createPruneSandbox();
+  writeFileSync(path.join(sandbox.target, 'backend/scripts/prune-stale-assets.mjs'), 'throw new Error("broken");\n');
+  const result = runPruneBlock(sandbox);
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /AFTER_PRUNE/);
+  assert.match(result.stdout, /WARNING: stale asset pruning did not complete \(exit 1:/);
+  assertNothingDeleted(sandbox);
+});
+
+// ---------------------------------------------------------------------------------------------------------------
+// The crontab part of the same step, run with stand-ins for sudo and crontab (and sometimes grep)
+
+const cronBlockStart = deployScript.indexOf('echo "==> Removing the standalone vulnerability scanner cron job');
+// The block ends where the comment of the next step, the install of the Law of the Day schedule, begins
+const cronBlockEnd = deployScript.indexOf('# The Law of the Day schedule (/etc/cron.d, from backend/config/cron.d).');
+const cronBlock = deployScript.slice(cronBlockStart, cronBlockEnd);
+const realGrep = spawnSync('sh', ['-c', 'command -v grep'], { encoding: 'utf8' }).stdout.trim();
+const realMktemp = spawnSync('sh', ['-c', 'command -v mktemp'], { encoding: 'utf8' }).stdout.trim();
+const realRm = spawnSync('sh', ['-c', 'command -v rm'], { encoding: 'utf8' }).stdout.trim();
+assert.ok([realGrep, realMktemp, realRm].every((command) => command.startsWith('/')), 'the stand-ins can reach the real grep, mktemp and rm');
+
+type CronSandbox = { directory: string; state: string; writes: string };
+
+/** `crontab` keeps root's crontab in a file and answers `-l` according to STUB_CRONTAB; `crontab -` replaces it. */
+function createCronSandbox(initial: string | null): CronSandbox {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'deploy-cron-'));
+  const bin = path.join(directory, 'bin');
+  const state = path.join(directory, 'root-crontab');
+  const writes = `${state}.writes`;
+  mkdirSync(bin);
+  if (initial !== null) writeFileSync(state, initial);
+  // sudo just runs the command, after the line it prints on a host whose name does not resolve (STUB_SUDO_NOISE)
+  writeFileSync(path.join(bin, 'sudo'), '#!/bin/sh\n[ -z "$STUB_SUDO_NOISE" ] || echo "$STUB_SUDO_NOISE" >&2\nexec "$@"\n');
+  // Without LC_ALL=C the "no crontab" answer comes in another language, which the step could not recognize.
+  // With STUB_CRONTAB=reads-stdin, `crontab -l` drains its standard input, as a careless command would.
+  writeFileSync(
+    path.join(bin, 'crontab'),
+    `#!/bin/sh
+case "$1" in
+  -l)
+    case "$STUB_CRONTAB" in
+      none) [ "$LC_ALL" = C ] || { echo "pas de crontab pour root" >&2; exit 1; }; echo "no crontab for root" >&2; exit 1 ;;
+      fail) echo "crontab: cannot read the spool directory: Permission denied" >&2; exit 1 ;;
+      fail-silent) exit 1 ;;
+      fail-two-lines) echo "no crontab for root (so it seems)" >&2; echo "crontab: the spool directory is gone" >&2; exit 1 ;;
+      noisy) echo "crontab: warning: something on stderr" >&2 ;;
+      reads-stdin) cat > /dev/null ;;
+    esac
+    cat "${state}" ;;
+  -)
+    cat > "${state}.new"
+    [ "$STUB_CRONTAB" = write-fails ] && { echo "crontab: errors in crontab file, can't install" >&2; exit 1; }
+    echo write >> "${writes}"
+    mv "${state}.new" "${state}" ;;
+esac
+`,
+  );
+  // macOS mktemp ignores TMPDIR when it has no template, GNU mktemp honors it: always create under TMPDIR, so a file
+  // that the step leaves behind shows in the sandbox.
+  writeFileSync(path.join(bin, 'mktemp'), `#!/bin/sh\n[ -z "$STUB_MKTEMP_FAIL" ] || { echo "mktemp: cannot create temp file" >&2; exit 1; }\nexec ${realMktemp} "$TMPDIR/crontab-error.XXXXXX"\n`);
+  // rm fails when STUB_RM_FAIL is set, as it would on a file that cannot be unlinked.
+  writeFileSync(path.join(bin, 'rm'), `#!/bin/sh\n[ -z "$STUB_RM_FAIL" ] || { echo "rm: cannot remove: Operation not permitted" >&2; exit 1; }\nexec ${realRm} "$@"\n`);
+  for (const name of ['sudo', 'crontab', 'mktemp', 'rm']) chmodSync(path.join(bin, name), 0o755);
+  return { directory, state, writes };
+}
+
+function cronEnv(sandbox: CronSandbox, mode: string, extraEnv: Record<string, string> = {}): Record<string, string> {
+  return { PATH: `${path.join(sandbox.directory, 'bin')}:${process.env.PATH}`, TMPDIR: sandbox.directory, STUB_CRONTAB: mode, ...extraEnv };
+}
+
+function runCronBlock(sandbox: CronSandbox, mode: string, extraEnv: Record<string, string> = {}) {
+  return spawnSync('bash', ['-e', '-c', `${cronBlock}\necho AFTER_CRONTAB`], { env: cronEnv(sandbox, mode, extraEnv), encoding: 'utf8' });
+}
+
+const writeCountOf = (sandbox: CronSandbox): number => (existsSync(sandbox.writes) ? readFileSync(sandbox.writes, 'utf8').trim().split('\n').length : 0);
+
+/** The step only warns: the block ends with status 0 and the lines after it run, so the deploy script goes on. */
+function assertWarnedAndWentOn(result: ReturnType<typeof runCronBlock>, warning: RegExp, label = ''): void {
+  assert.equal(result.status, 0, `${label} ${result.stderr}`);
+  assert.match(result.stdout, /AFTER_CRONTAB/, `${label}: the deploy script goes on`);
+  assert.match(result.stderr, warning, label);
+  assert.match(result.stderr, /WARNING: /, label);
+}
+
+const rootCrontab = [
+  '# Backup',
+  '0 4 * * * /usr/local/bin/backup-murphys.sh >> /var/log/backup-murphys.log 2>&1',
+  '',
+  '0 5 * * * /usr/local/bin/daily-report.sh >> /var/log/daily-report.log 2>&1',
+  '*/5 * * * * /usr/local/bin/health-monitor.sh > /dev/null 2>&1',
+  '',
+].join('\n');
+const scannerLine = '0 3 * * 0 /usr/local/bin/vulnerability-scanner.sh >> /var/log/vulnerability-scanner.log 2>&1\n';
+
+test('the crontab part of the deploy step is found where the tests expect it, never pipes a read into a write and never ends the script', () => {
+  assert.ok(cronBlockStart > -1 && cronBlockEnd > cronBlockStart, 'the block sits before the PM2 restart');
+  assert.ok(cronBlock.includes('vulnerability-scanner.sh'));
+  assert.doesNotMatch(cronBlock, /crontab -l[^\n]*[^|]\|(?!\|)/, 'crontab -l is read into a variable, not piped');
+  assert.doesNotMatch(cronBlock, /crontab -r/, 'the crontab is never removed');
+  assert.doesNotMatch(cronBlock, /\|\|\s*(true|:)\b/, 'no failure of this step is swallowed without a message');
+  const commands = cronBlock.split('\n').filter((line) => !line.trim().startsWith('#')).join('\n');
+  assert.doesNotMatch(commands, /(^|[;&|{)]|\$\(|\bthen|\belse|\bdo)\s*(exit|return)\b/m, 'housekeeping never ends the deploy script, it only warns');
+  assert.equal((cronBlock.match(/WARNING: /g) ?? []).length, 7, 'each problem has its own plain-text warning');
+  assert.doesNotMatch(cronBlock, /::warning::/, 'annotations are not parsed in the remote script');
+  assert.doesNotMatch(deployScript, /crontab -l[^\n]*\|[^\n]*crontab -/, 'nowhere in the script is a read piped into a write');
+});
+
+test('a crontab that cannot be read is left untouched, not emptied, and the deploy goes on with a warning', () => {
+  const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  const result = runCronBlock(sandbox, 'fail');
+  assertWarnedAndWentOn(result, /WARNING: could not read root's crontab \(exit 1: crontab: cannot read the spool directory: Permission denied\); it was left unchanged and the deploy continues/);
+  assert.equal(writeCountOf(sandbox), 0, 'crontab - was never run');
+  assert.equal(readFileSync(sandbox.state, 'utf8'), `${rootCrontab}${scannerLine}`);
+  assert.deepEqual(readdirSync(sandbox.directory).sort(), ['bin', 'root-crontab'], 'the temporary error file is removed');
+});
+
+test('a read that fails without a word, or whose last line is not "no crontab", only warns, and the crontab is untouched', () => {
+  for (const mode of ['fail-silent', 'fail-two-lines']) {
+    const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+    const result = runCronBlock(sandbox, mode);
+    assertWarnedAndWentOn(result, /WARNING: could not read root's crontab \(exit 1: /, mode);
+    assert.equal(writeCountOf(sandbox), 0, mode);
+    assert.equal(readFileSync(sandbox.state, 'utf8'), `${rootCrontab}${scannerLine}`, mode);
+  }
+});
+
+test('a temporary file that cannot be created only warns and leaves the crontab alone', () => {
+  const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  const result = runCronBlock(sandbox, 'ok', { STUB_MKTEMP_FAIL: '1' });
+  assertWarnedAndWentOn(result, /WARNING: could not create a temporary file to read root's crontab; it was left unchanged and the deploy continues/);
+  assert.equal(writeCountOf(sandbox), 0);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), `${rootCrontab}${scannerLine}`);
+});
+
+test('a temporary file that cannot be removed only warns, and the crontab is still rewritten', () => {
+  const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  const result = runCronBlock(sandbox, 'ok', { STUB_RM_FAIL: '1' });
+  assertWarnedAndWentOn(result, /WARNING: could not remove the temporary file .*crontab-error\.[^;]*; the deploy continues/);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), rootCrontab);
+});
+
+test('a server with no crontab for root is left alone and the deploy goes on', () => {
+  const sandbox = createCronSandbox(null);
+  const result = runCronBlock(sandbox, 'none');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Root has no crontab; nothing to remove\nAFTER_CRONTAB/);
+  assert.equal(writeCountOf(sandbox), 0, 'no crontab was created');
+  assert.ok(!existsSync(sandbox.state));
+});
+
+test('a crontab with the scanner entry loses only that line, written once', () => {
+  const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  const result = runCronBlock(sandbox, 'ok');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Standalone vulnerability scanner cron job removed\nAFTER_CRONTAB/);
+  assert.equal(writeCountOf(sandbox), 1);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), rootCrontab, 'every other line is kept, including the comment and the interior blank line');
+  assert.deepEqual(readdirSync(sandbox.directory).sort(), ['bin', 'root-crontab', 'root-crontab.writes'], 'the temporary error file is removed');
+});
+
+test('every scanner line goes, wherever it sits, and the other lines keep their order', () => {
+  const sandbox = createCronSandbox(`# Weekly scan\n${scannerLine}${rootCrontab}${scannerLine}0 6 * * * /usr/local/bin/other.sh\n`);
+  const result = runCronBlock(sandbox, 'ok');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(writeCountOf(sandbox), 1);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), `# Weekly scan\n${rootCrontab.replace(/\n$/, '')}\n0 6 * * * /usr/local/bin/other.sh\n`);
+});
+
+test('a crontab with Windows line endings and no final newline is written back with the other lines intact', () => {
+  const sandbox = createCronSandbox('0 4 * * * /usr/local/bin/backup-murphys.sh\r\n0 3 * * 0 /usr/local/bin/vulnerability-scanner.sh\r\n0 5 * * * /usr/local/bin/daily-report.sh');
+  const result = runCronBlock(sandbox, 'ok');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), '0 4 * * * /usr/local/bin/backup-murphys.sh\r\n0 5 * * * /usr/local/bin/daily-report.sh\n');
+});
+
+test('a very large crontab is rewritten without losing a line', () => {
+  const lines = Array.from({ length: 20000 }, (_, index) => `${index % 60} 4 * * * /usr/local/bin/job-${index}.sh`);
+  const sandbox = createCronSandbox(`${lines.join('\n')}\n${scannerLine}`);
+  const result = runCronBlock(sandbox, 'ok');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(writeCountOf(sandbox), 1);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), `${lines.join('\n')}\n`);
+});
+
+test('a crontab without the scanner entry is not written at all', () => {
+  const sandbox = createCronSandbox(rootCrontab);
+  const result = runCronBlock(sandbox, 'ok');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /No standalone vulnerability scanner cron job; the crontab was left unchanged\nAFTER_CRONTAB/);
+  assert.equal(writeCountOf(sandbox), 0);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), rootCrontab);
+});
+
+test('an empty result is never written: a crontab that holds only the scanner entry keeps it and the deploy goes on', () => {
+  for (const initial of [scannerLine, `${scannerLine}${scannerLine}`, `\n${scannerLine}  \n\t\n`]) {
+    const sandbox = createCronSandbox(initial);
+    const result = runCronBlock(sandbox, 'ok');
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stderr, /WARNING: the vulnerability scanner entry is the only entry in root's crontab; it was left in place/);
+    assert.match(result.stdout, /AFTER_CRONTAB/);
+    assert.equal(writeCountOf(sandbox), 0);
+    assert.equal(readFileSync(sandbox.state, 'utf8'), initial);
+  }
+});
+
+test('an empty or blank crontab is not written either', () => {
+  for (const initial of ['', '\n\n', '  \n']) {
+    const sandbox = createCronSandbox(initial);
+    const result = runCronBlock(sandbox, 'ok');
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(writeCountOf(sandbox), 0);
+    assert.equal(readFileSync(sandbox.state, 'utf8'), initial);
+  }
+});
+
+test('text that crontab -l prints to stderr on success never ends up in the crontab', () => {
+  const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  const result = runCronBlock(sandbox, 'noisy');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /WARNING: crontab -l printed: crontab: warning: something on stderr/, 'the deploy log shows it');
+  assert.equal(readFileSync(sandbox.state, 'utf8'), rootCrontab);
+});
+
+test('a line that sudo prints first does not hide "no crontab for root", and does not excuse a real failure', () => {
+  const noise = { STUB_SUDO_NOISE: 'sudo: unable to resolve host web1: Name or service not known' };
+  const none = createCronSandbox(null);
+  const noCrontab = runCronBlock(none, 'none', noise);
+  assert.equal(noCrontab.status, 0, noCrontab.stderr);
+  assert.match(noCrontab.stdout, /Root has no crontab; nothing to remove\nAFTER_CRONTAB/);
+  assert.equal(writeCountOf(none), 0);
+
+  const failing = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  const failed = runCronBlock(failing, 'fail', noise);
+  assertWarnedAndWentOn(failed, /WARNING: could not read root's crontab/);
+  assert.equal(writeCountOf(failing), 0);
+  assert.equal(readFileSync(failing.state, 'utf8'), `${rootCrontab}${scannerLine}`);
+});
+
+test('a grep that errors is neither "no scanner line" nor "nothing left": the crontab is untouched and the deploy goes on with a warning', () => {
+  // The first stand-in fails every search; each other one fails only one of the three: the search for the line,
+  // the one that drops it, the one that looks for what is left.
+  for (const script of [
+    'exit 2',
+    `case "$*" in *-aF*) exit 2 ;; *) exec ${realGrep} "$@" ;; esac`,
+    `case "$*" in *-avF*) exit 2 ;; *) exec ${realGrep} "$@" ;; esac`,
+    `case "$*" in *'[^[:space:]]'*) exit 2 ;; *) exec ${realGrep} "$@" ;; esac`,
+  ]) {
+    const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+    writeFileSync(path.join(sandbox.directory, 'bin', 'grep'), `#!/bin/sh\n${script}\n`);
+    chmodSync(path.join(sandbox.directory, 'bin', 'grep'), 0o755);
+    const result = runCronBlock(sandbox, 'ok');
+    assertWarnedAndWentOn(result, /WARNING: could not search root's crontab for vulnerability-scanner\.sh; it was left unchanged and the deploy continues/, script);
+    assert.equal(writeCountOf(sandbox), 0, script);
+    assert.equal(readFileSync(sandbox.state, 'utf8'), `${rootCrontab}${scannerLine}`, script);
+  }
+});
+
+test('a crontab that cannot be written keeps the previous one and the deploy goes on with a warning', () => {
+  const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  const result = runCronBlock(sandbox, 'write-fails');
+  assertWarnedAndWentOn(result, /WARNING: could not write root's crontab; it was left as it was and the deploy continues/);
+  assert.match(result.stderr, /errors in crontab file/);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), `${rootCrontab}${scannerLine}`);
+});
+
+test('the step still works when the deploy script is read from standard input, as `sudo bash <<INNER` does', () => {
+  // A command that reads standard input would swallow the lines of the script that follow it.
+  const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  const result = spawnSync('bash', ['-e'], { env: cronEnv(sandbox, 'reads-stdin'), input: `${cronBlock}\necho AFTER_CRONTAB\n`, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Standalone vulnerability scanner cron job removed\nAFTER_CRONTAB/);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), rootCrontab);
+});
+
+test('under the shell options of the deploy script (set -e and an ERR trap), with or without pipefail, every outcome, failures included, is handled by the step itself: the trap stays silent and the script goes on', () => {
+  const header = "set -e\ntrap 'echo \"==> Script failed at line $LINENO\"' ERR\n";
+  for (const options of ['', 'set -o pipefail\n']) {
+    for (const [mode, initial, status] of [
+      ['ok', `${rootCrontab}${scannerLine}`, 0],
+      ['ok', rootCrontab, 0],
+      ['ok', scannerLine, 0],
+      ['none', null, 0],
+      ['fail', `${rootCrontab}${scannerLine}`, 0],
+      ['write-fails', `${rootCrontab}${scannerLine}`, 0],
+    ] as const) {
+      const sandbox = createCronSandbox(initial);
+      const result = spawnSync('bash', ['-c', `${header}${options}${cronBlock}\necho AFTER_CRONTAB`], { env: cronEnv(sandbox, mode), encoding: 'utf8' });
+      const label = `${mode} ${options.trim()}`;
+      assert.equal(result.status, status, `${label}: ${result.stderr}`);
+      assert.match(result.stdout, /AFTER_CRONTAB/, label);
+      const trapped = (result.stdout + result.stderr).includes('Script failed at line');
+      assert.equal(trapped, false, `${label}: every failure is handled by the step itself, so the ERR trap stays silent`);
+    }
+  }
+});
+
+test('the pruning timeout is longer than the last measured run and shorter than the ssh action allows', () => {
+  const measuredSeconds = 69;
+  const [, seconds] = /timeout (\d+) node /.exec(pruneBlock) ?? [];
+  assert.ok(Number(seconds) >= 2 * measuredSeconds, `a timeout of ${seconds} s leaves room above the 69 s the first run took`);
+  const sshStep = deploySteps[indexOfStep('Deploy and restart services')];
+  const commandTimeout = String(sshStep?.with?.command_timeout ?? '10m'); // appleboy/ssh-action's default is ten minutes
+  const [, amount, unit] = /^(\d+)(s|m|h)$/.exec(commandTimeout) ?? [];
+  assert.ok(amount, `command_timeout ${commandTimeout} is a number of seconds, minutes or hours`);
+  const limitSeconds = Number(amount) * { s: 1, m: 60, h: 3600 }[unit as 's' | 'm' | 'h'];
+  assert.ok(limitSeconds >= 3 * Number(seconds), `the ssh action's ${limitSeconds} s limit leaves room for the rest of the deploy next to ${seconds} s of pruning`);
+});
+
+// ---------------------------------------------------------------------------------------------------------------
+// The Law of the Day schedule: installed by the deploy step, and by `npm run deploy`
+
+const deployTsSource = readFileSync(path.join(rootDirectory, 'backend/scripts/deploy.ts'), 'utf8');
+const installer = 'install-law-of-day-cron.sh';
+const lawOfDayMarker = 'echo "==> Installing the Law of the Day schedule"';
+const restartMarker = 'echo "==> Restarting PM2"';
+
+/** The position of a needle that must be in the text, so an order check cannot pass because an anchor was renamed. */
+const at = (text: string, needle: string): number => {
+  const index = text.indexOf(needle);
+  assert.ok(index >= 0, `${needle} is in the text`);
+  return index;
+};
+
+const realRsync = spawnSync('sh', ['-c', 'command -v rsync'], { encoding: 'utf8' }).stdout.trim();
+const scriptsSyncLine = deployScript.split('\n').find((line) => line.includes('"$STAGING_DIR/backend/scripts/"')) ?? '';
+
+test('the old select-law-of-day.mjs is neither copied back from staging nor deleted from the server by the scripts sync', () => {
+  assert.match(scriptsSyncLine, /rsync -a --delete --exclude='select-law-of-day\.mjs' "\$STAGING_DIR\/backend\/scripts\/" "\$TARGET_DIR\/backend\/scripts\/"/);
+  // Nothing before the installer removes the old script or its crontab line, so a refused install leaves the old job as it was
+  const beforeInstaller = deployScript.slice(0, at(deployScript, lawOfDayMarker));
+  assert.doesNotMatch(beforeInstaller, /rm\b[^\n]*select-law-of-day\.mjs/);
+});
+
+test('the scripts sync keeps the old .mjs on the server and does not bring the stale staging copy', { skip: realRsync ? false : 'rsync is not installed' }, () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'deploy-rsync-'));
+  const staging = path.join(directory, 'staging');
+  const target = path.join(directory, 'target');
+  for (const dir of [staging, target]) mkdirSync(path.join(dir, 'backend/scripts'), { recursive: true });
+  writeFileSync(path.join(staging, 'backend/scripts/select-law-of-day.mjs'), 'stale staging copy\n');
+  writeFileSync(path.join(staging, 'backend/scripts/select-law-of-day.ts'), 'new\n');
+  writeFileSync(path.join(target, 'backend/scripts/select-law-of-day.mjs'), 'server copy\n');
+  writeFileSync(path.join(target, 'backend/scripts/gone.sh'), 'left the repository\n');
+
+  const result = spawnSync('bash', ['-e', '-c', `STAGING_DIR="${staging}"\nTARGET_DIR="${target}"\n${scriptsSyncLine.trim().replace(/^sudo /, '')}`], { encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(readFileSync(path.join(target, 'backend/scripts/select-law-of-day.mjs'), 'utf8'), 'server copy\n');
+  assert.equal(readFileSync(path.join(target, 'backend/scripts/select-law-of-day.ts'), 'utf8'), 'new\n');
+  assert.equal(existsSync(path.join(target, 'backend/scripts/gone.sh')), false, 'other scripts that left the repository are still deleted');
+});
+
+test('the deploy installs the Law of the Day schedule once the files and the dependencies are in place', () => {
+  const install = at(deployScript, installer);
+  const nginxStart = at(deployScript, 'echo "==> Deploy: testing nginx and reloading"');
+  const rootPart = at(deployScript, "<<'INNER'");
+  assert.ok(install > rootPart, 'it runs in the part of the script that runs as root');
+  assert.ok(install > at(deployScript, 'npm run migrate'), 'after the dependencies are installed and the migrations ran');
+  assert.ok(install > at(deployScript, 'echo "✓ Standalone vulnerability scanner cron job removed"'), 'after the crontab cleanup');
+  assert.ok(install < at(deployScript, restartMarker), 'before the restart, where a failure would only be a warning');
+  assert.ok(!deployScript.slice(nginxStart, rootPart).includes(installer), 'the nginx guard does not run it');
+});
+
+/** The install step of the deploy script, run with a stand-in for the installer that exits with the given status. */
+function runInstallStep(installerStatus: number) {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'deploy-law-of-day-'));
+  const scripts = path.join(directory, 'backend/scripts');
+  mkdirSync(scripts, { recursive: true });
+  writeFileSync(path.join(scripts, installer), `echo "installer ran with: $*"\necho "node: $LAW_OF_DAY_NODE_BIN"\necho "stdin: [$(cat)]"\n[ "${installerStatus}" -eq 0 ] || echo "installer says no" >&2\nexit ${installerStatus}\n`);
+  const step = deployScript.slice(at(deployScript, lawOfDayMarker), at(deployScript, restartMarker));
+  // The rest of the real script is on stdin of the step; the installer must not be able to read it
+  return spawnSync('bash', ['-e', '-c', `TARGET_DIR="${directory}"\n${step}\necho AFTER_INSTALL`], { encoding: 'utf8', input: 'REST OF THE DEPLOY SCRIPT' });
+}
+
+test('the install step passes the release directory to the installer and prints no warning when it succeeds', () => {
+  const result = runInstallStep(0);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /installer ran with: \/[^\n]*deploy-law-of-day-[^\n]*\n/);
+  assert.match(result.stdout, /stdin: \[\]\nAFTER_INSTALL/, 'the installer reads nothing from the rest of the deploy script');
+  assert.match(result.stdout, /AFTER_INSTALL/);
+  // The job runs the node the deploy runs with, as an absolute path with symlinks resolved
+  const nodePath = /node: (.*)\n/.exec(result.stdout)?.[1] ?? '';
+  assert.equal(nodePath, realpathSync(String(spawnSync('sh', ['-c', 'command -v node'], { encoding: 'utf8' }).stdout.trim())));
+  assert.ok(path.isAbsolute(nodePath));
+  assert.doesNotMatch(result.stderr, /WARNING/);
+});
+
+test('a failed install of the schedule only warns, and the deploy goes on to restart the API', () => {
+  const result = runInstallStep(3);
+  assert.equal(result.status, 0, 'the step never ends the script under set -e');
+  assert.match(result.stdout, /AFTER_INSTALL/);
+  assert.match(result.stderr, /installer says no/);
+  assert.match(result.stderr, /^WARNING: the Law of the Day schedule was not installed \(exit 3, see the message above\); nothing picks the law at midnight until a deploy installs it, so the first request of each day does, and the deploy continues$/m);
+  const step = deployScript.slice(at(deployScript, lawOfDayMarker), at(deployScript, restartMarker));
+  const commands = step.split('\n').filter((line) => !line.trim().startsWith('#')).join('\n');
+  assert.doesNotMatch(commands, /(^|[;&|{)]|\bthen|\belse)\s*(exit|return)\b/m, 'the step has no exit of its own');
+});
+
+test('the old law-of-day crontab line is left to the installer: the scanner cleanup does not touch it or call the installer', () => {
+  const cleanup = deployScript.slice(cronBlockStart, cronBlockEnd);
+  assert.doesNotMatch(cleanup, /select-law-of-day/);
+  assert.ok(!cleanup.includes(installer));
+});
+
+test('npm run deploy installs the schedule too, as root, before it restarts PM2, and only warns when that fails', () => {
+  const install = at(deployTsSource, installer);
+  assert.ok(install > at(deployTsSource, "'Applying database migrations'"), 'after the dependencies and the migrations');
+  assert.ok(install < at(deployTsSource, 'pm2 restart ecosystem.config.cjs'), 'and a failure is handled before the restart');
+  // The node of the server (root's nvm node, which npm ci used), resolved there; not the node of the machine that runs the deploy
+  assert.ok(deployTsSource.includes("source ~/.nvm/nvm.sh && cd ${DROPLET_PATH}/backend && LAW_OF_DAY_NODE_BIN=\\$(readlink -f \\$(command -v node)) bash scripts/install-law-of-day-cron.sh ${DROPLET_PATH} </dev/null'"), 'the installer gets the server node and no stdin');
+  assert.match(deployTsSource, /rsync -avz --delete --exclude='select-law-of-day\.mjs' backend\/scripts\//, 'the old script stays on the server until the installer replaces its job');
+  const handler = deployTsSource.slice(install, at(deployTsSource, "log('\\nRestarting PM2 services...'"));
+  assert.match(handler, /catch \(error\) \{[\s\S]*?WARNING: the Law of the Day schedule was not installed[\s\S]*?the deployment continues`,\s*'yellow'/, 'the failure is logged as a warning, not rethrown');
+  assert.doesNotMatch(handler, /\bthrow\b/);
+});
+
+test('the log directory of the job is created by the deploy and is not the one its cleanup removes', () => {
+  // The job writes to backend/logs; the cleanup of old root-level files only removes /root/murphys-laws/logs
+  assert.match(deployScript, /sudo install -d -m 755 "\$TARGET_DIR\/backend\/logs"/);
+  assert.match(deployScript, /rm -rf config modules scripts utils logs/);
+  assert.ok(at(deployScript, 'rm -rf config modules scripts utils logs') < at(deployScript, 'cd "$TARGET_DIR/backend"'), 'the cleanup runs in the release root, before it moves into backend');
+  assert.match(readFileSync(path.join(rootDirectory, 'backend/config/cron.d/murphys-laws-law-of-day'), 'utf8'), /\/backend\/logs\/law-of-day\.log/);
 });

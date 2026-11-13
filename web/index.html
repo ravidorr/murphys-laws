@@ -49,24 +49,32 @@
     content="Explore Murphy's Law corollaries and experiment with interactive calculators that quantify inevitable mishaps.">
   <meta property="twitter:image" content="https://murphys-laws.com/social/home.png">
 
-  <!-- Law of the Day early start (home page only). The daily law is the largest element on the page, so waiting for the
-       app bundle to download, run and then request it put the law on a 9-12 second LCP path. This starts the request
-       before the stylesheet and the bundle, and paints the law into the prerendered zone as soon as it arrives. The app
-       adopts the same result (see consumeEarlyLawOfTheDay in src/utils/api.ts) if it came from the API URL the app itself
-       would use, so there is no second request. The
-       markup built here must match src/components/law-of-day.ts (tests/early-law-of-day.test.ts enforces that).
-       Plain ES5 on purpose: it runs on the oldest browsers the legacy bundle supports and must never throw. -->
+  <!-- Law of the Day early start (home page only). The daily law is the largest element on the page, and waiting for the
+       app bundle to download, run and then request it made it the LCP, at a real-user P75 of 13.4 s. This starts the
+       request before the stylesheet and the bundle, and paints the law into the prerendered zone as soon as it
+       arrives. The app adopts the same result (see consumeEarlyLawOfTheDay in src/utils/api.ts) if it came from the
+       API URL the app itself would use, so there is no second request. The markup built here must match
+       src/components/law-of-day.ts (tests/early-law-of-day.test.ts enforces that). ES5 syntax on purpose: it runs on the
+       oldest browsers the legacy bundle supports, uses fetch and Promise only where they exist (it does nothing
+       otherwise) and must never throw. -->
   <script>
     (function () {
       var path = location.pathname;
-      if ((path !== '/' && path !== '/index.html') || typeof fetch !== 'function') return;
+      // A legacy hash route such as /#/law/7 is rewritten by the router to another path (/law/7), so the home page is
+      // not what ends up shown. A bare /#/ is rewritten to the home page itself and still starts the request.
+      if ((path !== '/' && path !== '/index.html') || (location.hash.indexOf('#/') === 0 && location.hash.length > 2)
+        || typeof fetch !== 'function' || typeof Promise !== 'function') return;
 
+      // The window for this request and for the app's own fallback request together (src/utils/api.ts uses the same 10 s)
+      var TIMEOUT_MS = 10000;
       // The API the app is built for (VITE_API_URL, empty for the same origin); the build replaces the placeholder.
       // The app adopts this answer only if it came from the URL it would request itself.
       var url = '__API_BASE_URL__/api/v1/law-of-day';
-      var state = { law: null, url: url, startedAt: Date.now(), promise: null };
-      var controller = typeof AbortController === 'function' ? new AbortController() : null;
-      var timer = controller ? setTimeout(function () { controller.abort(); }, 10000) : 0;
+      // law: the answer, once it arrived. error: why the request or the early paint failed ('timeout', 'abort',
+      // 'network', 'parse', 'shape', 'error', 'paint' or the HTTP status as text); the app reports it when it falls
+      // back, because Sentry is not running yet at this point. startedAt: the app ignores the result once a minute
+      // has passed since the request started.
+      var state = { law: null, url: url, startedAt: Date.now(), error: null, promise: null };
 
       function attribution(law) {
         var first = law.attributions && law.attributions.length ? law.attributions[0] : null;
@@ -76,28 +84,35 @@
         return 'Sent by ' + (name ? name + (note ? ' - ' + note : '') : note);
       }
 
+      // The early paint is an optimisation: when it fails the law is still good and the app renders it itself, so a
+      // failure is recorded and swallowed here. Letting it escape would end in the error banner.
       function paint(law) {
-        var body = document.querySelector('[data-home-zone="law-of-day"][data-prerendered] .section-body');
-        if (!body) return;
-        var link = document.createElement('a');
-        link.href = '/law/' + law.id;
-        link.className = 'lod-link';
-        link.setAttribute('data-law-id', String(law.id));
-        link.setAttribute('aria-label', 'Read full law details');
-        var quote = document.createElement('blockquote');
-        quote.className = 'lod-quote-large';
-        quote.textContent = (law.title ? law.title + ': ' : '') + law.text;
-        link.appendChild(quote);
-        var credit = document.createElement('p');
-        credit.className = 'lod-attrib';
-        credit.textContent = attribution(law);
-        body.textContent = '';
-        body.appendChild(link);
-        body.appendChild(credit);
+        try {
+          var body = document.querySelector('[data-home-zone="law-of-day"][data-prerendered] .section-body');
+          if (!body) return;
+          var link = document.createElement('a');
+          link.href = '/law/' + law.id;
+          link.className = 'lod-link';
+          link.setAttribute('data-law-id', String(law.id));
+          link.setAttribute('aria-label', 'Read full law details');
+          var quote = document.createElement('blockquote');
+          quote.className = 'lod-quote-large';
+          quote.textContent = (law.title ? law.title + ': ' : '') + law.text;
+          link.appendChild(quote);
+          var credit = document.createElement('p');
+          credit.className = 'lod-attrib';
+          credit.textContent = attribution(law);
+          body.textContent = '';
+          body.appendChild(link);
+          body.appendChild(credit);
+        } catch (error) {
+          state.error = 'paint';
+        }
       }
 
-      // The zone exists once the page is parsed. Waiting for DOMContentLoaded would wait for the deferred app bundle,
-      // but readyState turns 'interactive' (and fires readystatechange) before deferred module scripts run.
+      // The zone exists once the page is parsed. Waiting for DOMContentLoaded could wait for a deferred app bundle (where
+      // index.html keeps its ordinary module script, such as the dev server), but readyState turns 'interactive' (and
+      // fires readystatechange) before deferred module scripts run.
       function paintWhenParsed(law) {
         if (document.readyState !== 'loading') {
           paint(law);
@@ -113,35 +128,146 @@
       // The API lets caches reuse the response for up to a minute. Within a minute of this browser's last vote, ask the
       // network instead, so a reload does not show a count that omits the vote. Same key and window as utils/recent-vote.ts
       // (abs: a stored time far from the clock, in either direction, must not bypass the cache).
-      var init = {
-        headers: { Accept: 'application/json' },
-        signal: controller ? controller.signal : undefined
-      };
-      try {
-        var votedAt = Number(localStorage.getItem('murphy_last_vote_at'));
-        if (votedAt > 0 && Math.abs(Date.now() - votedAt) < 60000) init.cache = 'no-cache';
-      } catch (e) {
-        // localStorage may be unavailable (private mode, etc.)
+      function bypassesHttpCache() {
+        try {
+          var votedAt = Number(localStorage.getItem('murphy_last_vote_at'));
+          return votedAt > 0 && Math.abs(Date.now() - votedAt) < 60000;
+        } catch (e) {
+          // localStorage may be unavailable (private mode, etc.)
+          return false;
+        }
       }
 
-      // The promise never rejects: it resolves to null on any failure, so the bundle falls back to its own request
-      // and no unhandled rejection can reach the error banner before the bundle attaches a handler.
-      state.promise = fetch(url, init).then(function (response) {
-        if (!response.ok) throw new Error('law-of-day ' + response.status);
-        return response.json();
-      }).then(function (payload) {
-        var law = payload && payload.law;
-        if (!law || !law.id || typeof law.text !== 'string') return null;
-        state.law = law;
-        paintWhenParsed(law);
-        return law;
-      }).catch(function () {
-        return null;
-      }).then(function (law) {
-        clearTimeout(timer);
-        return law;
+      // The promise never rejects: every outcome settles it exactly once, with the law or with null, so the bundle falls
+      // back to its own request and no unhandled rejection can reach the error banner before the bundle attaches a
+      // handler. state.law is set in the same step as the settlement, so the two cannot disagree.
+      state.promise = new Promise(function (resolve) {
+        var settled = false;
+        var controller = typeof AbortController === 'function' ? new AbortController() : null;
+
+        function settle(law, error) {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          state.law = law;
+          state.error = law ? null : error;
+          resolve(law);
+          if (!law) return;
+          // The law is already settled; a failure to even schedule the paint must not turn into a failed request
+          try {
+            paintWhenParsed(law);
+          } catch (paintError) {
+            state.error = 'paint';
+          }
+        }
+
+        function failureOf(error, fallback) {
+          return error && error.name === 'AbortError' ? 'abort' : fallback;
+        }
+
+        // A timer settles the request, so a hung request is bounded even where fetch cannot be aborted
+        var timer = setTimeout(function () {
+          settle(null, 'timeout');
+          if (controller) controller.abort();
+        }, TIMEOUT_MS);
+
+        try {
+          var init = {
+            headers: { Accept: 'application/json' },
+            signal: controller ? controller.signal : undefined
+          };
+          if (bypassesHttpCache()) init.cache = 'no-cache';
+          fetch(url, init).then(function (response) {
+            if (!response.ok) return settle(null, String(response.status));
+            return response.json().then(function (payload) {
+              var law = payload && payload.law;
+              if (law && law.id && typeof law.text === 'string') settle(law, null);
+              else settle(null, 'shape');
+            }, function (error) {
+              // A body that is not JSON is a SyntaxError; anything else here is a connection lost while reading it
+              settle(null, error && error.name === 'SyntaxError' ? 'parse' : failureOf(error, 'network'));
+            });
+          }, function (error) {
+            settle(null, failureOf(error, 'network'));
+          }).then(null, function () {
+            settle(null, 'error');
+          });
+        } catch (error) {
+          // fetch threw before any request was made (for instance a malformed API URL): not a connection problem
+          settle(null, 'error');
+        }
       });
       window.__earlyLawOfDay = state;
+    })();
+  </script>
+  <!-- App bundle start. The SSG turns the module script of dist/index.html into the inert #app-entry placeholder. On a
+       cold HTTP/2 connection the small Law of the Day answer queued behind the app bundle (about 173 KB over the wire) and
+       painted the law, the largest element on the page, 300-400 ms later than it could, so the bundle is held back: the
+       hold ends when the early request settles (with the law or without it) and at the latest HOLD_MS after this script
+       ran, so a slow or hung API cannot keep the app from loading (the early request has its own 10 s window, which
+       the app's fallback request shares; the hold only decides when the bundle starts). With no early request (a path
+       other than / and /index.html, such as the routes the service worker answers with this file, a legacy /#/... hash
+       route, or a browser without fetch or Promise) the bundle starts at once, and so it does if this script throws.
+       The pages the SSG builds from the shell keep their ordinary module script and never find the placeholder; the
+       backend's runtime law and category pages are made from this file and start the bundle at once. The module is
+       added only once parsing has ended, which is when the browser would run an ordinary deferred module script, because
+       src/main.ts needs #app. Plain ES5, and before the stylesheet, which would otherwise hold this script back.
+       tests/app-entry-loader.test.ts covers it. -->
+  <script>
+    (function () {
+      var HOLD_MS = 1000;
+      var started = false;
+      var timer = 0;
+
+      // The bundle URL named by the placeholder, or '' when the element is not the placeholder the SSG wrote: a script
+      // of type text/plain whose data-src is a file of /assets/ (a name, never a path, so no scheme, host or '..'). Any
+      // other element with that id (injected markup, DOM clobbering) is not trusted as a script source.
+      function entrySource(entry) {
+        if (entry.tagName !== 'SCRIPT' || entry.getAttribute('type') !== 'text/plain') return '';
+        var src = entry.getAttribute('data-src');
+        return typeof src === 'string' && /^\/assets\/[\w.-]+\.js$/.test(src) ? src : '';
+      }
+
+      function inject() {
+        var entry = document.getElementById('app-entry');
+        if (started || !entry) return;
+        var src = entrySource(entry);
+        if (!src) return;
+        var script = document.createElement('script');
+        script.type = 'module';
+        script.crossOrigin = 'anonymous';
+        script.src = src;
+        document.head.appendChild(script);
+        // Only once the script is in the page: a failure above leaves the later trigger (the timer or the parser) a retry
+        started = true;
+        clearTimeout(timer);
+      }
+
+      function start() {
+        if (document.readyState !== 'loading') {
+          inject();
+          return;
+        }
+        document.addEventListener('readystatechange', function onReady() {
+          if (document.readyState === 'loading') return;
+          document.removeEventListener('readystatechange', onReady);
+          inject();
+        });
+      }
+
+      // Anything unexpected here must not leave the page without its app: the bundle starts at once instead
+      try {
+        var early = window.__earlyLawOfDay;
+        if (!early || !early.promise || typeof early.promise.then !== 'function') {
+          start();
+          return;
+        }
+        early.promise.then(start, start);
+        timer = setTimeout(start, HOLD_MS);
+      } catch (error) {
+        // Sentry is not running yet, so the cause cannot be reported here; the app must load, and that is what matters
+        start();
+      }
     })();
   </script>
   <link rel="stylesheet" href="/styles/site.css">

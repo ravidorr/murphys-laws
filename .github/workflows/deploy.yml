@@ -108,6 +108,9 @@ jobs:
         env:
           # npm run build:web migrates this copy, serves it from a local API and prerenders from that API
           MURPHYS_DB_PATH: ${{ runner.temp }}/prod-db-copy/murphys.db
+          # The release name of the bundle and of the uploaded source maps: the commit, never a timestamp, so the
+          # same commit always builds the same bundle file names (web/scripts/app-release.ts)
+          VITE_APP_VERSION: ${{ github.sha }}
           # Sentry configuration for frontend error tracking and source map upload
           VITE_SENTRY_DSN: ${{ secrets['SENTRY_DSN'] }}
           SENTRY_AUTH_TOKEN: ${{ secrets['SENTRY_AUTH_TOKEN'] }}
@@ -211,7 +214,11 @@ jobs:
 
             sudo rsync -a --delete "$STAGING_DIR/web/dist/" "$TARGET_DIR/web/dist/"
             sudo rsync -a --delete "$STAGING_DIR/backend/src/" "$TARGET_DIR/backend/src/"
-            sudo rsync -a --delete "$STAGING_DIR/backend/scripts/" "$TARGET_DIR/backend/scripts/"
+            # select-law-of-day.mjs was replaced by select-law-of-day.ts. The upload never deletes, so the old copy
+            # stays in staging, and the exclusion keeps rsync from copying it back to the server. The same exclusion
+            # also protects the copy on the server from --delete: it is removed by the Law of the Day installer
+            # below, together with the old root crontab line that runs it, and only once the new job is installed.
+            sudo rsync -a --delete --exclude='select-law-of-day.mjs' "$STAGING_DIR/backend/scripts/" "$TARGET_DIR/backend/scripts/"
             sudo rsync -a --delete "$STAGING_DIR/backend/db/" "$TARGET_DIR/backend/db/"
             sudo rsync -a --delete "$STAGING_DIR/backend/config/" "$TARGET_DIR/backend/config/"
             sudo rsync -a --delete "$STAGING_DIR/shared/modules/" "$TARGET_DIR/shared/modules/"
@@ -224,6 +231,22 @@ jobs:
             sudo install -m 644 "$STAGING_DIR/web/vite.config.js" "$TARGET_DIR/web/vite.config.js"
 
             sudo chown -R root:root "$TARGET_DIR"
+
+            # Retention: scp-action never deletes from the staging copy and rsync --delete mirrors it, so old hashed
+            # bundles piled up (about 650 MB). Drop the ones that are older than 30 days, that nothing in the
+            # current build reaches and that the retained nginx access logs (about 14 days with the server's
+            # logrotate rule) show nobody requesting, from the staging copy as well as the web root (or the next
+            # rsync would bring them back). To turn it off, delete this block; adding --dry-run to the command only
+            # reports. It deletes nothing when a safety check fails (including when no access log can be read,
+            # because the glob below then stays literal) and must never block a release, so any non-zero exit only
+            # warns (a hang is cut off after 180 seconds, well inside the ssh action's own time limit of ten minutes, its default
+            # command_timeout; the first real run on the 1-vCPU server took about 69 seconds). Node comes from root's nvm, as in the commands below.
+            echo "==> Deploy: pruning stale build assets"
+            prune_rc=0
+            sudo env STAGING_DIR="$STAGING_DIR" TARGET_DIR="$TARGET_DIR" bash -c 'export NVM_DIR=/root/.nvm; [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1; cd "$TARGET_DIR" && nvm use --silent >/dev/null 2>&1; node --version; timeout 180 node "$TARGET_DIR/backend/scripts/prune-stale-assets.mjs" $(for log in /var/log/nginx/access.log*; do printf -- "--access-log %s " "$log"; done) "$STAGING_DIR/web/dist" "$TARGET_DIR/web/dist" 2>&1' || prune_rc=$?
+            if [ "$prune_rc" -ne 0 ]; then
+              echo "WARNING: stale asset pruning did not complete (exit $prune_rc: 1 means a safety check stopped it before any deletion or the script could not run, 3 means some deletions failed, 124 means it timed out, anything else means it could not start, for example no node; see its output above); the deploy continues"
+            fi
 
             # "sudo nginx -t && sudo systemctl reload nginx" does not stop this script under set -e (a failure
             # inside an && list that is not its last command is ignored), so install and test explicitly: keep the
@@ -383,10 +406,78 @@ jobs:
             sudo cp "$TARGET_DIR/backend/scripts/log-analyzer.sh" /usr/local/bin/log-analyzer.sh 2>/dev/null || true
             sudo chmod +x /usr/local/bin/*.sh 2>/dev/null || true
 
-            # Disable standalone vulnerability scanner cron job (it's included in daily report)
-            echo "Disabling standalone vulnerability scanner cron job..."
-            sudo crontab -l | grep -v "vulnerability-scanner.sh" | sudo crontab - || true
-            echo "✓ Standalone vulnerability scanner cron job disabled"
+            # The daily report runs the vulnerability scanner, so a standalone cron entry for it is removed. This is
+            # housekeeping and must never block a release (failing here would leave the old API running against the
+            # migrated schema), so every problem below only prints a WARNING and the deploy goes on; nothing here
+            # calls exit. What can never happen is an empty crontab: piping `crontab -l` into `crontab -` replaced
+            # the whole crontab with nothing whenever the read failed, and nothing reported it. The crontab is now
+            # read into a variable and written back only from a read that succeeded, only when a scanner line was
+            # there and only when something other than blank lines remains. "No crontab for root" is not a problem.
+            # Any other failed read, a grep that errors (exit 2, which must never look like "no match" or "nothing
+            # left") or a failed write leaves the crontab as it was (`crontab -` replaces it atomically).
+            echo "==> Removing the standalone vulnerability scanner cron job, if there is one"
+            scanner_script="vulnerability-scanner.sh"
+            crontab_error_file="$(mktemp)" || crontab_error_file=""
+            if [ -z "$crontab_error_file" ]; then
+              echo "WARNING: could not create a temporary file to read root's crontab; it was left unchanged and the deploy continues" >&2
+            else
+              crontab_status=0
+              crontab_current="$(sudo env LC_ALL=C crontab -l 2>"$crontab_error_file" </dev/null)" || crontab_status=$?
+              crontab_error="$(cat "$crontab_error_file")" || crontab_error=""
+              rm -f "$crontab_error_file" || echo "WARNING: could not remove the temporary file $crontab_error_file; the deploy continues" >&2
+              if [ "$crontab_status" -ne 0 ]; then
+                # sudo may print a line of its own first, so only the last line of the error is the crontab's answer
+                case "${crontab_error##*$'\n'}" in
+                  "no crontab for "*) echo "Root has no crontab; nothing to remove" ;;
+                  *) echo "WARNING: could not read root's crontab (exit $crontab_status: $crontab_error); it was left unchanged and the deploy continues" >&2 ;;
+                esac
+              else
+                [ -z "$crontab_error" ] || echo "WARNING: crontab -l printed: $crontab_error" >&2
+                # Each grep below exits 0 for "yes", 1 for "no" and 2 for an error, which is never read as "no". They
+                # read a pipe and print nothing (no -q, so printf is never cut off by a closed pipe), because a failed
+                # here-string redirection would look like "no".
+                # content_check is 0 when something other than blank lines remains and 1 when nothing does.
+                scanner_found=0
+                printf '%s\n' "$crontab_current" | LC_ALL=C grep -aF -- "$scanner_script" > /dev/null || scanner_found=$?
+                crontab_filtered=""
+                scanner_removed=0
+                content_check=0
+                if [ "$scanner_found" -eq 0 ]; then
+                  crontab_filtered="$(printf '%s\n' "$crontab_current" | LC_ALL=C grep -avF -- "$scanner_script")" || scanner_removed=$?
+                  if [ "$scanner_removed" -le 1 ]; then
+                    printf '%s\n' "$crontab_filtered" | LC_ALL=C grep -a '[^[:space:]]' > /dev/null || content_check=$?
+                  fi
+                fi
+                if [ "$scanner_found" -gt 1 ] || [ "$scanner_removed" -gt 1 ] || [ "$content_check" -gt 1 ]; then
+                  echo "WARNING: could not search root's crontab for $scanner_script; it was left unchanged and the deploy continues" >&2
+                elif [ "$scanner_found" -eq 1 ]; then
+                  echo "No standalone vulnerability scanner cron job; the crontab was left unchanged"
+                elif [ "$content_check" -eq 1 ]; then
+                  # Removing the entry would leave nothing, and an empty crontab is never written
+                  echo "WARNING: the vulnerability scanner entry is the only entry in root's crontab; it was left in place" >&2
+                elif printf '%s\n' "$crontab_filtered" | sudo crontab -; then
+                  echo "✓ Standalone vulnerability scanner cron job removed"
+                else
+                  echo "WARNING: could not write root's crontab; it was left as it was and the deploy continues" >&2
+                fi
+              fi
+            fi
+
+            # The Law of the Day schedule (/etc/cron.d, from backend/config/cron.d). The release files and the locked
+            # dependencies are in place, and the job first runs at 00:00 UTC, so this does not wait for the restart.
+            # It also removes the old select-law-of-day line from root's crontab, never writing an empty one. Like the
+            # cleanup above it must never block a release (the API picks the law on the first request of the day when
+            # the job is not installed), so a failure only prints a WARNING and the deploy goes on. The job runs the node
+            # this script runs with (the nvm node of .nvmrc, which npm ci built better-sqlite3 for), written into the
+            # cron file as an absolute path, so a Node upgrade is picked up by the next deploy. The installer reads
+            # nothing from stdin, which here is the rest of this script, so it is closed.
+            echo "==> Installing the Law of the Day schedule"
+            law_of_day_node="$(readlink -f "$(command -v node)")" || law_of_day_node=""
+            law_of_day_status=0
+            LAW_OF_DAY_NODE_BIN="$law_of_day_node" bash "$TARGET_DIR/backend/scripts/install-law-of-day-cron.sh" "$TARGET_DIR" </dev/null || law_of_day_status=$?
+            if [ "$law_of_day_status" -ne 0 ]; then
+              echo "WARNING: the Law of the Day schedule was not installed (exit $law_of_day_status, see the message above); nothing picks the law at midnight until a deploy installs it, so the first request of each day does, and the deploy continues" >&2
+            fi
 
             echo "==> Restarting PM2"
             cd "$TARGET_DIR/backend"

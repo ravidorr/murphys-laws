@@ -132,8 +132,8 @@ sqlite3 /root/backups/murphys-2025-01-15-020000.db "PRAGMA integrity_check;"
  # Update system
  apt update && apt upgrade -y
 
- # Install required packages
- apt install -y nginx git sqlite3 certbot python3-certbot-nginx \
+ # Install required packages (libnginx-mod-http-brotli-static: nginx.conf uses brotli_static, and nginx -t fails without it)
+ apt install -y nginx libnginx-mod-http-brotli-static git sqlite3 certbot python3-certbot-nginx \
  fail2ban ufw nodejs npm jq bc curl wget
 
  # Create user
@@ -305,9 +305,6 @@ EOF
  # Backup (daily at 4 AM UTC)
  0 4 * * * /usr/local/bin/backup-murphys.sh >> /var/log/backup-murphys.log 2>&1
 
- # Law of the Day selection (daily at midnight UTC)
- 0 0 * * * cd /root/murphys-laws && /usr/bin/node backend/scripts/select-law-of-day.mjs >> logs/law-of-day.log 2>&1
-
  # Daily status report (5 AM UTC) - includes SSL monitoring, log analysis, vulnerability scan, and cost report
  0 5 * * * /usr/local/bin/daily-report.sh >> /var/log/daily-report.log 2>&1
 
@@ -317,6 +314,8 @@ EOF
  # Performance tracking (hourly)
  0 * * * * /usr/local/bin/performance-tracker.sh >> /var/log/performance-tracker.log 2>&1
  ```
+
+ **Note:** The Law of the Day selection is not in this crontab. The deploy installs it as `/etc/cron.d/murphys-laws-law-of-day` (see `DEPLOYMENT.md`, "Law of the Day Selection"), so a restored server gets it with the next deploy.
 
  **Note:** SSL monitoring, log analysis, vulnerability scanning (Sundays), and cost optimization (1st of month) are all integrated into the daily-report.sh script and run as part of the daily status report at 5 AM UTC.
 

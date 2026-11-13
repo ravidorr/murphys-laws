@@ -144,8 +144,9 @@ ssh ravidor@167.99.53.90 "pm2 list"
 (`listen 443 ssl http2;`, the syntax of nginx 1.24; `http2 on;` only exists from 1.25.1).
 
 `npm run build` ends with `web/scripts/precompress-assets.ts`, which writes a `.gz` (level 9) and a `.br` (quality 11)
-copy next to every `.js`, `.css` and `.svg` file in `web/dist/assets/` when the copy is smaller than the original. nginx serves the
-`.gz` copy of the content-hashed files with `gzip_static`, so the server does no compression work for them. The deploy
+copy next to every `.js`, `.css` and `.svg` file in `web/dist/assets/` when the copy is smaller than the original. nginx
+serves the `.br` copy of the content-hashed files with `brotli_static` to clients that accept brotli and the `.gz` copy
+with `gzip_static` to the others, so the server does no compression work for them. The deploy
 workflow uploads all of `web/dist/`, so the copies reach the server with the rest of the build. A `.gz` or `.br` file
 belongs to its original. Both deploy paths replace `web/dist/` with `rsync --delete`, so the copies follow their originals;
 if you prune files by hand on the server, remove the matching `.gz` and `.br` files too.
@@ -161,24 +162,51 @@ failed `nginx -t` there, copy the old file back before anything reloads or resta
 does not prove the reload took effect: `systemctl reload` only signals nginx, so look at `/var/log/nginx/error.log`
 after a release that changes the listeners.
 
-### Follow-up: enabling brotli (not active yet)
+### Root's crontab during a deploy
 
-nginx does not serve the `.br` files yet, because the brotli module is not installed on the droplet and nginx rejects
-an unknown directive. A `brotli_static on;` line deployed before the module exists makes `nginx -t` fail in the deploy
-step (see "A rejected nginx configuration" above for what the deploy does then). Do these steps in this order:
+The vulnerability scanner runs from the daily report, so the GitHub Actions deploy removes any standalone
+`vulnerability-scanner.sh` entry from root's crontab. This is housekeeping and never blocks a release: it reads the
+crontab first, writes it back only from a read that succeeded, only when such a line was there and only when something
+other than blank lines remains, and every problem only prints a `WARNING:` line in the deploy log while the deploy goes
+on. A server with no crontab for root is left alone. A failed read (for example a permissions error), a failing `grep`,
+a temporary file that cannot be created or a failed write leaves the crontab exactly as it was (a temporary file that
+cannot be removed only warns), and so does a crontab
+whose only entry is the scanner line (an empty crontab is never written). So a failed read can no longer delete the
+other scheduled jobs. If the log shows one of these warnings, run `sudo crontab -l` on the server to see why; the
+standalone entry, if it is still there, would run the scan a second time next to the daily report.
 
-1. On the droplet, install the Ubuntu 24.04 packages (universe, built for the distribution's nginx 1.24):
-   `sudo apt install libnginx-mod-http-brotli-filter libnginx-mod-http-brotli-static`
-2. Check that they loaded and the config is still valid: `ls /etc/nginx/modules-enabled | grep brotli`, then
-   `sudo nginx -t && sudo systemctl reload nginx` (the package install may already have reloaded nginx).
-3. In a pull request, add `brotli_static on;` to the `location ~* "^/assets/..."` block of `nginx.conf`, next to
-   `gzip_static on;`. Optionally add `brotli on; brotli_comp_level 5; brotli_types` with the same list as `gzip_types`
-   in the server block for the files that have no `.br` copy. Extend `web/tests/nginx-performance.test.ts`, which
-   currently asserts that no brotli directive is present.
-4. Verify after the deploy: `curl -sI -H 'Accept-Encoding: br' https://murphys-laws.com/assets/<file>` shows
-   `Content-Encoding: br` and `Vary: Accept-Encoding`; with `Accept-Encoding: gzip` it still shows `gzip`.
-5. Roll back by reverting the pull request and deploying. The packages can stay installed;
-   `sudo apt remove libnginx-mod-http-brotli-filter libnginx-mod-http-brotli-static` removes them.
+### Brotli for the precompressed assets
+
+nginx serves the `.br` copy of the hashed JS, CSS and SVG files with `brotli_static on;` (next to `gzip_static on;` in the
+`location ~* "^/assets/..."` block of `nginx.conf`) to clients that send `Accept-Encoding: br`, the `.gz` copy to
+clients that only accept gzip, and the plain file to the rest. There is no dynamic brotli (`brotli on`): every other
+response keeps gzip. The `Vary: Accept-Encoding` header of the `.br` and `.gz` responses, which keeps a shared cache from
+handing a brotli body to a client that cannot decode it, comes from `gzip_vary on;` in the server block (with it off,
+neither static module sends `Vary`), so keep that directive.
+
+`brotli_static` comes from the `libnginx-mod-http-brotli-static` package (Ubuntu 24.04 universe, built for the
+distribution's nginx 1.24; `libnginx-mod-http-brotli-filter` is only needed for dynamic brotli, which is not used). The
+package is installed on the production droplet (since 2026-11-13, version `1.0.0~rc-5build1`, with
+`/etc/nginx/modules-enabled/50-mod-http-brotli-static.conf` in place). It must be installed on a server before a
+release containing `brotli_static` is deployed to it: without it `nginx -t` rejects the file as an unknown directive (see
+"A rejected nginx configuration" above for what the deploy does then). The same holds on a new droplet and after a
+rollback that removed the package, and an nginx that does not come from the Ubuntu archive cannot load the Ubuntu
+module either.
+
+On a new droplet install the package with nginx (`shared/docs/DISASTER-RECOVERY.md`). To install it on a running server:
+
+1. `sudo apt-get install libnginx-mod-http-brotli-static`
+2. `ls /etc/nginx/modules-enabled | grep brotli`, then `sudo nginx -t && sudo systemctl reload nginx` (the package
+   install may already have reloaded nginx; a reload is enough, no restart is needed)
+3. Verify a deployed release with the header a browser sends, over HTTP/2 the names are lower case:
+   `curl -sI -H 'Accept-Encoding: gzip, deflate, br' https://murphys-laws.com/assets/<file>` shows
+   `content-encoding: br`, one `cache-control` and `vary: Accept-Encoding`; with `Accept-Encoding: gzip` it shows
+   `content-encoding: gzip`. A `gzip` answer to the browser header means `gzip_static` is shadowing `brotli_static`.
+
+To roll back, revert the pull request and deploy first. Only then remove the package
+(`sudo apt-get remove libnginx-mod-http-brotli-static`, then `sudo nginx -t` and `sudo systemctl reload nginx`). While
+the live `nginx.conf` still contains `brotli_static`, removing the module makes the next reload fail and a restart or
+reboot leave nginx down.
 
 ---
 
@@ -306,37 +334,54 @@ ssh root@167.99.53.90 "namei -l /root/murphys-laws/web/dist/index.html"
 
 ### Law of the Day Selection
 
-The Law of the Day feature requires a daily cron job to pre-select tomorrow's law at midnight UTC:
+A daily job picks the day's Law of the Day at midnight UTC, so it is chosen on a schedule and not by the first visitor of the day. **The deploy installs it; do not add it to a crontab by hand.** The schedule is the repository file `backend/config/cron.d/murphys-laws-law-of-day`, and both `deploy.yml` and `npm run deploy` run `backend/scripts/install-law-of-day-cron.sh` after the dependencies are installed and the migrations ran, on every deploy (it is safe to repeat). It:
+- stops with an error, before changing anything, when the job could not start: the schedule file, `backend/scripts/select-law-of-day.ts`, `backend/node_modules/tsx`, `.nvmrc` or `crontab` is missing, or the node that the job runs is missing, cannot report its version, is not the major Node version of `.nvmrc` or cannot load `better-sqlite3` (that node is the one the deploy itself runs with, the nvm node of `.nvmrc`, which `better-sqlite3` was built for: both deploy paths pass it as `LAW_OF_DAY_NODE_BIN` and the installer writes its absolute path into the job, so the next deploy follows a Node upgrade; if the variable is not set at all the installer uses `/usr/bin/node`, which must then be a symlink to the nvm node, see `PREVENTING-502-ERRORS.md`)
+- replaces `/etc/cron.d/murphys-laws-law-of-day` in one step (a temporary file in `/etc/cron.d`, then a rename), mode 644 and owned by root, as cron requires; cron ignores a file there whose name contains a dot, so the name has none, and any edit made on the server is overwritten
+- creates `backend/logs`, which the job's log is in (the deploy's cleanup of old root-level files removes `/root/murphys-laws/logs`, not this one)
+- removes the old `select-law-of-day.mjs` line from root's crontab, so the job does not run twice, and then the old `.mjs` script, only after the new job is installed and the old line is gone (the deploys' `rsync --delete` leaves that one script alone, so a refused install, or an old line that could not be removed, leaves the line and its file as they were). The crontab is read into a variable and written back only from a successful read, only when that line was there and only when something other than blank lines remains: root's crontab is never emptied, and when the old line is its only entry it stays and the deploy prints a warning
+- warns when the server's time zone is not UTC: cronie honors the `CRON_TZ=UTC` line of the file, but the Debian and Ubuntu `cron` package does not document it (Ubuntu 22.04's `crontab(5)` has only `TZ`, which affects the job's environment and not its schedule), so there the job runs in the server's time zone, at 00:00 local time. On a server east of UTC that is before 00:00 UTC, so the job only finds the day before already picked and the first visitor picks again. The pick is for the current UTC day whenever it runs, so it is still the right law
+
+A failure of the installer is only a warning in the deploy (`WARNING: the Law of the Day schedule was not installed ...`) and never holds back a release, because the API picks the law on the first request of the day when the job is not installed. Until a deploy installs it nothing picks the law at midnight; the job installed by an earlier deploy stays, and fails in its log if the node path in it has gone, until the next deploy replaces it. Look for that line in the deploy log when the pick time (below) is late.
+
+The job is (the repository file; the installer replaces `/usr/bin/node` with the absolute path of the deploy's node, for example `/root/.nvm/versions/node/v22.16.0/bin/node`):
 
 ```cron
-0 0 * * * cd /root/murphys-laws && /usr/bin/node backend/scripts/select-law-of-day.mjs >> logs/law-of-day.log 2>&1
+0 0 * * * root { cd /root/murphys-laws/backend && /usr/bin/node node_modules/tsx/dist/cli.mjs scripts/select-law-of-day.ts; } >> /root/murphys-laws/backend/logs/law-of-day.log 2>&1
 ```
 
 **What it does:**
-- Runs daily at 00:00 UTC
-- Selects highest-voted law not featured in last 365 days
-- Alphabetical tiebreaker if multiple laws have same votes
-- Stores selection in `law_of_the_day_history` table
-- Logs output to `logs/law-of-day.log`
+- Runs daily at 00:00 UTC and picks today's (UTC) law
+- Selects highest-voted law not featured in last 365 days, with an alphabetical tiebreaker
+- Stores selection in `law_of_the_day_history` table, through the same `LawService.selectLawOfTheDay` the API uses
+- Keeps one live pick per UTC day, however often it runs and even when it meets a request at midnight: the check and the insert are one `BEGIN IMMEDIATE` transaction, so the second to arrive finds the first one's pick. (A replacement pick is added for the same date only when the law picked was unpublished since.) The API still picks on a request if the job did not run
+- Logs a timestamped line to `backend/logs/law-of-day.log` (`Picked law ...`, `Already picked ...`, or an error and a non-zero exit), after the untimestamped `Database connected` line of the database service
+- Nothing alerts when the job fails or does not run, because the API quietly picks instead: look at the log and at `created_at` (below) now and then; a pick made after about 00:05 UTC means the job did not do it
 
 **Verification:**
 ```bash
-# Check if cron job exists
+# The schedule is installed, and the old crontab line is gone (the grep prints nothing)
+cat /etc/cron.d/murphys-laws-law-of-day
 sudo crontab -l | grep select-law-of-day
 
-# Check recent selections
-tail -20 /root/murphys-laws/logs/law-of-day.log
+# Cron started the job at midnight (this shows only that it started; the log line below says what it did)
+sudo journalctl -u cron --since "yesterday" --no-pager | grep select-law-of-day
+tail -5 /root/murphys-laws/backend/logs/law-of-day.log
 
-# Manually trigger selection (for testing)
-cd /root/murphys-laws && sudo /usr/bin/node backend/scripts/select-law-of-day.mjs
+# Today's pick was made at 00:00, not by a visitor (created_at is UTC)
+sudo sqlite3 -readonly /root/murphys-laws/backend/murphys.db "SELECT featured_date, law_id, created_at FROM law_of_the_day_history ORDER BY id DESC LIMIT 3"
+
+# Run it by hand (safe at any time: it only picks if today has no pick)
+sudo bash -c 'source /root/.nvm/nvm.sh && cd /root/murphys-laws/backend && node node_modules/tsx/dist/cli.mjs scripts/select-law-of-day.ts'
 ```
+
+To stop the schedule, delete `/etc/cron.d/murphys-laws-law-of-day` and the repository file together (the deploy reinstalls it otherwise); the API then picks on the first request of each day.
 
 ### Daily Law of the Day Email
 
 Subscribers who confirmed their address get the day's law by email. Run this after the selection job (SMTP must be configured in the backend `.env`):
 
 ```cron
-15 6 * * * cd /root/murphys-laws/backend && /usr/bin/npm run email:daily >> ../logs/daily-email.log 2>&1
+15 6 * * * cd /root/murphys-laws/backend && /usr/bin/npm run email:daily >> logs/daily-email.log 2>&1
 ```
 
 **What it does:**
@@ -355,7 +400,7 @@ cd /root/murphys-laws/backend && npx web-push generate-vapid-keys
 Keep the pair: changing it drops every existing browser subscription. Then schedule the send after the selection job:
 
 ```cron
-20 6 * * * cd /root/murphys-laws/backend && /usr/bin/npm run push:daily >> ../logs/daily-push.log 2>&1
+20 6 * * * cd /root/murphys-laws/backend && /usr/bin/npm run push:daily >> logs/daily-push.log 2>&1
 ```
 
 **What it does:**

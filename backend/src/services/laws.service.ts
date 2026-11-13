@@ -100,6 +100,13 @@ interface LawOfTheDayHistoryRow {
   law_id: number;
 }
 
+/** The day's pick as `selectLawOfTheDay` reports it; `created` is false when the pick was already there. */
+export interface LawOfTheDayPick {
+  lawId: number;
+  featuredDate: string;
+  created: boolean;
+}
+
 interface EditorialRow {
   explanation: string;
   practical_example: string;
@@ -469,9 +476,8 @@ export class LawService {
     return stmt.all(...categoryIds, lawId, lawId, limit);
   }
 
-  async getLawOfTheDay(): Promise<{ law: LawRow; featured_date: string } | null> {
-    const today = new Date().toISOString().split('T')[0];
-
+  /** The law featured for a UTC day: the newest pick whose law is still published, if any. */
+  private findFeaturedLawId(featuredDate: string): number | undefined {
     // Ignore a stale pick whose law was unpublished (e.g. rejected by a moderator) so a new one is chosen.
     const existingStmt = this.db.prepare(`
       SELECT h.law_id
@@ -481,13 +487,33 @@ export class LawService {
       ORDER BY h.rowid DESC
       LIMIT 1
     `);
-    const existingLaw = existingStmt.get(today) as LawOfTheDayHistoryRow | undefined;
+    const existingLaw = existingStmt.get(featuredDate) as LawOfTheDayHistoryRow | undefined;
+    return existingLaw?.law_id;
+  }
 
-    let lawId: number;
+  /**
+   * Makes sure a Law of the Day is picked for a UTC day (default: today) and reports it, or returns null when no
+   * law is published. The API calls it on a request and the daily cron script calls it at midnight, so two
+   * processes can run it at once: the check and the insert share one immediate transaction, which takes the
+   * database's write lock before the check, so exactly one of them picks and the other finds that pick.
+   * `created` tells which one it was.
+   */
+  selectLawOfTheDay(featuredDate: string = new Date().toISOString().split('T')[0]): LawOfTheDayPick | null {
+    // A pick that already exists is the common case and must not need the write lock.
+    const existingLawId = this.findFeaturedLawId(featuredDate);
+    if (existingLawId !== undefined) {
+      return { lawId: existingLawId, featuredDate, created: false };
+    }
 
-    if (existingLaw) {
-      lawId = existingLaw.law_id;
-    } else {
+    const pick = this.db.transaction((): LawOfTheDayPick | null => {
+      // Checked again under the lock: another process may have picked since the check above.
+      const pickedMeanwhile = this.findFeaturedLawId(featuredDate);
+      if (pickedMeanwhile !== undefined) {
+        return { lawId: pickedMeanwhile, featuredDate, created: false };
+      }
+
+      let lawId: number;
+
       const candidatesStmt = this.db.prepare(`
         SELECT l.id,
                COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'up'), 0) AS upvotes
@@ -527,12 +553,20 @@ export class LawService {
         INSERT INTO law_of_the_day_history (law_id, featured_date)
         VALUES (?, ?)
       `);
-      insertStmt.run(lawId, today);
-    }
+      insertStmt.run(lawId, featuredDate);
+      return { lawId, featuredDate, created: true };
+    });
 
-    const law = await this.getLaw(lawId);
+    return pick.immediate();
+  }
+
+  async getLawOfTheDay(): Promise<{ law: LawRow; featured_date: string } | null> {
+    const pick = this.selectLawOfTheDay();
+    if (!pick) return null;
+
+    const law = await this.getLaw(pick.lawId);
     if (!law) return null;
-    return { law, featured_date: today };
+    return { law, featured_date: pick.featuredDate };
   }
 
   async suggestions({ q, limit = 10 }: SuggestionsParams = {}) {

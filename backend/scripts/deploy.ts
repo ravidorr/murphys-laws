@@ -81,7 +81,8 @@ async function deploy(): Promise<void> {
     'Syncing backend src'
   );
   exec(
-    `rsync -avz --delete backend/scripts/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/scripts/`,
+    // The retired select-law-of-day.mjs stays on the server until the installer below has installed the new job
+    `rsync -avz --delete --exclude='select-law-of-day.mjs' backend/scripts/ ${DROPLET_HOST}:${DROPLET_PATH}/backend/scripts/`,
     'Syncing backend scripts'
   );
   exec(
@@ -211,6 +212,24 @@ async function deploy(): Promise<void> {
     `ssh ${DROPLET_HOST} "sudo -u root bash -c 'cd ${DROPLET_PATH}/backend && source ~/.nvm/nvm.sh && npm run migrate'"`,
     'Applying database migrations'
   );
+
+  // The files and dependencies are in place, and the job first runs at 00:00 UTC, so this does not wait for the
+  // restart. It also never writes an empty root crontab when it removes the old select-law-of-day line. Like the
+  // deploy workflow, a failure is only a warning: the API picks the law on the first request of the day when the
+  // job is not installed, and holding back the release for it would be worse. The job runs the node this deploy
+  // runs on the server (root's nvm node, which npm ci built better-sqlite3 for), as an absolute path in the cron
+  // file; not process.execPath, which is the node of this machine. The installer reads nothing from stdin.
+  try {
+    exec(
+      String.raw`ssh ${DROPLET_HOST} "sudo -u root bash -c 'source ~/.nvm/nvm.sh && cd ${DROPLET_PATH}/backend && LAW_OF_DAY_NODE_BIN=\$(readlink -f \$(command -v node)) bash scripts/install-law-of-day-cron.sh ${DROPLET_PATH} </dev/null'"`,
+      'Installing the Law of the Day schedule'
+    );
+  } catch (error) {
+    log(
+      `WARNING: the Law of the Day schedule was not installed (${error instanceof Error ? error.message : String(error)}; see the message above); nothing picks the law at midnight until a deploy installs it, so the first request of each day does, and the deployment continues`,
+      'yellow'
+    );
+  }
 
   log('\nRestarting PM2 services...', 'blue');
   exec(

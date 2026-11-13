@@ -5,6 +5,7 @@ import { marked } from 'marked';
 import { CALCULATOR_META_DESCRIPTIONS, CRANES_LAW_PAGE } from '../src/utils/constants.ts';
 import { Home, renderHome } from '../src/views/home.ts';
 import { ARCHIVE_SEARCH_HTML } from '../src/views/home-archive-search.ts';
+import { API_BASE_PLACEHOLDER, injectEarlyApiBase, unreplacedEarlyApiBase } from '../scripts/early-api-base.ts';
 import {
   wrapFirstWordWithAccent,
   enhanceMarkdownHtml,
@@ -24,6 +25,8 @@ import {
   buildSitemapXml,
   validateGeneratedPage,
   injectBreadcrumbJsonLd,
+  holdAppEntry,
+  validateHomePage,
   buildContentBreadcrumbTrail,
   fetchWithRetry,
   fetchAllCategories,
@@ -133,6 +136,36 @@ describe('SSG Utilities', () => {
     it('does not apply to pages that are not checked for contact details', () => {
       const html = metadataTemplate.replace('</body>', '<p>Write to contact@murphys-laws.com</p></body>');
       expect(validateGeneratedPage(html, { canonicalPath: '/' })).toEqual([]);
+    });
+  });
+
+  describe('early API base placeholder', () => {
+    const readIndexHtml = () => readFileSync(resolve(__dirname, '../index.html'), 'utf8');
+
+    it('fails a generated page that still has the placeholder, which means the early-api-base plugin did not run', () => {
+      const unbuilt = metadataTemplate.replace('</head>', `<script>var url = '${API_BASE_PLACEHOLDER}/api/v1/law-of-day';</script></head>`);
+
+      const failures = validateGeneratedPage(unbuilt, { canonicalPath: '/' });
+
+      expect(failures).toHaveLength(1);
+      expect(failures[0]).toContain(API_BASE_PLACEHOLDER);
+      expect(failures[0]).toContain('early-api-base plugin');
+      expect(validateGeneratedPage(unbuilt.replace(API_BASE_PLACEHOLDER, ''), { canonicalPath: '/' })).toEqual([]);
+    });
+
+    it('fails the 404 page that still has the placeholder', () => {
+      const shell = metadataTemplate.replace('</head>', `<script>var url = '${API_BASE_PLACEHOLDER}';</script></head>`);
+
+      expect(validateNotFoundPage(buildNotFoundPage(shell, [])).join(' ')).toContain(API_BASE_PLACEHOLDER);
+    });
+
+    it('catches the source index.html as it is before the build and passes it once built', () => {
+      const source = readIndexHtml();
+
+      expect(source).toContain(API_BASE_PLACEHOLDER);
+      expect(unreplacedEarlyApiBase(source)).toContain(API_BASE_PLACEHOLDER);
+      expect(unreplacedEarlyApiBase(injectEarlyApiBase(source, ''))).toBeNull();
+      expect(unreplacedEarlyApiBase(injectEarlyApiBase(source, 'https://api.example.com'))).toBeNull();
     });
   });
 
@@ -592,6 +625,88 @@ describe('SSG Static Route Content', () => {
       const trail = buildContentBreadcrumbTrail(page);
       expect(trail[trail.length - 1]!.path).toBe(`/${page.slug}`);
     }
+  });
+});
+
+describe('holdAppEntry', () => {
+  const entry = '<script type="module" crossorigin src="/assets/index-AbCd1234.js"></script>';
+  const shell = `<head><script type="module">window.__vite_is_modern_browser=true</script>${entry}<link rel="stylesheet" crossorigin href="/assets/style-X.css"></head>`;
+
+  it('replaces the bundle script with an inert placeholder that names the bundle', () => {
+    const held = holdAppEntry(shell);
+
+    expect(held).toContain('<script type="text/plain" id="app-entry" data-src="/assets/index-AbCd1234.js"></script>');
+    expect(held).not.toContain('crossorigin src="/assets/index-AbCd1234.js"');
+  });
+
+  it('leaves the rest of the shell, including the inline module scripts and the stylesheet, as it was', () => {
+    expect(holdAppEntry(shell)).toBe(shell.replace(entry, '<script type="text/plain" id="app-entry" data-src="/assets/index-AbCd1234.js"></script>'));
+  });
+
+  it.each([
+    ['no bundle script', '<head></head>', 0],
+    ['two bundle scripts', `<head>${entry}${entry}</head>`, 2],
+    ['a bundle script written another way', '<head><script type="module" src="/assets/index-AbCd1234.js"></script></head>', 0],
+  ])('fails the build for %s, so the gain is never lost silently', (_name, html, found) => {
+    expect(() => holdAppEntry(html)).toThrow(`Expected one app module script in the page shell, found ${found}`);
+  });
+});
+
+describe('validateHomePage', () => {
+  const held = '<head><script>getElementById(\'app-entry\')</script><script type="text/plain" id="app-entry" data-src="/assets/index-AbCd1234.js"></script></head>';
+
+  it('accepts a home page that holds the bundle', () => {
+    expect(validateHomePage(held)).toEqual([]);
+  });
+
+  it('flags a page that kept the ordinary bundle script, lacks the placeholder, or lacks the loader', () => {
+    const ordinary = '<head><script type="module" crossorigin src="/assets/index-AbCd1234.js"></script></head>';
+    expect(validateHomePage(ordinary)).toEqual([
+      'expected one app entry placeholder, found 0',
+      'still has an ordinary app module script',
+      'missing the app bundle loader',
+    ]);
+    expect(validateHomePage(held.replace('<script>getElementById(\'app-entry\')</script>', ''))).toEqual(['missing the app bundle loader']);
+  });
+
+  it('flags each fault on its own', () => {
+    const ordinary = '<script type="module" crossorigin src="/assets/index-AbCd1234.js"></script>';
+    expect(validateHomePage(held + held)).toEqual(['expected one app entry placeholder, found 2']);
+    expect(validateHomePage(held + ordinary)).toEqual(['still has an ordinary app module script']);
+    expect(validateHomePage(held.replace('/assets/index-AbCd1234.js', '/x.js'))).toEqual(['expected one app entry placeholder, found 0']);
+  });
+
+  it('does not take the loader from a comment or a script that only names the placeholder', () => {
+    const commented = held.replace('<script>getElementById(\'app-entry\')</script>', '<!-- getElementById(\'app-entry\') -->');
+    expect(validateHomePage(commented)).toEqual(['missing the app bundle loader']);
+  });
+
+  it('reads script tags as a browser does: any case, whitespace or attributes on the end tag; the placeholder only as the loader accepts it', () => {
+    const upper = held.replace('<script>getElementById(\'app-entry\')</script>', '<SCRIPT >getElementById(\'app-entry\')</SCRIPT >')
+      .replace('</script></head>', '</script foo="bar"></head>');
+    expect(validateHomePage(upper)).toEqual([]);
+    expect(validateHomePage(held.replace('<script type="text/plain"', '<SCRIPT type="text/plain"'))).toEqual(['expected one app entry placeholder, found 0']);
+    expect(validateHomePage(held + '<script type="module" crossorigin src="/assets/index-AbCd1234.js"></script foo="bar">')).toEqual(['still has an ordinary app module script']);
+    expect(validateHomePage(held + '<SCRIPT type="module" crossorigin src="/assets/index-AbCd1234.js"></SCRIPT >')).toEqual(['still has an ordinary app module script']);
+    expect(validateHomePage(held + '<LINK REL="modulepreload" href="/assets/vendor-X.js">')).toEqual(['preloads the app bundle or its chunks, which defeats holding it back']);
+  });
+
+  it('takes the loader only from an inline script, not from one with a src or a type', () => {
+    const withoutLoader = held.replace('<script>getElementById(\'app-entry\')</script>', '');
+    expect(validateHomePage(withoutLoader + '<script src="/x.js">getElementById(\'app-entry\')</script>')).toEqual(['missing the app bundle loader']);
+    expect(validateHomePage(withoutLoader + '<script type="text/plain">getElementById(\'app-entry\')</script>')).toEqual(['missing the app bundle loader']);
+    expect(validateHomePage(withoutLoader + '<script nomodule>getElementById(\'app-entry\')</script >')).toEqual([]);
+  });
+
+  it('flags a placeholder the loader would refuse, so a build that moved the assets fails instead of losing the app', () => {
+    for (const src of ['https://cdn.example/assets/index-AbCd1234.js', '/assets/index-AbCd1234.js?v=1', '/assets/index-a/b.js']) {
+      expect(validateHomePage(held.replace('/assets/index-AbCd1234.js', src))).toEqual(['expected one app entry placeholder, found 0']);
+    }
+  });
+
+  it('flags a preload of the bundle or of a chunk, which would fetch it while it is held back', () => {
+    expect(validateHomePage(held + '<link rel="modulepreload" crossorigin href="/assets/vendor-X.js">'))
+      .toEqual(['preloads the app bundle or its chunks, which defeats holding it back']);
   });
 });
 

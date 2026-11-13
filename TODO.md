@@ -9,10 +9,6 @@ This document outlines additional tasks and potential improvements for the Murph
 
 ## Performance
 
-- [ ] **Enable brotli for the precompressed assets:** `npm run build` already writes `.br` copies next to the hashed JS and CSS, but nginx
-  does not serve them because the brotli module is not installed on the droplet (an unknown directive would fail `nginx -t` in the
-  deploy step). Install `libnginx-mod-http-brotli-filter` and `libnginx-mod-http-brotli-static` first, then add `brotli_static on;` to
-  the hashed-assets location of `nginx.conf` (steps, verification and rollback in `shared/docs/DEPLOYMENT.md`).
 - [ ] **Serve `/manifest.webmanifest` with its real type:** the server sends the manifest as `application/octet-stream`
   (`/etc/nginx/mime.types` has no `webmanifest` entry), so it is not compressed either (`gzip_types` lists
   `application/manifest+json`). Add a new `location = /manifest.webmanifest` with `types { application/manifest+json webmanifest; }`,
@@ -23,6 +19,10 @@ This document outlines additional tasks and potential improvements for the Murph
 - [ ] **Revalidate the prerendered pages:** send `Cache-Control: no-cache` for them, so a deploy shows up on the next visit (they send no
   `Cache-Control` today, so browsers decide how long to keep them), and decide the same for `ads.txt`, `llms.txt`, `llms-full.txt` and
   `social/home.webp`, which send none either.
+- [ ] **Revisit the web Sentry `tracesSampleRate` after the 2026-11-19 performance report:** `web/src/main.ts` samples 100% of
+  transactions (it was 10%) so the 2026-11-15 and 2026-11-19 reports have enough real-user samples. Lower it again if quota
+  or noise is a concern, and update `web/tests/sentry-sampling.test.ts` and the comment beside the option with it (the
+  backend's `initSentry` has its own rate, still 10%).
 
 ## Site data
 
