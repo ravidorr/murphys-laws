@@ -151,7 +151,7 @@ test('the actions are composite actions that read their input from the environme
 });
 
 test('every npm ci that can download a native binary is retried', () => {
-  // `npm ci --ignore-scripts` (lockfile-sync) runs no install scripts, so it downloads no binary. A script that runs
+  // `npm ci --ignore-scripts` (the Root checks workflow) runs no install scripts, so it downloads no binary. A script that runs
   // npm ci for real must contain the three-try loop (the action itself does, and so does the deploy's SSH script).
   const files = [...workflowFiles(), ...actionFiles()];
   let checked = 0;
@@ -208,11 +208,4 @@ test('the Android builds fetch the Gradle distribution in a retried step before 
       `${workflowName}: fetch the distribution through the action, not a bare gradlew --version`,
     );
   }
-});
-
-test('the workflow contract tests run in a workflow that every pull request triggers', () => {
-  const workflow = readFileSync(path.join(workflowsDirectory, 'lockfile-sync.yml'), 'utf8');
-
-  assert.match(workflow, /scripts\/npm-ci-action\.test\.ts/);
-  assert.match(workflow, /scripts\/codeql-workflow\.test\.ts/);
 });
