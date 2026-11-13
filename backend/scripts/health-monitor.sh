@@ -17,6 +17,11 @@ OUTAGE_REPORT_WINDOW=21600    # an outage mail covers the next 6 hours, in case 
 LOCK_DIR="/var/tmp/health-monitor.lock"
 LOCK_STALE_SECONDS=900        # a lock older than this is taken over even if its process still exists
 CHECK_TIMEOUT_SECONDS=120     # backstop for one run of the check, which bounds its own requests to 10 seconds
+# A deploy's `npm ci` empties backend/node_modules for about 20 to 60 seconds, so a check that starts then
+# crashes. Before mailing "could not run", look again this many times, this many seconds apart. The worst case
+# (3 runs of 120 s and 2 pauses of 45 s) stays under LOCK_STALE_SECONDS.
+COULD_NOT_RUN_RETRIES=2
+COULD_NOT_RUN_RETRY_DELAY=45
 
 # Configuration
 MAX_FAILURES=3  # Restart after 3 consecutive failures
@@ -255,6 +260,23 @@ health_check_exit_code=0
 run_health_check > "$OUTPUT_FILE" 2>&1 || health_check_exit_code=$?
 
 health_check_class="$(classify_health_exit "$health_check_exit_code" "$OUTPUT_FILE")"
+
+# A check that could not run says nothing about the site, and the usual cause is a deploy replacing the
+# dependencies at that moment, so wait and run it again before reporting. Exit 2 (an invalid alert recipient)
+# is a settled configuration error and is reported straight away. The last attempt decides the outcome and
+# its output is the one mailed.
+retry_attempt=0
+while [ "$health_check_class" = "monitor-problem" ] && [ "$health_check_exit_code" -ne 2 ] \
+    && [ "$retry_attempt" -lt "$COULD_NOT_RUN_RETRIES" ]; do
+    retry_attempt=$((retry_attempt + 1))
+    # The output is overwritten by the next attempt, so keep what this one said in the log: it is the only
+    # record of a transient crash that a later attempt recovers from.
+    log "Health check could not run (exit code: $health_check_exit_code, output: $(tail -n 3 "$OUTPUT_FILE" 2>/dev/null | tr '\n' ' ')); retrying in ${COULD_NOT_RUN_RETRY_DELAY}s (attempt $retry_attempt of $COULD_NOT_RUN_RETRIES)"
+    sleep "$COULD_NOT_RUN_RETRY_DELAY"
+    health_check_exit_code=0
+    run_health_check > "$OUTPUT_FILE" 2>&1 || health_check_exit_code=$?
+    health_check_class="$(classify_health_exit "$health_check_exit_code" "$OUTPUT_FILE")"
+done
 
 if [ "$health_check_class" = "healthy" ]; then
     log "Health check passed"

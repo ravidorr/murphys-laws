@@ -226,6 +226,7 @@ describe('health-monitor.sh as cron runs it', () => {
     pm2: string;
     pings: string;
     timeouts: string;
+    sleeps: string;
   }
 
   interface MonitorOptions {
@@ -267,7 +268,7 @@ describe('health-monitor.sh as cron runs it', () => {
     fake('pm2', 'if [ "$1" = "jlist" ]; then echo "[]"; else echo "pm2 $* count=$(cat "$FAILURES_FILE" 2>/dev/null)" >> "$PM2_LOG"; exit "${PM2_RESTART_EXIT:-0}"; fi');
     // The real `timeout` is missing on macOS; this one records its arguments and runs the command.
     fake('timeout', 'echo "timeout $1" >> "$TIMEOUT_LOG"; shift; exec "$@"');
-    fake('sleep', 'exit 0');
+    fake('sleep', 'echo "$1" >> "$SLEEP_LOG"; exit 0');
     fake('curl', 'echo "curl $*" >> "$CURL_LOG"');
     const failuresFile = path.join(box.root, 'health-check-failures');
     if (failuresUnwritable) {
@@ -294,6 +295,7 @@ describe('health-monitor.sh as cron runs it', () => {
       PM2_LOG: path.join(box.root, 'pm2.log'),
       FAILURES_FILE: failuresFile,
       TIMEOUT_LOG: path.join(box.root, 'timeout.log'),
+      SLEEP_LOG: path.join(box.root, 'sleep.log'),
       CURL_LOG: path.join(box.root, 'curl.log'),
       TMPDIR: box.root,
       HEALTHCHECKS_PING_URL: 'https://ping.example/uuid',
@@ -311,6 +313,7 @@ describe('health-monitor.sh as cron runs it', () => {
       pm2: read('pm2.log'),
       pings: read('curl.log'),
       timeouts: read('timeout.log'),
+      sleeps: read('sleep.log'),
     };
   }
 
@@ -362,7 +365,7 @@ describe('health-monitor.sh as cron runs it', () => {
     ['exit 127 (tsx, npx or node not found)', 127],
     ['exit 137 (killed)', 137],
   ])('on %s the check could not run: no restart, count untouched, no ping, an alert says so', (_name, code) => {
-    const run = monitor([code], { failures: 2 });
+    const run = monitor([code, code, code], { failures: 2 });
     expect(run.status).toBe(2);
     expect(run.failures).toBe('2');
     expect(run.pm2).toBe('');
@@ -382,7 +385,7 @@ describe('health-monitor.sh as cron runs it', () => {
     expect(again.log).toContain('ALERT SUPPRESSED (cooldown): Health Check Could Not Run');
 
     // A different cause is a different problem, so it is reported at once.
-    expect(mails(monitor([127], { box: first.box }))).toBe(2);
+    expect(mails(monitor([127, 127, 127], { box: first.box }))).toBe(2);
 
     // Six hours later the same cause is reported again.
     writeFileSync(stateFile(first, 'could-not-run-2'), `${Math.floor(Date.now() / 1000) - 21_700}\n`);
@@ -410,7 +413,7 @@ describe('health-monitor.sh as cron runs it', () => {
   });
 
   it('treats exit 1 without a "Health check FAILED" line (a crash or a broken install) as a problem with the check, not an outage', () => {
-    const run = monitor([1], { failures: 2, noMarker: true });
+    const run = monitor([1, 1, 1], { failures: 2, noMarker: true });
     expect(run.status).toBe(2);
     expect(run.failures).toBe('2');
     expect(run.pm2).toBe('');
@@ -418,12 +421,73 @@ describe('health-monitor.sh as cron runs it', () => {
     expect(run.mail).toContain('crash or a broken install');
   });
 
+  describe('a check that could not run is run again before anything is mailed', () => {
+    const runs = (run: Run) => run.tsxArgs.trim().split('\n').length;
+
+    it('says nothing when the next run works, as when a deploy was replacing the dependencies (the 2026-11-13 07:40 mail)', () => {
+      const run = monitor([1, 0], { failures: 2, noMarker: true });
+      expect(run.status).toBe(0);
+      expect(runs(run)).toBe(2);
+      expect(run.mail).toBe('');
+      expect(run.failures).toBe('0');
+      expect(run.pm2).toBe('');
+      expect(run.pings).toContain('curl');
+      expect(run.log).toContain('retrying in 45s (attempt 1 of 2)');
+      expect(run.log).toContain('output: fake health check output');
+      expect(run.sleeps.trim()).toBe('45');
+      expect(run.log).toContain('Health check passed');
+    });
+
+    it('also waits through a second failed attempt', () => {
+      const run = monitor([127, 1, 0], { noMarker: true });
+      expect(run.status).toBe(0);
+      expect(runs(run)).toBe(3);
+      expect(run.mail).toBe('');
+      expect(run.log).toContain('(attempt 2 of 2)');
+    });
+
+    it('mails once, with the usual subject and the last attempt\'s output, when it still cannot run after the retries', () => {
+      const run = monitor([1, 1, 1], { failures: 2, noMarker: true });
+      expect(run.status).toBe(2);
+      expect(runs(run)).toBe(3);
+      expect(run.failures).toBe('2');
+      expect(mails(run)).toBe(1);
+      expect(run.mail).toContain('Health Check Could Not Run');
+      expect(run.log).not.toContain('attempt 3');
+    });
+
+    it('does not retry exit 2, a configuration error that will not fix itself', () => {
+      const run = monitor([2, 0]);
+      expect(run.status).toBe(2);
+      expect(runs(run)).toBe(1);
+      expect(run.mail).toContain('Health Check Could Not Run');
+    });
+
+    it('restarts as usual when the retry finds the outage that reaches the threshold, and does not retry the retest', () => {
+      const run = monitor([127, 1, 0], { failures: 2 });
+      expect(run.status).toBe(0);
+      expect(run.pm2).toContain('pm2 restart all');
+      expect(run.mail).toContain('Services Restarted Due to Health Check Failures');
+      expect(run.mail).not.toContain('Could Not Run');
+      expect(runs(run)).toBe(3);
+    });
+
+    it('judges the run that finally works as usual: a real outage after a retry is counted and mailed as one', () => {
+      const run = monitor([127, 1]);
+      expect(run.status).toBe(1);
+      expect(runs(run)).toBe(2);
+      expect(run.failures).toBe('1');
+      expect(run.mail).toContain('Health Check Failed (1/3)');
+      expect(run.mail).not.toContain('Could Not Run');
+    });
+  });
+
   it('runs the check under timeout, with a 120 second backstop', () => {
     expect(monitor([0]).timeouts.trim()).toBe('timeout 120');
   });
 
   it('says why the check could not run when it timed out', () => {
-    expect(monitor([124]).mail).toContain('timed out after 120 seconds');
+    expect(monitor([124, 124, 124]).mail).toContain('timed out after 120 seconds');
   });
 
   it('counts a real failure (exit 1) and alerts, without restarting before the threshold', () => {
