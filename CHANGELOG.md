@@ -13,31 +13,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `sudo crontab -l | grep -v vulnerability-scanner.sh | sudo crontab - || true`: when `crontab -l` failed for any reason
   other than "no crontab for root" (permissions, an I/O error, a transient failure), `grep` printed nothing and
   `crontab -` replaced the whole crontab with an empty one, which would delete every scheduled job on the server
-  (backup, daily report, health monitor, performance tracker, Law of the Day selection), and nothing reported it (`|| true` also hid a failed
-  write). `grep -v` also exits 1 when it filters out every line, which nothing reported either, and the empty result
-  was written anyway. The step now reads the
-  crontab into a variable and writes it back only from a successful read, only when a scanner line was actually there,
-  and only when something else remains: an empty or blank result is never written, so a crontab whose only entry is the
-  scanner line is left as it is with a warning. "No crontab for root" is left alone (a line that `sudo` prints first
-  does not hide it, and `LC_ALL=C` keeps the message recognizable), any other failed read or a `grep` that errors (exit
-  2) fails the deploy at that step with the cause and leaves the crontab unchanged, and a failed write fails it too
-  (the step runs after the migrations and before the PM2 restart, like the monitoring-script installs just above it).
-  Other lines are kept byte for byte (a rewrite drops trailing blank lines and adds a missing final newline). Text that `crontab -l` prints to
-  stderr on success never reaches the crontab, and `crontab -l` reads no standard input, so it cannot swallow the
-  lines of the script that `sudo bash <<'INNER'` is reading. Eighteen new tests in `scripts/deploy-workflow.test.ts`
-  (47 in all) cover this: sixteen run that part of the deploy script as written, with stand-ins for `sudo`, `crontab`,
-  `mktemp` and `grep`: a failed read (with a message, without one, and with a last line that is not "no crontab"), no
-  crontab, one or several scanner lines, no scanner line, only the scanner line, an empty and a blank crontab, Windows
-  line endings without a final newline, a 20000-line crontab, stderr noise, `sudo` noise, a `grep` error in each of the
-  three searches, a failed write, a script read from standard input, and the shell options of the deploy script
-  (`set -e` and an ERR trap, with and without `pipefail`); the other two check where the block sits and the pruning
-  timeout. `shared/docs/DEPLOYMENT.md` describes the behavior.
+  (backup, daily report, health monitor, performance tracker, Law of the Day selection), and nothing reported it
+  (`|| true` also hid a failed write). `grep -v` also exits 1 when it filters out every line, which nothing reported
+  either, and the empty result was written anyway. The step now reads the crontab into a variable and writes it back
+  only from a successful read, only when a scanner line was actually there, and only when something other than blank
+  lines remains: an empty or blank result is never written, so a crontab whose only entry is the scanner line is left
+  as it is. "No crontab for root" is left alone (a line that `sudo` prints first does not hide it, and `LC_ALL=C`
+  keeps the message recognizable). The cleanup is housekeeping and must never block a release (a failure after the
+  migrations and before the PM2 restart would leave the old API running against the new schema), so every problem
+  only prints a plain `WARNING:` line and the deploy goes on, and the step never calls `exit`: any other failed read,
+  a `grep` that errors (exit 2) in any of the three searches, a temporary file that cannot be created, a failed write
+  and a crontab whose only entry is the scanner line all leave the crontab as it was (`crontab -` replaces it
+  atomically), and a temporary file that cannot be removed only warns. Other lines are kept byte for byte (a rewrite drops trailing blank lines and adds a missing final
+  newline). Text that `crontab -l` prints to stderr on success never reaches the crontab, and `crontab -l` reads no
+  standard input, so it cannot swallow the lines of the script that `sudo bash <<'INNER'` is reading. Twenty new
+  tests in `scripts/deploy-workflow.test.ts` (49 in all) cover this: eighteen run that part of the deploy script as
+  written, with stand-ins for `sudo`, `crontab`, `mktemp`, `rm` and `grep`, and each failure asserts the crontab untouched,
+  the warning printed and the lines after the block still running: a failed read (with a message, without one, and
+  with a last line that is not "no crontab"), no crontab, one or several scanner lines, no scanner line, only the
+  scanner line, an empty and a blank crontab, Windows line endings without a final newline, a 20000-line crontab,
+  stderr noise, `sudo` noise, a `grep` error in each of the three searches, a failed write, a failed `mktemp` and a failed `rm`, a
+  script read from standard input, and the shell options of the deploy script (`set -e` and an ERR trap, with and without
+  `pipefail`); the other two check where the block sits (no `exit`, no `|| true`, no read piped into a write) and the
+  pruning timeout. `shared/docs/DEPLOYMENT.md` describes the behavior.
   The asset pruning block of the same script (`timeout 90 node .../prune-stale-assets.mjs`) took about 69 seconds on
   the 1-vCPU production server in its first real run, because it parses 14 days of nginx logs. That is too close to its
   90-second limit: a timeout only warns and never fails the deploy, but it would quietly turn pruning off. The limit is
   now 180 seconds, still well inside the ten minutes that `appleboy/ssh-action` allows the whole script (its default
   `command_timeout`, which `deploy.yml` does not set). A test keeps the limit above twice the measured run and at
-  most a third of the ssh action's. Root bumped to `2.6.241`.
+  most a third of the ssh action's. Root bumped to `2.6.242`.
 - The home page now holds the app bundle until the Law of the Day answer has arrived. On a cold HTTP/2 connection the
   0.6 KB answer of the early request queued behind the bundle (173 KB over the wire): the answer reached the browser
   300 to 400 ms after the stylesheet (nginx's own log showed 80 to 300 ms between the request and the sent response

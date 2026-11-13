@@ -164,13 +164,15 @@ after a release that changes the listeners.
 ### Root's crontab during a deploy
 
 The vulnerability scanner runs from the daily report, so the GitHub Actions deploy removes any standalone
-`vulnerability-scanner.sh` entry from root's crontab. It reads the crontab first and only writes it back from a read
-that succeeded, and only when such a line was there. A server with no crontab for root is left alone. Any other failure
-to read it (for example a permissions error) fails the deploy at that step and leaves the crontab exactly as it was; a
-failed write fails it too. An empty result is never written: if the scanner entry is the only one, it is left in place
-with a warning and the deploy goes on. So a failed read can no longer delete the other scheduled jobs. If the deploy
-stops there (after the migrations, before the PM2 restart, so the old API process keeps running), run
-`sudo crontab -l` on the server to see why, then deploy again.
+`vulnerability-scanner.sh` entry from root's crontab. This is housekeeping and never blocks a release: it reads the
+crontab first, writes it back only from a read that succeeded, only when such a line was there and only when something
+other than blank lines remains, and every problem only prints a `WARNING:` line in the deploy log while the deploy goes
+on. A server with no crontab for root is left alone. A failed read (for example a permissions error), a failing `grep`,
+a temporary file that cannot be created or a failed write leaves the crontab exactly as it was (a temporary file that
+cannot be removed only warns), and so does a crontab
+whose only entry is the scanner line (an empty crontab is never written). So a failed read can no longer delete the
+other scheduled jobs. If the log shows one of these warnings, run `sudo crontab -l` on the server to see why; the
+standalone entry, if it is still there, would run the scan a second time next to the daily report.
 
 ### Follow-up: enabling brotli (not active yet)
 
