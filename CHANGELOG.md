@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The health monitor now runs a check that could not run again, twice and 45 seconds apart, before it emails "Health
+  Check Could Not Run". What was wrong: the 2026-11-13 07:40 UTC mail (`Cannot find package .../dotenv/index.js`) was not
+  a broken install. The deploy of 07:37 UTC was inside `npm ci`, which empties `backend/node_modules` for about 20 to 60
+  seconds (07:39:59 to 07:40:18 that time; longer if `npm ci` itself is retried), and the 5-minute monitor run at 07:40:01 started the check in that window.
+  The site was healthy, the runs at 07:35 and 07:45 passed, and `node_modules` is intact; the monitor log shows three
+  such mails since 2026-11-08, each one a deploy collision. Besides the noise, the 6-hour cooldown per exit code meant a
+  collision mail could silence a real broken-install mail sent within the next 6 hours. Now `health-monitor.sh` waits
+  and runs the check again when it could not run (exit 2, an invalid alert recipient, is not retried); the last attempt
+  decides the outcome, so a run that then works is healthy, one that finds an outage is counted as one, and one that
+  still cannot run mails once, with that attempt's output (the output of the earlier attempts is kept in the monitor
+  log). A retry can land while the same deploy restarts the API and send "Health Check Failed (1/3)" instead; the next
+  healthy run clears it. The worst case (three runs of 120 s and two pauses) stays
+  under the 15 minute lock timeout; a run past the 5-minute interval makes the next cron run skip itself. `deploy.yml`
+  is untouched (it is near GitHub's expression length limit). Tests cover a transient failure, two, a persistent one,
+  exit 2, and an outage found on the retry. Backend bumped to `2.3.100`; root to `2.6.262`.
 - The deploy step's script has room to grow again (issue #350). It holds `${{ secrets[...] }}` expressions, so GitHub
   compiles the whole script into one expression and refuses a workflow whose expression is over 21,000 characters; the
   script was at 19,765. Two self-contained blocks moved from `.github/workflows/deploy.yml` into scripts that the deploy

@@ -93,6 +93,12 @@ restart. Exit code `3` is healthy but reported. Anything else means the check co
 nothing about the site: exit `1` without that line (a crash or a broken install), `2` or `4` (the check
 script's own errors), `124` (timed out), `126` or `127` (`tsx`, `npx` or `node` cannot be started), `137`
 (killed). Then it leaves the failure count alone, restarts nothing and does not ping the dead-man switch.
+Before it reports that, it waits 45 seconds and runs the check again, up to twice (not for exit `2`, a settled
+configuration error), because a deploy's `npm ci` empties `backend/node_modules` for usually under a minute (longer
+when `npm ci` itself is retried) and a check started then crashes. The last attempt decides: a run that then works
+is healthy and sends no "could not run" mail (the output of the failed attempts stays in the monitor log), and one
+that finds an outage is counted as one. A retry can land while the same deploy restarts the API and then send
+"Health Check Failed (1/3)"; the next healthy run clears it.
 What it emails, and how often:
 
 - First failure: "Health Check Failed (1/3)". If that mail could not be sent, the next failing run tries
