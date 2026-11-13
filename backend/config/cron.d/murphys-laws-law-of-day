@@ -4,12 +4,15 @@
 # /etc/cron.d must not contain a dot, or cron ignores the file.
 # The log is in backend/logs, which the deploy creates and keeps. The job starts the same tsx entry point as PM2 does
 # for the API. The installer writes the absolute path of the node the deploy runs with (the nvm node, LAW_OF_DAY_NODE_BIN)
-# in place of /usr/bin/node below, which stays the default, and refuses to install this file when that node is not the
-# major Node version of .nvmrc or cannot load better-sqlite3.
-# CRON_TZ is honored by cronie; the Debian and Ubuntu cron package does not document it, and would run the job in the
-# server's time zone (expected to be UTC; the installer warns when it is not). The pick is always for the
-# current UTC day either way, so a run at another hour still picks the right law. The braces put a failing `cd` in
-# the log too.
+# in place of /usr/bin/node below. /usr/bin/node stays the default only for a caller that sets no node; on the production
+# server it is a symlink to nvm v22.20.0 (the node PM2 runs), while the deploy's node is v22.16.0, the version of .nvmrc.
+# The installer refuses to install this file when the node it would run is not the major Node version of .nvmrc or cannot
+# load better-sqlite3.
+# The Debian and Ubuntu cron package (the production server's cron) ignores CRON_TZ: its crontab(5) documents only TZ,
+# which sets the job's environment and not its schedule. So the job runs in the server's own time zone, which is UTC
+# (Etc/UTC), and the installer prints a warning at deploy time when it is not. The CRON_TZ=UTC line is kept because it is
+# harmless there and is honored by cronie on a host that uses it. The pick is always for the current UTC day, so a run at another hour
+# still picks the right law. The braces put a failing `cd` in the log too.
 SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 CRON_TZ=UTC
