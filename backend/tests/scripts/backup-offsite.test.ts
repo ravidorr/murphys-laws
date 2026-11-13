@@ -518,14 +518,18 @@ describe('off-site helper deploy wiring', () => {
   it('npm run deploy and the workflow install backup-murphys.sh and backup-offsite.sh and refuse to continue without it', () => {
     const deployTs = readFileSync(path.join(scriptsDir, 'deploy.ts'), 'utf8');
     const workflow = readFileSync(path.resolve(__dirname, '../../../.github/workflows/deploy.yml'), 'utf8');
+    // The workflow installs them through install-maintenance-scripts.sh (its script is too close to GitHub's length limit to hold the copies)
+    const installer = readFileSync(path.join(scriptsDir, 'install-maintenance-scripts.sh'), 'utf8');
 
     expect(deployTs).toMatch(/STRICT_MONITORING_SCRIPTS = \[[^\]]*'backup-murphys\.sh'[^\]]*'backup-offsite\.sh'/);
     // The backup script itself is installed strictly too: an old copy would never make the off-site copy
     expect(deployTs).not.toMatch(/backup-murphys\.sh[^\n]*\|\| true/);
     expect(workflow).not.toMatch(/backup-murphys\.sh[^\n]*\|\| true/);
+    expect(installer).not.toMatch(/backup-murphys\.sh[^\n]*\|\| true/);
     expect(deployTs).toContain('backup-offsite.sh /usr/local/bin/backup-offsite.sh && sudo chmod +x');
     expect(workflow).toMatch(/for script in alert-email backup-murphys backup-offsite /);
-    expect(workflow).toMatch(/for script in backup-murphys backup-offsite health-monitor /);
+    expect(installer).toMatch(/for script in backup-murphys backup-offsite health-monitor /);
+    expect(workflow).toMatch(/install-maintenance-scripts\.sh" "\$TARGET_DIR" <\/dev\/null \|\| exit \$\?/);
   });
 
   it('every script has valid syntax', () => {
