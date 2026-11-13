@@ -35,6 +35,18 @@ This document outlines additional tasks and potential improvements for the Murph
   committed on 2025-11-16 (1,229 contact addresses in `attributions.contact_value` and the vote identifiers). It is
   untracked now, but only a history rewrite and a force-push remove it, which is the owner's decision.
 
+- [ ] **Stop serving prerendered pages for laws that are no longer published:** `/law/1719` and `/law/848` (and about 36
+  more `web/dist/law/*` directories untouched since 9 November) still answer 200 with `index, follow` from the deploy's
+  staging copy, while `/api/v1/laws/1719` and `/848` return 404 and the sitemap omits them (Baidu's renderer hit both
+  APIs, found in the 13 November 404 report). Likely cause, not yet confirmed: the deploy uploads `web/dist` into
+  `~/deploy/murphys-laws` without deleting, and `rsync -a --delete` then copies the stale staging files into the web
+  root, so removing them from the web root alone would not last. Fix the deploy so staging mirrors the build, then
+  decide whether a removed law should answer 410 or 404.
+
+- [ ] **Decide on `/public-api-get-software`:** 6 requests in two days from two addresses with a desktop Chrome user
+  agent (13 November 404 report). It matches no known exploit or route, so it was left as a plain 404; block it only if
+  more of that sweep shows up.
+
 ## Design Review Findings (Jan 2026)
 
 The following items were identified during comprehensive UX, UI, Accessibility, Microcopy, and SEO skill reviews but not yet implemented.
