@@ -48,11 +48,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   own tool instead of leaving one bound to markup that is gone), and a rejected or throwing registration is a
   `console.warn`, never an error for the visitor. `web/src/utils/webmcp-tools.ts` defines the tools, and each view removes
   its tools through the router's `cleanup` hook when the page is left (the category page does it itself, because its
-  search component is created after a request and the router only collects cleanups present when a view returns):
+  search component is created after a request and the router only collects cleanups present when a view returns, and
+  it builds no search component once the visitor has left, so a late answer cannot replace the next page's tool):
   - `search_laws` (read-only): fills the header search form and submits it, so the same handler, tracking and navigation
     run as for a visitor. The header is on every page, so it is the one place this tool is offered from.
   - `filter_laws` (read-only): runs the advanced search on Browse and the category pages with a category id and/or a
-    submitter, optionally with a keyword, through the same `onSearch` the Search button calls.
+    submitter, optionally with a keyword. It shows those filters in the form first (clearing the controls it did not
+    set) and then calls the same `onSearch` the Search button calls, so the form always matches the results and a later
+    click on Search does not drop the tool's keyword or category.
   - `calculate_sods_law` and `calculate_buttered_toast` (read-only, pure calculations): return the calculator's result
     for the values given and never move the page's sliders. The first is offered by the home page widget and the full
     Sod's Law page, the second by the full Buttered Toast page. The two formulas and their result bands now live in
@@ -61,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     the Sod's Law page each had their own copy). The unused `buttered-toast-calculator-simple` component keeps its own copy.
   - `subscribe_daily_email`: enters an address in the Law of the Day signup form and focuses Subscribe, but does not
     submit, because submitting sends an email to that address; a missing or invalid address is rejected without touching
-    the field.
+    the field, and an address the visitor already typed is never overwritten.
   - `draft_law_submission`: fills the submit-a-law form (text, and optionally title, category and author) and fires the
     form's own `input` and `change` events, so its validation and duplicate check run. It never ticks the CC0
     public-domain release or presses Submit, which stay with the visitor, and it refuses to overwrite anything the
@@ -72,7 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   visitor lands on the unfiltered archive), the vote and bookmark buttons (an agent-callable vote would invite
   ballot-stuffing) and the admin moderation page. The origin-trial token is not part of this change, so the tools only
   appear in Chrome with the `enable-webmcp-testing` flag until one is registered. New tests: `webmcp.test.ts`,
-  `webmcp-views.test.ts` and `calculator-scoring.test.ts`. Web bumped to `3.4.129`; root to `2.6.263`.
+  `webmcp-views.test.ts` and `calculator-scoring.test.ts`. Web bumped to `3.4.130`; root to `2.6.264`.
 - Documented that the production cron ignores `CRON_TZ=UTC` (issue #351). The server's cron is the Debian and Ubuntu
   `cron` package (`3.0pl1-184ubuntu2`, not cronie), whose `crontab(5)` documents only `TZ` and whose changelog carries a
   `No-multiple-timezones.patch`, so the Law of the Day job runs in the server's time zone, which is `Etc/UTC` (documentary

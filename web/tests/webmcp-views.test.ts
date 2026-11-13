@@ -109,16 +109,83 @@ describe('WebMCP on the daily email component', () => {
 });
 
 describe('WebMCP on the advanced search', () => {
-  it('registers filter_laws, which calls the component\'s onSearch, and removes it on cleanup', async () => {
+  const filterLaws = (input: Record<string, unknown>) => live.get('filter_laws')!.tool.execute(input);
+  const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  function mountSearch() {
     const onSearch = vi.fn();
     const search = AdvancedSearch({ onSearch });
     document.body.append(search);
+    const keyword = search.querySelector<HTMLInputElement>('#search-keyword')!;
+    const category = search.querySelector<HTMLSelectElement>('#search-category')!;
+    const attributionHidden = search.querySelector<HTMLInputElement>('#search-attribution')!;
+    const attributionInput = search.querySelector<HTMLInputElement>('#search-attribution-input')!;
+    const searchButton = search.querySelector<HTMLButtonElement>('#search-btn')!;
+    return { onSearch, search, keyword, category, attributionHidden, attributionInput, searchButton };
+  }
 
-    await live.get('filter_laws')!.tool.execute({ category_id: 8, query: 'gas' });
-    await new Promise((resolve) => setTimeout(resolve, 0));
+  it('registers filter_laws, which calls the component\'s onSearch, and removes it on cleanup', async () => {
+    const { onSearch, search } = mountSearch();
+
+    await filterLaws({ category_id: 8, query: 'gas' });
+    await tick();
     expect(onSearch).toHaveBeenCalledWith({ q: 'gas', category_id: 8 });
 
     expectRemovedOnCleanup('filter_laws', search);
+  });
+
+  it('shows the tool\'s filters in the form, so a later Search click keeps them', async () => {
+    const { onSearch, keyword, category, attributionHidden, attributionInput, searchButton } = mountSearch();
+    await tick();
+    category.add(new Option('Computers', '8'));
+
+    await filterLaws({ query: 'toast', category_id: 8, attribution: 'Anonymous' });
+    await tick();
+
+    expect(keyword.value).toBe('toast');
+    expect(category.value).toBe('8');
+    expect(attributionHidden.value).toBe('Anonymous');
+    expect(attributionInput.value).toBe('Anonymous');
+    expect(onSearch).toHaveBeenCalledWith({ q: 'toast', category_id: 8, attribution: 'Anonymous' });
+
+    // The visitor changes only the submitter and presses Search: the tool's keyword and category stay
+    onSearch.mockClear();
+    attributionHidden.value = 'Ann';
+    searchButton.click();
+    expect(onSearch).toHaveBeenCalledWith({ q: 'toast', category_id: 8, attribution: 'Ann' });
+  });
+
+  it('adds a placeholder option when the category list has not loaded, so the category is not dropped', async () => {
+    const { onSearch, category, searchButton } = mountSearch();
+    await tick();
+    expect(Array.from(category.options).some((option) => option.value === '8')).toBe(false);
+
+    await filterLaws({ category_id: 8 });
+    await tick();
+
+    expect(category.value).toBe('8');
+    expect(category.selectedOptions[0]!.textContent).toBe('Category 8');
+    onSearch.mockClear();
+    searchButton.click();
+    expect(onSearch).toHaveBeenCalledWith({ category_id: 8 });
+  });
+
+  it('empties the controls the tool did not set, so the form matches the search that ran', async () => {
+    const { keyword, category, attributionHidden, attributionInput } = mountSearch();
+    await tick();
+    category.add(new Option('Computers', '8'));
+    keyword.value = 'old keyword';
+    category.value = '8';
+    attributionHidden.value = 'Ann';
+    attributionInput.value = 'Ann';
+
+    await filterLaws({ query: 'new' });
+    await tick();
+
+    expect(keyword.value).toBe('new');
+    expect(category.value).toBe('');
+    expect(attributionHidden.value).toBe('');
+    expect(attributionInput.value).toBe('');
   });
 });
 

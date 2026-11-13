@@ -68,6 +68,9 @@ export function registerDailyEmailTool(form: HTMLFormElement, field: HTMLInputEl
       probe.type = 'email';
       probe.value = email;
       if (email.length > EMAIL_MAX_LENGTH || !probe.checkValidity()) return { error: 'email is not a valid address' };
+      // An address the visitor already typed is theirs, as in the submit-a-law tool
+      const existing = field.value.trim();
+      if (existing && existing !== email) return { error: 'the form already has an address the visitor typed; ask them first' };
       field.value = email;
       form.querySelector<HTMLButtonElement>('button[type="submit"]')?.focus();
       return {

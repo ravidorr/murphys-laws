@@ -1041,14 +1041,16 @@ describe('CategoryDetail view', () => {
       expect(advancedSearchCleanup).toHaveBeenCalledTimes(1);
     });
 
-    it('removes the agent tool of a search component created after the visitor already left', async () => {
+    it('builds no search component, so registers no agent tool, once the visitor has left', async () => {
+      const { AdvancedSearch } = await import('../src/components/advanced-search.js');
+      vi.mocked(AdvancedSearch).mockClear();
+
       const el = CategoryDetail({ categoryId, onNavigate });
       (el as CleanableElement).cleanup!();
-      expect(advancedSearchCleanup).not.toHaveBeenCalled();
-
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      expect(advancedSearchCleanup).toHaveBeenCalledTimes(1);
+      expect(AdvancedSearch).not.toHaveBeenCalled();
+      expect(advancedSearchCleanup).not.toHaveBeenCalled();
     });
   });
 

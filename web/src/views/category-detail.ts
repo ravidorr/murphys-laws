@@ -66,7 +66,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   let retryPendingSearch = false;
   let loadGeneration = 0;
   // The search component is created after an async request, so the router never sees its own cleanup: this view
-  // removes the component's WebMCP tool itself, also when the visitor left before the component existed
+  // removes the component's WebMCP tool itself, and builds no component once the visitor has left
   let removeSearchTool: () => void = () => {};
   let left = false;
 
@@ -336,6 +336,10 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
         });
         if (breadcrumb) breadcrumbContainer.replaceChildren(breadcrumb);
 
+        // Building the component registers its agent tool under a global name; after the visitor has moved on
+        // that would replace the tool of the page they are on now
+        if (left) return;
+
         const searchComponent = AdvancedSearch({
           initialFilters: { category_id: category.id },
           defaultCategoryId: category.id,
@@ -377,7 +381,6 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
         });
         el.querySelector('#advanced-search-container')!.appendChild(searchComponent);
         removeSearchTool = (searchComponent as CleanableElement).cleanup!;
-        if (left) removeSearchTool();
       }
     } catch (error) {
       Sentry.captureException(error);

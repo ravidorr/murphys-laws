@@ -213,6 +213,20 @@ describe('subscribe_daily_email tool', () => {
     expect(result).toMatchObject({ success: true, status: 'awaiting_visitor' });
   });
 
+  it('never overwrites an address the visitor already typed', async () => {
+    field.value = 'visitor@example.com';
+    const result = await live.get('subscribe_daily_email')!.tool.execute({ email: 'agent@example.com' });
+    expect(result).toEqual({ error: 'the form already has an address the visitor typed; ask them first' });
+    expect(field.value).toBe('visitor@example.com');
+    expect(document.activeElement).not.toBe(button);
+  });
+
+  it('accepts the address that is already in the field', async () => {
+    field.value = 'ann@example.com';
+    const result = await live.get('subscribe_daily_email')!.tool.execute({ email: 'ann@example.com' });
+    expect(result).toMatchObject({ success: true, status: 'awaiting_visitor' });
+  });
+
   it('still succeeds when the form has no Subscribe button', async () => {
     button.remove();
     const result = await live.get('subscribe_daily_email')!.tool.execute({ email: 'ann@example.com' });
