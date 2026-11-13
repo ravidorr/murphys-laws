@@ -1,8 +1,17 @@
-name: Lockfile sync
+name: Root checks
 
-# Fails a pull request when a lockfile records a different version than the package.json it belongs to. The
-# pre-commit hook fixes this automatically (npm run lockfiles:sync), but hooks can be skipped, so this is the
-# check that cannot be. It runs on every pull request (no path filter) so it can be a required status check.
+# The checks that belong to the repository as a whole rather than to one package: the lockfile versions and the tests
+# of the root scripts, workflows and deploy tooling (scripts/*.test.ts, npm run test:scripts).
+#
+# There is no path filter, so every pull request gets these checks and the lockfile-sync gate below can be a required
+# status check. The scripts tests read files all over the repository (backend/scripts, the workflows, lighthouserc.json,
+# mcp/ and more) and some of them depend on the clock, so no list of paths could say when they need to run. They take
+# about 20 seconds (the suite alone; the job around it takes longer).
+#
+# The file keeps its old name, lockfile-sync.yml, and so does the required status check, lockfile-sync; only the
+# workflow's display name changed. The required status check is reported by the gate job at the end of this file, which
+# fails unless every job above it passed. A job added here has to be added to the gate's needs list as well, or its
+# failure would not block a merge.
 
 on:
   push:
@@ -13,12 +22,15 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request supersedes the older run. Every push to main has a group of its own (its sha) and is
+# never cancelled, so a quick second merge cannot leave a cancelled check on the first one's commit.
 concurrency:
-  group: lockfile-sync-${{ github.ref }}
-  cancel-in-progress: true
+  group: lockfile-sync-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  lockfile-sync:
+  lockfile-versions:
+    name: Lockfile versions
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -38,8 +50,70 @@ jobs:
       - name: Lockfile versions match package.json
         run: npm run lockfiles:sync -- --check
 
-      - name: Test the lockfile sync script
-        run: node --import tsx --test scripts/sync-lockfile-versions.test.ts
+  scripts-tests:
+    name: Scripts tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
 
-      - name: Test the workflow contracts
-        run: node --import tsx --test scripts/npm-ci-action.test.ts scripts/codeql-workflow.test.ts scripts/deploy-workflow.test.ts
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      # The scripts tests use no native add-on or browser of any workspace, so the install scripts can be skipped, and
+      # with them the downloads that the retried npm-ci action exists for.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      # backend/scripts/cost-optimization-report.sh pipes its arithmetic through bc. The server has it (see
+      # shared/docs/DISASTER-RECOVERY.md), the runner image may not. The package comes from the runner's apt mirror,
+      # which can be slow or unreachable, so retry it, bounded so that every try together (at most 7 minutes) fits in
+      # the job timeout.
+      - name: Install bc
+        run: |
+          if command -v bc > /dev/null; then
+            exit 0
+          fi
+          for attempt in 1 2 3; do
+            status=0
+            timeout 60 sudo apt-get update -qq && timeout 60 sudo apt-get install -y -qq bc || status=$?
+            if [ "$status" -eq 0 ]; then
+              exit 0
+            fi
+            echo "::warning::installing bc failed with exit status ${status} (attempt ${attempt} of 3)"
+            if [ "$attempt" -lt 3 ]; then
+              sleep $((attempt * 20))
+            fi
+          done
+          echo "::error::installing bc failed three times"
+          exit 1
+
+      - name: Run the scripts tests
+        run: npm run test:scripts
+
+  # The status check that branch protection requires. It runs even when a job above failed or was cancelled
+  # (if: always()), and passes only when every one of them succeeded, so a skipped job is a failure here. A job
+  # missing from the needs list is not seen by the gate; the workflow test keeps that list complete.
+  ci-gate:
+    name: lockfile-sync
+    needs: [lockfile-versions, scripts-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify the root checks completed successfully
+        env:
+          LOCKFILE_VERSIONS_RESULT: ${{ needs.lockfile-versions.result }}
+          SCRIPTS_TESTS_RESULT: ${{ needs.scripts-tests.result }}
+        run: |
+          if [ "$LOCKFILE_VERSIONS_RESULT" = "success" ] && [ "$SCRIPTS_TESTS_RESULT" = "success" ]; then
+            echo "Root checks completed successfully."
+            exit 0
+          fi
+          echo "::error::Root checks did not all succeed: lockfile-versions=$LOCKFILE_VERSIONS_RESULT scripts-tests=$SCRIPTS_TESTS_RESULT"
+          exit 1

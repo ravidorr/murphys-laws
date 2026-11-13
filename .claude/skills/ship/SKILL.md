@@ -83,8 +83,9 @@ listed version files and stage them; do not bypass the check.
 
 Edit the version in `package.json` as usual. The pre-commit hook then copies it into `package-lock.json` and
 `backend/package-lock.json` and stages those files, so there is nothing to regenerate. To do it by hand, or if
-the hook was skipped, run `npm run lockfiles:sync`. The `Lockfile sync` CI check runs
-`npm run lockfiles:sync -- --check` and fails a pull request whose lockfiles still disagree. `ios/` and
+the hook was skipped, run `npm run lockfiles:sync`. The Lockfile versions job of the Root checks workflow runs
+`npm run lockfiles:sync -- --check`, and the required `lockfile-sync` check fails a pull request whose lockfiles still
+disagree. `ios/` and
 `android/` versions are not npm packages and are unaffected.
 
 If `ios/project.yml` `sources:` or `android/app/build.gradle.kts` `copySharedContent` (or the equivalent build glue) ever expands to consume more `shared/` paths, update this skill so the probes match the new reality.

@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The root scripts tests (`scripts/*.test.ts`, `npm run test:scripts`) now run in CI on every pull request and every
+  push to `main`. Only four of them (the workflow and lockfile contract tests) ran before, so a fixture dated 2026-10-10
+  went stale on 2026-11-09 (the metrics analyzers only read the last 30 days) and failed unnoticed for days. They run in
+  the `Root checks` workflow (`lockfile-sync.yml`, no path filter; the suite itself takes about 20 seconds) as a new
+  `Scripts tests` job next to `Lockfile versions`; the `lockfile-sync` check that the repository already requires is now
+  reported by a gate job that needs both, so a failing scripts test blocks the merge without any change to the
+  repository ruleset. The job installs `bc` (the cost report script needs it, the runner image may not have it, the
+  server does), retrying the apt mirror three times with every apt call bounded and the failing exit status reported,
+  and `npm run ci` runs the suite too. A newer push to a pull request cancels the older run, but a run on `main` has a
+  group of its own and is never cancelled by the next merge. The workflow contract tests that `lockfile-sync` used to
+  run by name are part of the suite, and a new `lockfile-sync-workflow.test.ts` pins the triggers, runs the gate script
+  and the `bc` step against every outcome, forbids the common ways of swallowing or skipping a failure, and pins the
+  required check name. Root bumped to `2.6.233`.
 - The web app now samples every Sentry transaction for the performance measurement window: `tracesSampleRate` in
   `web/src/main.ts` goes from `0.1` to `1.0`. Only about 9 pageloads a day were being sampled, too few for the
   scheduled performance reports of 2026-11-15 and 2026-11-19, and traffic is small, so the Sentry quota cost of 100% is
