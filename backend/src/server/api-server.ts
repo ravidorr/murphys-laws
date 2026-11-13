@@ -220,6 +220,21 @@ export function createApiServer(options?: CreateApiServerOptions) {
 export function startApiServer() {
   const { host, port, server } = createApiServer();
 
+  // Outside production a port that is already taken is an environment problem on a developer's machine, not a bug:
+  // say so and exit, instead of letting it escape as an uncaught exception that Sentry reports as a fatal error. In
+  // production a held port means the API is down, so the error is still thrown after the message and reaches Sentry.
+  // Any other server error is thrown as an uncaught exception, which Sentry reports too.
+  server.on('error', (error: NodeJS.ErrnoException) => {
+    if (error.code !== 'EADDRINUSE') {
+      throw error;
+    }
+    console.error(`Port ${port} on ${host} is already in use; stop the process that holds it or set PORT to another port`);
+    if (process.env.NODE_ENV === 'production') {
+      throw error;
+    }
+    process.exit(1);
+  });
+
   server.listen(port, host, () => {
     console.log(`Server running at http://${host}:${port}/`);
     /* v8 ignore start -- NODE_ENV is always set; 'development' fallback unreachable in tests/production */
