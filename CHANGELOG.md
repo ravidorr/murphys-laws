@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The iOS app version is now the same in every file that records it, and a check keeps it so. It was written in three
+  places that had drifted: `ios/project.yml` and `ios/MurphysLaws/Info.plist` said `1.2.14 (30)`, but the committed
+  `ios/MurphysLaws.xcodeproj/project.pbxproj` (which a local Xcode build uses; the iOS CI regenerates it from
+  `project.yml` with XcodeGen) still said `1.2.4 (20)` in both its Debug and Release configurations (the project-level
+  `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION`, which the app and both test targets inherit; no target sets its
+  own). Nobody noticed because `npm run check:versions` only checked that a change bumped `Info.plist` and
+  `project.yml`, never that the files agree. The project file now says `1.2.14 (30)`, edited in those four lines only:
+  regenerating it with XcodeGen was tried and not used, because it also rewrites unrelated parts of the file (it drops
+  the entries of the generated, gitignored `DesignSystem/Tokens.swift` and adds `cranes-law.md`). The iOS version is
+  not bumped: a change to the project file alone does not call for an iOS bump under `check:versions`, because the
+  project file is one of the version files, not a trigger. `npm run check:versions` (and so the pre-commit hook) now
+  also fails when `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`, `CFBundleShortVersionString` /
+  `CFBundleVersion` in `Info.plist` and every `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.pbxproj` are
+  not all the same, naming the values each file has. It fails, and does not skip, when one of the three files cannot
+  be read, has no version, has a version line it cannot read (rather than dropping that line from the comparison) or
+  has fewer than two of each version (the Debug and Release configurations). Tests in `scripts/check-version-bumps.test.ts` cover agreement,
+  each kind of drift, the unreadable and unparseable cases and the command's exit status on a staged scratch
+  repository, and run the same check on the files of the repository, so `npm run test:scripts` (which CI runs) catches
+  a drift that a commit made without the hook would bring in. Root bumped to `2.6.247`.
 - nginx now serves the precompressed brotli copies of the hashed assets (`brotli_static on;` in the `/assets/` location,
   next to `gzip_static on;`). A client that sends `Accept-Encoding: br` gets the `.br` file the build already writes
   next to each `.js`, `.css` and `.svg` file (measured on a build of the web app: the main bundle, 429 KB raw, is

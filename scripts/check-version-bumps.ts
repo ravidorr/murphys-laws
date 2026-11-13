@@ -233,6 +233,133 @@ export const versionRules: VersionRule[] = [
   },
 ];
 
+const iosProjectYmlPath = 'ios/project.yml';
+const iosInfoPlistPath = 'ios/MurphysLaws/Info.plist';
+const iosPbxprojPath = 'ios/MurphysLaws.xcodeproj/project.pbxproj';
+
+type IosVersionSource = {
+  path: string;
+  marketing: string[];
+  build: string[];
+};
+
+type IosVersionPattern = {
+  /** Matches a line that carries a value, capturing the value. */
+  value: RegExp;
+  /** Matches every line that mentions the key at all, whether or not its value can be read. */
+  mention: RegExp;
+};
+
+type IosFileSpec = {
+  path: string;
+  marketing: IosVersionPattern;
+  build: IosVersionPattern;
+  /** How many times each key must appear. */
+  minimumOccurrences: number;
+};
+
+const iosFileSpecs: IosFileSpec[] = [
+  {
+    path: iosProjectYmlPath,
+    marketing: {
+      value: /^\s*MARKETING_VERSION:\s*("[^"]*"|'[^']*'|[^\s#]+)\s*(?:#.*)?$/gm,
+      mention: /^\s*MARKETING_VERSION:/gm,
+    },
+    build: {
+      value: /^\s*CURRENT_PROJECT_VERSION:\s*("[^"]*"|'[^']*'|[^\s#]+)\s*(?:#.*)?$/gm,
+      mention: /^\s*CURRENT_PROJECT_VERSION:/gm,
+    },
+    minimumOccurrences: 1,
+  },
+  {
+    path: iosInfoPlistPath,
+    marketing: {
+      value: /<key>CFBundleShortVersionString<\/key>\s*<string>([^<]+)<\/string>/g,
+      mention: /<key>CFBundleShortVersionString<\/key>/g,
+    },
+    build: {
+      value: /<key>CFBundleVersion<\/key>\s*<string>([^<]+)<\/string>/g,
+      mention: /<key>CFBundleVersion<\/key>/g,
+    },
+    minimumOccurrences: 1,
+  },
+  {
+    // The project-level Debug and Release configurations each carry the version; the targets inherit it.
+    path: iosPbxprojPath,
+    marketing: {
+      value: /^\s*MARKETING_VERSION = ([^;]+);\s*$/gm,
+      mention: /^\s*MARKETING_VERSION\s*=/gm,
+    },
+    build: {
+      value: /^\s*CURRENT_PROJECT_VERSION = ([^;]+);\s*$/gm,
+      mention: /^\s*CURRENT_PROJECT_VERSION\s*=/gm,
+    },
+    minimumOccurrences: 2,
+  },
+];
+
+function unquote(value: string): string {
+  return value.trim().replace(/^(["'])(.*)\1$/, '$2');
+}
+
+function readIosVersionSource(spec: IosFileSpec, content: string | null): IosVersionSource | string[] {
+  if (content === null) {
+    return [`iOS versions: ${spec.path} cannot be read`];
+  }
+
+  const problems: string[] = [];
+  const values: Record<'marketing' | 'build', string[]> = { marketing: [], build: [] };
+
+  for (const [key, label] of [['marketing', 'marketing version'], ['build', 'build number']] as const) {
+    const pattern = spec[key];
+    values[key] = [...content.matchAll(pattern.value)].map((match) => unquote(match[1]));
+    const mentions = [...content.matchAll(pattern.mention)].length;
+
+    if (values[key].length === 0) {
+      problems.push(`iOS versions: ${spec.path} has no ${label} that can be read`);
+    } else if (values[key].length < mentions) {
+      problems.push(`iOS versions: ${spec.path} has a ${label} line that cannot be read`);
+    } else if (values[key].length < spec.minimumOccurrences) {
+      problems.push(
+        `iOS versions: ${spec.path} has the ${label} ${values[key].length} time(s), expected at least ${spec.minimumOccurrences}`,
+      );
+    }
+  }
+
+  return problems.length > 0 ? problems : { path: spec.path, ...values };
+}
+
+/**
+ * The iOS app version is written in three places that must agree: `ios/project.yml` (the XcodeGen input, which the
+ * iOS CI builds from because it regenerates the project), the app's `Info.plist` and the committed
+ * `project.pbxproj` (which a local Xcode build uses; its project-level Debug and Release configurations both carry
+ * the version and the targets inherit it). Returns one message per disagreement, and the problems of any file that is
+ * missing, has no version in it, has a version line that cannot be read or has fewer occurrences than expected, so a
+ * file that cannot be checked fails the check instead of being skipped.
+ */
+export function findIosVersionDrift(readFile: (filePath: string) => string | null): string[] {
+  const results = iosFileSpecs.map((spec) => readIosVersionSource(spec, readFile(spec.path)));
+  const problems = results.flatMap((result) => (Array.isArray(result) ? result : []));
+  const readable = results.filter((result): result is IosVersionSource => !Array.isArray(result));
+
+  if (problems.length > 0) {
+    return problems;
+  }
+
+  const describe = (key: 'marketing' | 'build') =>
+    readable.map((source) => `${source.path} has ${[...new Set(source[key])].join(', ')}`).join('; ');
+  const drift: string[] = [];
+
+  for (const [key, label] of [['marketing', 'marketing version'], ['build', 'build number']] as const) {
+    const values = new Set(readable.flatMap((source) => source[key]));
+    if (values.size > 1) {
+      drift.push(`iOS versions: the ${label} differs between files (${describe(key)})`);
+    }
+  }
+
+  return drift;
+}
+
 export function parseStagedFiles(output: string): StagedFile[] {
   return output
     .split('\n')
@@ -291,19 +418,37 @@ function readFromIndex(filePath: string): string | null {
 function main(): void {
   const stagedFiles = parseStagedFiles(git(['diff', '--cached', '--name-status', '--diff-filter=ACMRTD']));
   const missing = findMissingVersionBumps(stagedFiles, readFromHead, readFromIndex);
+  const drift = findIosVersionDrift(readFromIndex);
 
-  if (missing.length === 0) {
+  if (missing.length === 0 && drift.length === 0) {
     return;
   }
 
-  console.error('');
-  console.error('ERROR: Staged changes require version bumps.');
-  console.error('');
-  for (const item of missing) {
-    console.error(`- ${item}`);
+  if (missing.length > 0) {
+    console.error('');
+    console.error('ERROR: Staged changes require version bumps.');
+    console.error('');
+    for (const item of missing) {
+      console.error(`- ${item}`);
+    }
+    console.error('');
+    console.error('Update the listed version files, stage them, and retry the commit.');
   }
-  console.error('');
-  console.error('Update the listed version files, stage them, and retry the commit.');
+
+  if (drift.length > 0) {
+    console.error('');
+    console.error('ERROR: The iOS app version is not the same in every file that records it.');
+    console.error('');
+    for (const item of drift) {
+      console.error(`- ${item}`);
+    }
+    console.error('');
+    console.error(
+      `Set MARKETING_VERSION and CURRENT_PROJECT_VERSION in ${iosProjectYmlPath} and ${iosPbxprojPath} (every configuration), ` +
+        `and CFBundleShortVersionString and CFBundleVersion in ${iosInfoPlistPath}, to the same values.`,
+    );
+  }
+
   process.exit(1);
 }
 
