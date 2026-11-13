@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, utimesSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -424,4 +424,142 @@ test('a new file that cannot be installed restores the previous one and fails th
   assert.equal(readFileSync(sandbox.site, 'utf8'), 'old config\n');
   assert.deepEqual(callsOf(sandbox), [], 'nginx was not reloaded');
   assert.deepEqual(readdirSync(sandbox.temp), []);
+});
+
+// ---------------------------------------------------------------------------------------------------------------
+// The stale-asset pruning part of the same step, run with a stand-in for sudo against throwaway directories
+
+const pruneBlockStart = deployScript.indexOf('echo "==> Deploy: pruning stale build assets"');
+const pruneBlock = deployScript.slice(pruneBlockStart, nginxBlockStart);
+const liveLogs = '/var/log/nginx/access.log*';
+const rootNvm = '/root/.nvm';
+const pruneScript = path.join(rootDirectory, 'backend/scripts/prune-stale-assets.mjs');
+// Without the live paths the sandbox would not redirect the block, and it would read the real nginx logs.
+assert.ok(pruneBlock.includes(liveLogs) && pruneBlock.includes(rootNvm), 'the pruning block of the deploy step names the live logs and nvm');
+
+type PruneSandbox = { directory: string; staging: string; target: string; logs: string; bin: string };
+
+const longAgo = new Date('2020-01-01T00:00:00Z');
+
+function writeDist(dist: string): void {
+  const assets = path.join(dist, 'assets');
+  mkdirSync(assets, { recursive: true });
+  writeFileSync(path.join(dist, 'index.html'), '<script type="module" src="/assets/index-NEW.js"></script>');
+  writeFileSync(path.join(dist, 'sw.js'), 'precache("/assets/referenced-OLD.js")');
+  // Five recent files are kept by age, referenced-OLD.js by sw.js and requested-OLD.js by the access log; the three
+  // old ones that nothing names are the stale ones.
+  for (const name of ['index-NEW.js', 'a-NEW.js', 'b-NEW.js', 'c-NEW.js', 'd-NEW.js']) writeFileSync(path.join(assets, name), '// new');
+  for (const name of ['referenced-OLD.js', 'requested-OLD.js', 'stale-1-OLD.js', 'stale-2-OLD.js', 'stale-3-OLD.css']) {
+    writeFileSync(path.join(assets, name), '// old');
+    utimesSync(path.join(assets, name), longAgo, longAgo);
+  }
+}
+
+function createPruneSandbox({ withLog = true }: { withLog?: boolean } = {}): PruneSandbox {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'deploy-prune-'));
+  const staging = path.join(directory, 'staging');
+  const target = path.join(directory, 'target');
+  const logs = path.join(directory, 'logs');
+  const bin = path.join(directory, 'bin');
+  for (const folder of [logs, bin, path.join(target, 'backend/scripts')]) mkdirSync(folder, { recursive: true });
+  writeDist(path.join(staging, 'web/dist'));
+  writeDist(path.join(target, 'web/dist'));
+  copyFileSync(pruneScript, path.join(target, 'backend/scripts/prune-stale-assets.mjs'));
+  if (withLog) {
+    writeFileSync(path.join(logs, 'access.log'), '1.2.3.4 - - [01/Nov/2026:10:00:00 +0000] "GET /assets/requested-OLD.js HTTP/2.0" 200 5 "-" "ua"\n');
+  }
+  writeFileSync(path.join(bin, 'sudo'), '#!/bin/sh\nexec "$@"\n');
+  // macOS has no timeout(1): run the command without a limit, as GNU timeout does when it is not reached.
+  writeFileSync(path.join(bin, 'timeout'), '#!/bin/sh\nshift\nexec "$@"\n');
+  for (const name of ['sudo', 'timeout']) chmodSync(path.join(bin, name), 0o755);
+  return { directory, staging, target, logs, bin };
+}
+
+function runPruneBlock(sandbox: PruneSandbox) {
+  const block = pruneBlock.replaceAll(liveLogs, `${sandbox.logs}/access.log*`).replaceAll(rootNvm, path.join(sandbox.directory, 'no-nvm'));
+  return spawnSync('bash', ['-e', '-c', `${block}\necho AFTER_PRUNE`], {
+    env: { PATH: `${sandbox.bin}:${process.env.PATH}`, STAGING_DIR: sandbox.staging, TARGET_DIR: sandbox.target },
+    encoding: 'utf8',
+  });
+}
+
+const staleFiles = ['stale-1-OLD.js', 'stale-2-OLD.js', 'stale-3-OLD.css'];
+const keptFiles = ['index-NEW.js', 'a-NEW.js', 'b-NEW.js', 'c-NEW.js', 'd-NEW.js', 'referenced-OLD.js', 'requested-OLD.js'];
+const presentIn = (sandbox: PruneSandbox, root: 'staging' | 'target', files: string[]): boolean[] =>
+  files.map((name) => existsSync(path.join(sandbox[root], 'web/dist/assets', name)));
+const assertNothingDeleted = (sandbox: PruneSandbox) => {
+  for (const root of ['staging', 'target'] as const) {
+    assert.deepEqual(presentIn(sandbox, root, [...staleFiles, ...keptFiles]), Array(10).fill(true), `${root} keeps every file`);
+  }
+};
+
+test('the pruning part of the deploy step is found where the tests expect it', () => {
+  const rsync = deployScript.indexOf('sudo rsync -a --delete "$STAGING_DIR/web/dist/" "$TARGET_DIR/web/dist/"');
+  const scriptsRsync = deployScript.indexOf('sudo rsync -a --delete "$STAGING_DIR/backend/scripts/" "$TARGET_DIR/backend/scripts/"');
+  assert.ok(rsync > -1 && scriptsRsync > -1, 'the web root and the scripts are synced');
+  assert.ok(pruneBlockStart > rsync && pruneBlockStart > scriptsRsync, 'pruning runs after both rsyncs, so the script and the new build are in place');
+  assert.ok(pruneBlockStart > -1 && pruneBlockStart < nginxBlockStart, 'pruning runs before nginx is tested and reloaded');
+  assert.match(pruneBlock, /"\$STAGING_DIR\/web\/dist" "\$TARGET_DIR\/web\/dist" 2>&1'/, 'it covers the staging copy and the web root, both quoted');
+  assert.doesNotMatch(pruneBlock, /--dry-run|rm -r/);
+  assert.match(pruneBlock, /timeout \d+ node /, 'a hang is cut off');
+});
+
+test('the pruning deletes the stale files of the staging copy and the web root, keeps the rest and the deploy goes on', () => {
+  const sandbox = createPruneSandbox();
+  const result = runPruneBlock(sandbox);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /AFTER_PRUNE/);
+  assert.doesNotMatch(result.stdout + result.stderr, /::warning::/);
+  assert.match(result.stdout, /Deleted 6 stale asset files/);
+  for (const root of ['staging', 'target'] as const) {
+    assert.deepEqual(presentIn(sandbox, root, staleFiles), [false, false, false], `${root} lost its stale files`);
+    assert.deepEqual(presentIn(sandbox, root, keptFiles), Array(7).fill(true), `${root} keeps what is named, requested or recent`);
+    assert.ok(existsSync(path.join(sandbox[root], 'web/dist/index.html')) && existsSync(path.join(sandbox[root], 'web/dist/sw.js')));
+  }
+});
+
+test('without any existing access log nothing is deleted, the exit code is reported and the deploy goes on', () => {
+  const sandbox = createPruneSandbox({ withLog: false });
+  const result = runPruneBlock(sandbox);
+  assert.equal(result.status, 0, 'a failing prune never fails the step');
+  assert.match(result.stdout, /AFTER_PRUNE/);
+  assert.match(result.stdout, /Asset retention aborted, nothing deleted: none of the 1 access log files exists/, 'the reason is in the same stream as the warning');
+  assert.match(result.stdout, /::warning::Stale asset pruning did not complete \(exit 1:/);
+  assertNothingDeleted(sandbox);
+});
+
+test('a web root that fails a safety check stops the pruning of the staging copy too', () => {
+  const sandbox = createPruneSandbox();
+  writeFileSync(path.join(sandbox.target, 'web/dist/index.html'), '<html>no entry script</html>');
+  const result = runPruneBlock(sandbox);
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /AFTER_PRUNE/);
+  assert.match(result.stdout, /exit 1:/);
+  assertNothingDeleted(sandbox);
+});
+
+for (const [label, nodeExit] of [
+  ['node exits 127, as it does when it is missing', 127],
+  ['the script reports failed deletions (exit 3)', 3],
+] as const) {
+  test(`when ${label}, the deploy only warns with the exit code`, () => {
+    const sandbox = createPruneSandbox();
+    writeFileSync(path.join(sandbox.bin, 'node'), `#!/bin/sh\n[ "$1" = --version ] && echo v0.0.0 && exit 0\nexit ${nodeExit}\n`);
+    chmodSync(path.join(sandbox.bin, 'node'), 0o755);
+    const result = runPruneBlock(sandbox);
+    assert.equal(result.status, 0, 'the step goes on under set -e');
+    assert.match(result.stdout, /AFTER_PRUNE/);
+    assert.ok(result.stdout.includes(`::warning::Stale asset pruning did not complete (exit ${nodeExit}:`), result.stdout);
+    assertNothingDeleted(sandbox);
+  });
+}
+
+test('a script that crashes on the server only warns', () => {
+  const sandbox = createPruneSandbox();
+  writeFileSync(path.join(sandbox.target, 'backend/scripts/prune-stale-assets.mjs'), 'throw new Error("broken");\n');
+  const result = runPruneBlock(sandbox);
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /AFTER_PRUNE/);
+  assert.match(result.stdout, /::warning::Stale asset pruning did not complete \(exit 1:/);
+  assertNothingDeleted(sandbox);
 });
