@@ -53,6 +53,8 @@ declare module '@scripts/ssg' {
   export function enhanceMarkdownHtml(html: string): string;
   export function wrapInCardStructure(html: string, options?: { lastUpdated?: string }): string;
   export function injectBreadcrumbJsonLd(html: string, id: string, trail: Array<{ name: string; path: string }>): string;
+  export function holdAppEntry(html: string): string;
+  export function validateHomePage(html: string): string[];
   export function buildContentBreadcrumbTrail(page: { slug: string; title: string }): Array<{ name: string; path: string }>;
   export function buildStaticFavoritesContent(): string;
   export function buildStaticSubmitContent(): string;

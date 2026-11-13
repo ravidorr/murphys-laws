@@ -8,7 +8,8 @@ const maxPrecache = 1.5 * 1024 * 1024;
 
 const indexHtml = await readFile(path.join(distDir, 'index.html'), 'utf8');
 const entryScripts = [
-  ...indexHtml.matchAll(/<script[^>]+type="module"[^>]+src="([^"]+)"/g),
+  // The home page holds its bundle in an inert #app-entry placeholder (data-src) until the loader starts it
+  ...indexHtml.matchAll(/<script[^>]+(?:type="module"[^>]+\ssrc|id="app-entry"[^>]+data-src)="([^"]+)"/g),
 ].map((match) => match[1].replace(/^\//, ''));
 
 if (entryScripts.length === 0)
