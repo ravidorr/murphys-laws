@@ -583,6 +583,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `/var/log/nginx/*.log` logrotate rule covers it.
 
 ### Fixed
+- Starting the API server on a port that is already taken no longer reports a fatal `Error: listen EADDRINUSE` to
+  Sentry from a development machine (issue JAVASCRIPT-1C, environment `development`). `startApiServer` had no `error`
+  listener on the HTTP server, so the failed `listen` escaped as an uncaught exception, which the Sentry SDK captures
+  as a fatal event before the process dies. It now listens for the server's `error` event. For `EADDRINUSE` it prints
+  "Port N on HOST is already in use; stop the process that holds it or set PORT to another port"; then, outside
+  production, it exits with code 1 and reports nothing. In production (`NODE_ENV=production`) it prints the same
+  message and still throws the error, because a held port there means the API is down and Sentry should hear about it.
+  Any other server error is thrown as before. The cause of the clash on the developer's machine is not known: `npm run
+  dev` kills the holder of the port first (`predev`), so `npm start`, running `tsx` directly or a process that is not
+  this server are likelier than a second `npm run dev:backend`. Tests in `api-server.test.ts` pin the exact message,
+  the exit outside production, the rethrow in production and the rethrow of other errors, and the real server was run
+  against an occupied port to check the message and the exit code. Backend bumped to `2.3.96`; root to `2.6.256`.
 - The web test "gives the retry the whole 10 s when the early request failed at once" no longer fails now and then
   with 9999 where it expects 10000. It read the real clock: `setEarly()` stamps the early request's start with
   `Date.now()`, and the retry subtracts the time that has passed since from the 10 s window, so a tick of 1 ms between

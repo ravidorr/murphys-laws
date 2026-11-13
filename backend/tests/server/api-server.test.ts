@@ -11,11 +11,12 @@ vi.mock('@sentry/node', () => ({
 }));
 
 const mockListen = vi.fn();
+const mockServerOn = vi.fn();
 vi.mock('node:http', () => ({
   default: {
     createServer: vi.fn((handler: (req: unknown, res: unknown) => void) => ({
       listen: mockListen,
-      on: vi.fn(),
+      on: mockServerOn,
       emit(event: string, req: unknown, res: unknown) {
         if (event === 'request') handler(req, res);
         return true;
@@ -341,6 +342,81 @@ describe('api-server', () => {
       expect(typeof host).toBe('string');
       expect(typeof callback).toBe('function');
       expect(() => callback()).not.toThrow();
+    });
+
+    describe('listen errors', () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      let exitSpy: ReturnType<typeof vi.spyOn>;
+      let errorSpy: ReturnType<typeof vi.spyOn>;
+
+      beforeEach(() => {
+        exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+        errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      });
+
+      afterEach(() => {
+        vi.restoreAllMocks();
+        process.env.NODE_ENV = originalNodeEnv;
+      });
+
+      async function startAndGetErrorHandler(): Promise<{
+        handler: (error: NodeJS.ErrnoException) => void;
+        host: string;
+        port: number;
+      }> {
+        const { createApiServer, startApiServer } = await import('../../src/server/api-server.ts');
+        const { host, port } = createApiServer();
+        startApiServer();
+        const call = mockServerOn.mock.calls.find(([event]) => event === 'error');
+        expect(call).toBeDefined();
+        return { handler: call![1], host, port };
+      }
+
+      const addrInUse = () => Object.assign(new Error('listen EADDRINUSE'), { code: 'EADDRINUSE' });
+
+      it('should explain a port in use and exit with code 1 outside production', async () => {
+        process.env.NODE_ENV = 'development';
+        const { handler, host, port } = await startAndGetErrorHandler();
+
+        expect(() => handler(addrInUse())).not.toThrow();
+
+        expect(errorSpy).toHaveBeenCalledWith(
+          `Port ${port} on ${host} is already in use; stop the process that holds it or set PORT to another port`,
+        );
+        expect(exitSpy).toHaveBeenCalledWith(1);
+      });
+
+      it('should explain a port in use and rethrow it in production so Sentry sees it', async () => {
+        process.env.NODE_ENV = 'production';
+        const { handler, host, port } = await startAndGetErrorHandler();
+        const error = addrInUse();
+
+        let thrown: unknown;
+        try {
+          handler(error);
+        } catch (caught) {
+          thrown = caught;
+        }
+
+        expect(thrown).toBe(error);
+        expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining(`Port ${port} on ${host} is already in use`));
+        expect(exitSpy).not.toHaveBeenCalled();
+      });
+
+      it('should rethrow any other listen error and not exit', async () => {
+        const { handler } = await startAndGetErrorHandler();
+        const boom = Object.assign(new Error('listen EACCES'), { code: 'EACCES' });
+
+        let thrown: unknown;
+        try {
+          handler(boom);
+        } catch (caught) {
+          thrown = caught;
+        }
+
+        expect(thrown).toBe(boom);
+        expect(exitSpy).not.toHaveBeenCalled();
+      });
     });
   });
 
