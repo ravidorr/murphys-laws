@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- A corollary can no longer be the Law of the Day (issue #344). `LawService.selectLawOfTheDay` is the only place the
+  pick is made (the 00:00 UTC cron script `select-law-of-day.ts` and the API's first request of the day, which also serves
+  the email, push, embed and feed, all call it; the web page, the apps, the CLI and the MCP server only read
+  `/api/v1/law-of-day`), and both of its queries, the one-year candidate query and the fallback that ignores the year
+  when every law was featured, now leave out corollaries, using the same rule as the corollary filter of the law list
+  and the related laws (`EXCLUDE_PUBLISHED_COROLLARIES`: a `COROLLARY_OF` row whose parent is published; a corollary of
+  an unpublished law still shows as an ordinary law on its page and stays eligible). Under the one-level rule an excluded
+  corollary always has a published parent that is not a corollary, so nothing is left to pick only when no law is
+  published, which is unchanged: the service returns null, the job logs an error and exits 1, the API answers 404. A pick
+  already recorded for the day is not re-examined and no data is changed, so a corollary recorded before this fix stays
+  that day's law until the next UTC day. `law-of-the-day-selection.test.ts` and `select-law-of-day.test.ts` gain a
+  `law_relations` table and tests (a corollary with the most votes is skipped, also in the fallback, other relations and
+  children of unpublished parents stay eligible, a recorded pick is left alone, a cron run against a real database);
+  four of them fail on the previous code. The service test file no longer depends on the date it runs on: its day is
+  today's UTC date as SQLite reads it (the one-year rule is evaluated on SQLite's clock, which no fake timer reaches)
+  and every history date is counted back from that day, where the old `daysAgo` dates came from `Date.now()` and
+  collided with a fixed day, so the file would have failed from the first UTC midnight after it was written. Run with
+  the JavaScript and SQLite clocks both moved forward by 1, 2 and 400 days it passes; the old file fails at 1 day.
+  `shared/docs/DEPLOYMENT.md` says so. Backend bumped to `2.3.95`; root to
+  `2.6.251`.
 - The deploy workflow was rejected by GitHub ("workflow file issue": the runs for the nginx guard commits ended in failure
   with no job, so no deploy could start). The `script` of the "Deploy and restart services" step contains
   `${{ secrets[...] }}` expressions, so GitHub compiles the whole script into one expression, and an expression may be at

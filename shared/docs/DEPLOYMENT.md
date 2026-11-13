@@ -391,6 +391,7 @@ The job is (the repository file; the installer replaces `/usr/bin/node` with the
 **What it does:**
 - Runs daily at 00:00 UTC and picks today's (UTC) law
 - Selects highest-voted law not featured in last 365 days, with an alphabetical tiebreaker
+- Never picks a corollary (a law linked to a published parent by a `COROLLARY_OF` row in `law_relations`), in the one-year query or in the fallback that ignores the year when every law was featured. The only case with nothing to pick is no published law at all: the job then logs an error and exits 1, and the API answers 404. A pick already recorded for the day is kept as it is
 - Stores selection in `law_of_the_day_history` table, through the same `LawService.selectLawOfTheDay` the API uses
 - Keeps one live pick per UTC day, however often it runs and even when it meets a request at midnight: the check and the insert are one `BEGIN IMMEDIATE` transaction, so the second to arrive finds the first one's pick. (A replacement pick is added for the same date only when the law picked was unpublished since.) The API still picks on a request if the job did not run
 - Logs a timestamped line to `backend/logs/law-of-day.log` (`Picked law ...`, `Already picked ...`, or an error and a non-zero exit), after the untimestamped `Database connected` line of the database service

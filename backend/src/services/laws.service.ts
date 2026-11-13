@@ -497,6 +497,13 @@ export class LawService {
    * processes can run it at once: the check and the insert share one immediate transaction, which takes the
    * database's write lock before the check, so exactly one of them picks and the other finds that pick.
    * `created` tells which one it was.
+   *
+   * A corollary is never picked: both the one-year candidate query and the fallback leave out corollaries of a
+   * published law (EXCLUDE_PUBLISHED_COROLLARIES), so a corollary cannot win even when every other law was featured
+   * in the last year. A corollary that is left out always has a published parent that is not itself a corollary
+   * (the one-level rule), so that parent stays eligible and the pool is empty only when no law is
+   * published. That case is unchanged: null, and the cron script logs an error and exits 1. A pick already recorded for the day is not re-examined, so a corollary
+   * recorded before this rule existed stays that day's law until the next UTC day.
    */
   selectLawOfTheDay(featuredDate: string = new Date().toISOString().split('T')[0]): LawOfTheDayPick | null {
     // A pick that already exists is the common case and must not need the write lock.
@@ -518,7 +525,7 @@ export class LawService {
         SELECT l.id,
                COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'up'), 0) AS upvotes
         FROM laws l
-        WHERE l.status = 'published'
+        WHERE l.status = 'published'${EXCLUDE_PUBLISHED_COROLLARIES}
           AND l.id NOT IN (
             SELECT law_id
             FROM law_of_the_day_history
@@ -534,7 +541,7 @@ export class LawService {
           SELECT l.id,
                  COALESCE((SELECT COUNT(*) FROM votes v WHERE v.law_id = l.id AND v.vote_type = 'up'), 0) AS upvotes
           FROM laws l
-          WHERE l.status = 'published'
+          WHERE l.status = 'published'${EXCLUDE_PUBLISHED_COROLLARIES}
           ORDER BY upvotes DESC, l.text ASC
           LIMIT 1
         `);
