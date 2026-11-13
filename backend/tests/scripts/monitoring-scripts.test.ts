@@ -926,7 +926,8 @@ describe('scripts run end to end with a fake mail', () => {
 
 describe('deploy wiring', () => {
   const targets = [
-    ['the GitHub workflow', root('.github/workflows/deploy.yml')],
+    // The workflow installs the scripts with this one (see the tests below for how it is called)
+    ['the GitHub workflow\'s installer (install-maintenance-scripts.sh)', path.join(scriptsDir, 'install-maintenance-scripts.sh')],
     ['npm run deploy (deploy.ts)', path.join(scriptsDir, 'deploy.ts')],
   ] as const;
   // Scripts that source the helper and are installed individually (health-check.sh is run from the repo).
@@ -993,14 +994,16 @@ describe('deploy wiring', () => {
   };
 
   it('the workflow stops the deploy, with a message, when the helper cannot be installed', () => {
-    const deploy = workflow();
-    expect(deploy).toMatch(/alert-email\.sh[^\n]*\\\n[^\n]*chmod \+x \/usr\/local\/bin\/alert-email\.sh[^\n]*\\\n[^\n]*test -f \/usr\/local\/bin\/alert-email\.sh[^\n]*\\\n[^\n]*exit 1/);
-    expect(deploy).toContain('could not install /usr/local/bin/alert-email.sh');
+    const installer = readFileSync(path.join(scriptsDir, 'install-maintenance-scripts.sh'), 'utf8');
+    expect(installer).toMatch(/alert-email\.sh[^\n]*\\\n[^\n]*chmod \+x "\$BIN_DIR\/alert-email\.sh"[^\n]*\\\n[^\n]*test -f "\$BIN_DIR\/alert-email\.sh"[^\n]*\\\n[^\n]*exit 1/);
+    expect(installer).toContain('could not install $BIN_DIR/alert-email.sh');
+    // and the workflow stops the deploy with the status of the installer
+    expect(workflow()).toMatch(/install-maintenance-scripts\.sh" "\$TARGET_DIR" <\/dev\/null \|\| exit \$\?/);
   });
 
   it('the workflow stops the deploy when a monitoring script cannot be installed', () => {
-    const deploy = workflow();
-    expect(deploy).toMatch(/for script in [^\n]*; do\n[^\n]*cp [^\n]*\\\n[^\n]*chmod \+x [^\n]*\\\n[^\n]*exit 1[^\n]*\n\s*done/);
+    const installer = readFileSync(path.join(scriptsDir, 'install-maintenance-scripts.sh'), 'utf8');
+    expect(installer).toMatch(/for script in [^\n]*; do\n[^\n]*cp [^\n]*\\\n[^\n]*chmod \+x [^\n]*\\\n[^\n]*exit 1[^\n]*\n\s*done/);
   });
 
   describe('the early "Check monitoring recipient secrets" step, run for real', () => {

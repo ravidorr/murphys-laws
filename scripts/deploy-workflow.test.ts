@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, utimesSync, writeFileSync } from 'node:fs';
+import { appendFileSync, chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -514,7 +514,11 @@ test('the reload waits for the release: it comes after every rsync, the install 
 // the rsyncs and installs of the release among them, is only recorded. This is what shows the order of the whole step.
 type OrderSandbox = { directory: string; site: string; trace: string };
 
-function runBeforeRoot(nginxTest: 'pass' | 'fail', previous: string | null, script = deployScript.slice(0, rootPartStart), extraEnv: Record<string, string> = {}) {
+// The scripts that the step checks for in the upload before it touches the live site: the monitoring scripts, which are
+// installed with failures not ignored, and the script that installs them
+const uploadedScripts = ['alert-email', 'backup-murphys', 'backup-offsite', 'health-monitor', 'ssl-monitor', 'cost-optimization-report', 'test-backup-restore', 'install-maintenance-scripts'];
+
+function runBeforeRoot(nginxTest: 'pass' | 'fail', previous: string | null, script = deployScript.slice(0, rootPartStart), extraEnv: Record<string, string> = {}, notUploaded: string[] = []) {
   const directory = mkdtempSync(path.join(os.tmpdir(), 'deploy-order-'));
   const home = path.join(directory, 'home');
   const staging = path.join(home, 'deploy/murphys-laws');
@@ -523,7 +527,7 @@ function runBeforeRoot(nginxTest: 'pass' | 'fail', previous: string | null, scri
   const trace = path.join(directory, 'trace.log');
   mkdirSync(path.join(staging, 'backend/scripts'), { recursive: true });
   mkdirSync(temp);
-  for (const name of ['alert-email', 'backup-murphys', 'backup-offsite', 'health-monitor', 'ssl-monitor', 'cost-optimization-report', 'test-backup-restore']) {
+  for (const name of uploadedScripts.filter((script) => !notUploaded.includes(script))) {
     writeFileSync(path.join(staging, 'backend/scripts', `${name}.sh`), '#!/bin/sh\n');
   }
   writeFileSync(path.join(staging, 'nginx.conf'), 'new config\n');
@@ -601,6 +605,15 @@ test('a rejected configuration stops the step before anything is replaced or rel
     }
   }
 });
+
+for (const missing of uploadedScripts) {
+  test(`a release that arrived without ${missing}.sh stops the step before nginx is tested or anything on the live tree changes`, () => {
+    const { result, commands } = runBeforeRoot('pass', 'old config\n', undefined, {}, [missing]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, new RegExp(`ERROR: ${missing}\\.sh is missing from the uploaded release; nothing was changed on the server`));
+    assert.deepEqual(commands.filter((command) => !command.startsWith('sudo install -d')), [], 'only empty directories were created');
+  });
+}
 
 test('the harness would catch the old order: with the nginx test moved behind the release, a rejected file is seen after the live tree changed', () => {
   // The same step with the guard moved to where it used to be (just before the reload, after the prune): the checks
@@ -752,10 +765,15 @@ test('a script that crashes on the server only warns', () => {
 });
 
 // ---------------------------------------------------------------------------------------------------------------
-// The crontab part of the same step, run with stand-ins for sudo and crontab (and sometimes grep)
+// The crontab part of the same step, run with stand-ins for sudo and crontab (and sometimes grep). The cleanup itself is
+// backend/scripts/remove-scanner-cron.sh (the workflow's script is too close to GitHub's length limit to hold it, see the
+// last tests): most tests run the block of the deploy script that calls it, from its marker to the next step, against the
+// real script file (a few run the script file directly, or stand-ins for it), with TARGET_DIR set to this repository as it is the release directory on the server.
 
+const cronScriptPath = path.join(rootDirectory, 'backend/scripts/remove-scanner-cron.sh');
+const cronScript = readFileSync(cronScriptPath, 'utf8');
 const cronBlockStart = deployScript.indexOf('echo "==> Removing the standalone vulnerability scanner cron job');
-// The block ends where the comment of the next step, the install of the Law of the Day schedule, begins
+// The block (the marker and the call of the script) ends where the comment of the next step, the install of the Law of the Day schedule, begins
 const cronBlockEnd = deployScript.indexOf('# The Law of the Day schedule (/etc/cron.d, from backend/config/cron.d).');
 const cronBlock = deployScript.slice(cronBlockStart, cronBlockEnd);
 const realGrep = spawnSync('sh', ['-c', 'command -v grep'], { encoding: 'utf8' }).stdout.trim();
@@ -809,7 +827,7 @@ esac
 }
 
 function cronEnv(sandbox: CronSandbox, mode: string, extraEnv: Record<string, string> = {}): Record<string, string> {
-  return { PATH: `${path.join(sandbox.directory, 'bin')}:${process.env.PATH}`, TMPDIR: sandbox.directory, STUB_CRONTAB: mode, ...extraEnv };
+  return { PATH: `${path.join(sandbox.directory, 'bin')}:${process.env.PATH}`, TMPDIR: sandbox.directory, STUB_CRONTAB: mode, TARGET_DIR: rootDirectory, ...extraEnv };
 }
 
 function runCronBlock(sandbox: CronSandbox, mode: string, extraEnv: Record<string, string> = {}) {
@@ -838,15 +856,40 @@ const scannerLine = '0 3 * * 0 /usr/local/bin/vulnerability-scanner.sh >> /var/l
 
 test('the crontab part of the deploy step is found where the tests expect it, never pipes a read into a write and never ends the script', () => {
   assert.ok(cronBlockStart > -1 && cronBlockEnd > cronBlockStart, 'the block sits before the PM2 restart');
-  assert.ok(cronBlock.includes('vulnerability-scanner.sh'));
-  assert.doesNotMatch(cronBlock, /crontab -l[^\n]*[^|]\|(?!\|)/, 'crontab -l is read into a variable, not piped');
-  assert.doesNotMatch(cronBlock, /crontab -r/, 'the crontab is never removed');
-  assert.doesNotMatch(cronBlock, /\|\|\s*(true|:)\b/, 'no failure of this step is swallowed without a message');
-  const commands = cronBlock.split('\n').filter((line) => !line.trim().startsWith('#')).join('\n');
-  assert.doesNotMatch(commands, /(^|[;&|{)]|\$\(|\bthen|\belse|\bdo)\s*(exit|return)\b/m, 'housekeeping never ends the deploy script, it only warns');
-  assert.equal((cronBlock.match(/WARNING: /g) ?? []).length, 7, 'each problem has its own plain-text warning');
-  assert.doesNotMatch(cronBlock, /::warning::/, 'annotations are not parsed in the remote script');
+  assert.ok(cronScript.includes('vulnerability-scanner.sh'));
+  assert.doesNotMatch(cronScript, /crontab -l[^\n]*[^|]\|(?!\|)/, 'crontab -l is read into a variable, not piped');
+  assert.doesNotMatch(cronScript, /crontab -r/, 'the crontab is never removed');
+  assert.doesNotMatch(cronScript, /\|\|\s*(true|:)\b/, 'no failure of this step is swallowed without a message');
+  for (const [label, text] of [['the script', cronScript], ['the call in the deploy script', cronBlock]] as const) {
+    const commands = text.split('\n').filter((line) => !line.trim().startsWith('#')).join('\n');
+    assert.doesNotMatch(commands, /(^|[;&|{)]|\$\(|\bthen|\belse|\bdo)\s*(exit|return)\b/m, `${label}: housekeeping never ends the deploy script, it only warns`);
+  }
+  assert.equal((cronScript.match(/WARNING: /g) ?? []).length, 7, 'each problem has its own plain-text warning');
+  assert.doesNotMatch(`${cronScript}\n${cronBlock}`, /::warning::/, 'annotations are not parsed in the remote script');
   assert.doesNotMatch(deployScript, /crontab -l[^\n]*\|[^\n]*crontab -/, 'nowhere in the script is a read piped into a write');
+  assert.doesNotMatch(cronScript, /select-law-of-day|install-law-of-day-cron/, 'the old law-of-day line is left to its installer');
+  assert.match(cronScript, /^set -e\ntrap 'echo "==> Script failed at line \$LINENO of \$0"' ERR$/m, 'it runs under the shell options the block had inside the deploy script, and its trap names the file, as the lines are its own');
+  assert.doesNotMatch(cronScript, /^set [^\n]*[uo]/m, 'with no further options: the block was written and tested for set -e and the ERR trap only');
+  assert.equal(cronBlock.split('\n').filter((line) => /^bash "\$TARGET_DIR\/backend\/scripts\/remove-scanner-cron\.sh" <\/dev\/null/.test(line)).length, 1, 'the deploy calls the script once, with its standard input from /dev/null');
+});
+
+test('the deploy prints the marker of the cleanup before it runs, and keeps going with a warning when the script is missing or cannot run', () => {
+  assert.ok(cronBlock.indexOf('echo "==> Removing the standalone vulnerability scanner cron job, if there is one"') < cronBlock.indexOf('remove-scanner-cron.sh'));
+  // A release without the script (TARGET_DIR with no backend/scripts in it): bash cannot open it, which is only a warning
+  const missing = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  const result = runCronBlock(missing, 'ok', { TARGET_DIR: missing.directory });
+  assertWarnedAndWentOn(result, /WARNING: the scanner cron cleanup did not finish \(exit 127, see the message above\); root's crontab may be unchanged and the deploy continues/);
+  assert.match(result.stderr, /remove-scanner-cron\.sh: No such file or directory/, 'the cause is shown');
+  assert.match(result.stdout, /==> Removing the standalone vulnerability scanner cron job, if there is one\nAFTER_CRONTAB/);
+  assert.equal(writeCountOf(missing), 0);
+  assert.equal(readFileSync(missing.state, 'utf8'), `${rootCrontab}${scannerLine}`);
+  // A script that fails for a reason that its own warnings do not cover: the exit status is in the warning
+  const failing = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  mkdirSync(path.join(failing.directory, 'app/backend/scripts'), { recursive: true });
+  writeFileSync(path.join(failing.directory, 'app/backend/scripts/remove-scanner-cron.sh'), 'echo "stand-in failing" >&2\nexit 7\n');
+  const failed = runCronBlock(failing, 'ok', { TARGET_DIR: path.join(failing.directory, 'app') });
+  assertWarnedAndWentOn(failed, /WARNING: the scanner cron cleanup did not finish \(exit 7, see the message above\)/);
+  assert.match(failed.stderr, /stand-in failing/);
 });
 
 test('a crontab that cannot be read is left untouched, not emptied, and the deploy goes on with a warning', () => {
@@ -1016,9 +1059,20 @@ test('the step still works when the deploy script is read from standard input, a
   assert.equal(readFileSync(sandbox.state, 'utf8'), rootCrontab);
 });
 
-test('under the shell options of the deploy script (set -e and an ERR trap), with or without pipefail, every outcome, failures included, is handled by the step itself: the trap stays silent and the script goes on', () => {
+test('the cleanup script itself never reads standard input: `crontab -l` has its own </dev/null, whatever the call does', () => {
+  // The call here has no `</dev/null`, so the script's standard input is the rest of this script and a `crontab -l` that read it would swallow it
+  const sandbox = createCronSandbox(`${rootCrontab}${scannerLine}`);
+  const result = spawnSync('bash', ['-e'], { env: cronEnv(sandbox, 'reads-stdin'), input: `bash "${cronScriptPath}"\necho AFTER_CRONTAB\n`, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Standalone vulnerability scanner cron job removed\nAFTER_CRONTAB/);
+  assert.equal(readFileSync(sandbox.state, 'utf8'), rootCrontab);
+});
+
+test('under the shell options of the deploy script (set -e and an ERR trap), and with pipefail added, every outcome, failures included, is handled by the step itself: the trap stays silent and the script goes on', () => {
+  // The call runs the script in a child process, which inherits neither option of the deploy script: the script sets its own
+  // (`set -e` and the trap), and the second way of running it adds pipefail to that, as the block was tested before it moved
   const header = "set -e\ntrap 'echo \"==> Script failed at line $LINENO\"' ERR\n";
-  for (const options of ['', 'set -o pipefail\n']) {
+  for (const how of ['through the call of the deploy script', 'the script itself under pipefail'] as const) {
     for (const [mode, initial, status] of [
       ['ok', `${rootCrontab}${scannerLine}`, 0],
       ['ok', rootCrontab, 0],
@@ -1028,14 +1082,36 @@ test('under the shell options of the deploy script (set -e and an ERR trap), wit
       ['write-fails', `${rootCrontab}${scannerLine}`, 0],
     ] as const) {
       const sandbox = createCronSandbox(initial);
-      const result = spawnSync('bash', ['-c', `${header}${options}${cronBlock}\necho AFTER_CRONTAB`], { env: cronEnv(sandbox, mode), encoding: 'utf8' });
-      const label = `${mode} ${options.trim()}`;
+      const result = how === 'through the call of the deploy script'
+        ? spawnSync('bash', ['-c', `${header}${cronBlock}\necho AFTER_CRONTAB`], { env: cronEnv(sandbox, mode), encoding: 'utf8' })
+        : spawnSync('bash', ['-o', 'pipefail', cronScriptPath], { env: cronEnv(sandbox, mode), encoding: 'utf8', input: '' });
+      const label = `${mode} ${how}`;
       assert.equal(result.status, status, `${label}: ${result.stderr}`);
-      assert.match(result.stdout, /AFTER_CRONTAB/, label);
+      if (how === 'through the call of the deploy script') assert.match(result.stdout, /AFTER_CRONTAB/, label);
       const trapped = (result.stdout + result.stderr).includes('Script failed at line');
       assert.equal(trapped, false, `${label}: every failure is handled by the step itself, so the ERR trap stays silent`);
     }
   }
+});
+
+/** A release directory whose two scripts are stand-ins that print what they can read from standard input, for the calls of the deploy script. */
+function runCallsWithStandInScripts(call: string) {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'deploy-stdin-'));
+  mkdirSync(path.join(directory, 'backend/scripts'), { recursive: true });
+  for (const name of ['install-maintenance-scripts.sh', 'remove-scanner-cron.sh']) {
+    writeFileSync(path.join(directory, 'backend/scripts', name), `echo "${name} stdin: [$(cat)]"\n`);
+  }
+  // The rest of the deploy script is on the standard input of the call, as it is for `sudo bash <<INNER`
+  return spawnSync('bash', ['-e'], { env: { PATH: process.env.PATH, TARGET_DIR: directory }, input: `${call}\necho AFTER_CALL\nREST OF THE DEPLOY SCRIPT\n`, encoding: 'utf8' });
+}
+
+test('neither script can read the rest of the deploy script: both calls give them an empty standard input and the lines after the call still run', () => {
+  const maintenance = runCallsWithStandInScripts(deployScript.split('\n').find((line) => line.trimStart().startsWith('bash "$TARGET_DIR/backend/scripts/install-maintenance-scripts.sh"'))?.trim() ?? 'false');
+  assert.equal(maintenance.status, 127, 'the lines after the call are not the script: only the line of the call and AFTER_CALL run; the rest is not a command');
+  assert.match(maintenance.stdout, /install-maintenance-scripts\.sh stdin: \[\]\nAFTER_CALL\n/);
+  const cron = runCallsWithStandInScripts(cronBlock.trim().split('\n').filter((line) => !line.trim().startsWith('#')).join('\n'));
+  assert.equal(cron.status, 127);
+  assert.match(cron.stdout, /remove-scanner-cron\.sh stdin: \[\]\nAFTER_CALL\n/);
 });
 
 test('the pruning timeout is longer than the last measured run and shorter than the ssh action allows', () => {
@@ -1099,7 +1175,7 @@ test('the deploy installs the Law of the Day schedule once the files and the dep
   const rootPart = at(deployScript, "<<'INNER'");
   assert.ok(install > rootPart, 'it runs in the part of the script that runs as root');
   assert.ok(install > at(deployScript, 'npm run migrate'), 'after the dependencies are installed and the migrations ran');
-  assert.ok(install > at(deployScript, 'echo "✓ Standalone vulnerability scanner cron job removed"'), 'after the crontab cleanup');
+  assert.ok(install > at(deployScript, 'remove-scanner-cron.sh" </dev/null'), 'after the crontab cleanup');
   assert.ok(install < at(deployScript, restartMarker), 'before the restart, where a failure would only be a warning');
   assert.ok(!deployScript.slice(nginxStart, rootPart).includes(installer), 'the nginx guard and reload do not run it');
 });
@@ -1140,7 +1216,7 @@ test('a failed install of the schedule only warns, and the deploy goes on to res
 });
 
 test('the old law-of-day crontab line is left to the installer: the scanner cleanup does not touch it or call the installer', () => {
-  const cleanup = deployScript.slice(cronBlockStart, cronBlockEnd);
+  const cleanup = `${deployScript.slice(cronBlockStart, cronBlockEnd)}\n${cronScript}`;
   assert.doesNotMatch(cleanup, /select-law-of-day/);
   assert.ok(!cleanup.includes(installer));
 });
@@ -1166,6 +1242,165 @@ test('the log directory of the job is created by the deploy and is not the one i
 });
 
 // ---------------------------------------------------------------------------------------------------------------
+// The server maintenance scripts: copied into /usr/local/bin by backend/scripts/install-maintenance-scripts.sh, which
+// the deploy step calls right after the migrations
+
+const maintenanceScriptPath = path.join(rootDirectory, 'backend/scripts/install-maintenance-scripts.sh');
+const maintenanceScript = readFileSync(maintenanceScriptPath, 'utf8');
+const maintenanceCall = deployScript.split('\n').find((line) => line.trimStart().startsWith('bash "$TARGET_DIR/backend/scripts/install-maintenance-scripts.sh"')) ?? '';
+// The copies that stop the deploy when they fail, in the order of the script, and those that never do
+const requiredMaintenanceScripts = ['alert-email', 'backup-murphys', 'backup-offsite', 'health-monitor', 'ssl-monitor', 'cost-optimization-report', 'test-backup-restore'];
+const optionalMaintenanceScripts = ['daily-report', 'vulnerability-scanner', 'performance-tracker', 'analyze-resource-peaks', 'log-analyzer'];
+const maintenanceConfigs = { 'operational-metrics-main-app.env.example': 'operational-metrics.env.example', 'infrastructure-inventory.json.example': 'infrastructure-inventory.json.example' };
+
+type MaintenanceSandbox = { directory: string; app: string; bin: string; etc: string; stubs: string };
+
+/** A release directory holding the script and the files it copies (except `omit`), and empty stand-ins for /usr/local/bin and /etc/murphys-laws. */
+function createMaintenanceSandbox(omit: string[] = []): MaintenanceSandbox {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'deploy-maintenance-'));
+  const app = path.join(directory, 'app');
+  const stubs = path.join(directory, 'stubs');
+  mkdirSync(path.join(app, 'backend/scripts'), { recursive: true });
+  mkdirSync(path.join(app, 'backend/config'));
+  mkdirSync(path.join(directory, 'bin'));
+  mkdirSync(stubs);
+  copyFileSync(maintenanceScriptPath, path.join(app, 'backend/scripts/install-maintenance-scripts.sh'));
+  for (const name of [...requiredMaintenanceScripts, ...optionalMaintenanceScripts].filter((script) => !omit.includes(script))) {
+    writeFileSync(path.join(app, 'backend/scripts', `${name}.sh`), `#!/bin/sh\n# ${name}\n`, { mode: 0o644 });
+  }
+  for (const name of Object.keys(maintenanceConfigs).filter((config) => !omit.includes(config))) writeFileSync(path.join(app, 'backend/config', name), `# ${name}\n`);
+  // The step runs as root through sudo; here sudo just runs the command, except a chmod of the file named in STUB_FAIL_CHMOD
+  writeFileSync(path.join(stubs, 'sudo'), '#!/bin/sh\nif [ "$1" = chmod ] && [ -n "$STUB_FAIL_CHMOD" ]; then case "$*" in *"$STUB_FAIL_CHMOD") exit 1 ;; esac; fi\nexec "$@"\n', { mode: 0o755 });
+  return { directory, app, bin: path.join(directory, 'bin'), etc: path.join(directory, 'etc'), stubs };
+}
+
+/** The call of the deploy script, read from standard input with a script after it, as `sudo bash <<INNER` runs it (with its ERR trap). */
+function runMaintenanceCall(sandbox: MaintenanceSandbox, extraEnv: Record<string, string> = {}) {
+  return spawnSync('bash', ['-e'], {
+    env: { PATH: `${sandbox.stubs}:${process.env.PATH}`, TARGET_DIR: sandbox.app, BIN_DIR: sandbox.bin, ETC_DIR: sandbox.etc, ...extraEnv },
+    input: `trap 'echo "==> Script failed at line $LINENO"' ERR\n${maintenanceCall.trim()}\necho AFTER_MAINTENANCE\n`,
+    encoding: 'utf8',
+  });
+}
+
+const installedIn = (sandbox: MaintenanceSandbox): string[] => readdirSync(sandbox.bin).sort();
+
+test('the deploy calls the maintenance installer after the migrations and before the crontab cleanup, with the release directory, its standard input from /dev/null and its exit status passed on', () => {
+  assert.equal(maintenanceCall.trim(), 'bash "$TARGET_DIR/backend/scripts/install-maintenance-scripts.sh" "$TARGET_DIR" </dev/null || exit $?');
+  // The name also appears earlier, in the check of the upload, so the position is the one of the call itself
+  const callAt = at(deployScript, maintenanceCall.trim());
+  assert.ok(at(deployScript, 'npm run migrate') < callAt);
+  assert.ok(callAt < cronBlockStart);
+  assert.ok(callAt > rootPartStart, 'it runs in the part of the script that runs as root');
+  assert.doesNotMatch(deployScript, /\/usr\/local\/bin/, 'the copies are not in the deploy script any more');
+  assert.match(maintenanceScript, /^set -e\ntrap 'echo "==> Script failed at line \$LINENO of \$0"' ERR$/m, 'it runs under the shell options the copies had inside the deploy script, and its trap names the file, as the lines are its own');
+  assert.doesNotMatch(maintenanceScript, /^set [^\n]*[uo]/m, 'with no further options');
+  assert.match(maintenanceScript, /^BIN_DIR="\$\{BIN_DIR:-\/usr\/local\/bin\}"$/m, 'the default is the real directory');
+  assert.match(maintenanceScript, /^ETC_DIR="\$\{ETC_DIR:-\/etc\/murphys-laws\}"$/m);
+  assert.match(maintenanceScript, /^TARGET_DIR="\$\{1:-\/root\/murphys-laws\}"$/m);
+});
+
+test('the upload check of the deploy script lists every script that the installer must copy, and the installer itself', () => {
+  const listOf = (text: string, marker: string): string[] => {
+    const match = new RegExp(`${marker}[\\s\\S]*?for script in ([a-z -]+); do`).exec(text);
+    assert.ok(match, `a "for script in" list after ${marker}`);
+    return (match[1] ?? '').split(' ');
+  };
+  const installerRequired = ['alert-email', ...listOf(maintenanceScript, 'shellcheck disable=SC2015')];
+  assert.deepEqual(installerRequired, requiredMaintenanceScripts, 'the list of this test follows the installer');
+  assert.deepEqual(listOf(deployScript, 'The monitoring scripts are installed'), [...installerRequired, 'install-maintenance-scripts'], 'a script the installer must copy that is missing from the upload is found before the live site is touched');
+  assert.deepEqual(uploadedScripts, [...installerRequired, 'install-maintenance-scripts']);
+});
+
+test('the maintenance installer copies every script and example file, makes the scripts executable and lets the deploy go on', () => {
+  const sandbox = createMaintenanceSandbox();
+  const result = runMaintenanceCall(sandbox);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /^AFTER_MAINTENANCE$/m, 'the lines after the call run: it read nothing from the deploy script');
+  assert.equal(result.stderr, '');
+  assert.deepEqual(installedIn(sandbox), [...requiredMaintenanceScripts, ...optionalMaintenanceScripts].map((name) => `${name}.sh`).sort());
+  for (const name of installedIn(sandbox)) {
+    assert.ok((statSync(path.join(sandbox.bin, name)).mode & 0o111) !== 0, `${name} is executable`);
+    assert.equal(readFileSync(path.join(sandbox.bin, name), 'utf8'), `#!/bin/sh\n# ${name.replace(/\.sh$/, '')}\n`, `${name} is the release copy`);
+  }
+  assert.deepEqual(readdirSync(sandbox.etc).sort(), Object.values(maintenanceConfigs).sort());
+  assert.equal(readFileSync(path.join(sandbox.etc, 'operational-metrics.env.example'), 'utf8'), '# operational-metrics-main-app.env.example\n');
+});
+
+test('the maintenance installer also makes the scripts that were already there executable', () => {
+  const sandbox = createMaintenanceSandbox();
+  writeFileSync(path.join(sandbox.bin, 'older.sh'), '#!/bin/sh\n', { mode: 0o644 });
+  assert.equal(runMaintenanceCall(sandbox).status, 0);
+  assert.ok((statSync(path.join(sandbox.bin, 'older.sh')).mode & 0o111) !== 0);
+});
+
+test('the copies that never stop the deploy are skipped when their file is not in the release', () => {
+  const sandbox = createMaintenanceSandbox([...optionalMaintenanceScripts, ...Object.keys(maintenanceConfigs)]);
+  const result = runMaintenanceCall(sandbox);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /^AFTER_MAINTENANCE$/m);
+  assert.deepEqual(installedIn(sandbox), requiredMaintenanceScripts.map((name) => `${name}.sh`).sort());
+  assert.deepEqual(readdirSync(sandbox.etc), [], 'the directory for the examples is created');
+  assert.equal(result.stderr, '', 'a copy that is allowed to fail does so without a word');
+  assert.doesNotMatch(result.stdout, /Script failed at line/);
+});
+
+test('an alert-email.sh that cannot be installed fails the deploy with its message, before anything else is installed', () => {
+  const sandbox = createMaintenanceSandbox(['alert-email']);
+  const result = runMaintenanceCall(sandbox);
+  assert.equal(result.status, 1, 'the exit status of the script is the one of the deploy');
+  assert.match(result.stderr, new RegExp(`ERROR: could not install ${sandbox.bin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/alert-email\\.sh; the monitoring scripts would lose their alerts`));
+  assert.match(result.stderr, /No such file or directory/, 'the cause of the copy is shown');
+  assert.doesNotMatch(result.stdout, /AFTER_MAINTENANCE/, 'the deploy script ends');
+  assert.doesNotMatch(result.stdout + result.stderr, /Script failed at line/, 'a handled failure does not trigger the ERR trap');
+  assert.deepEqual(installedIn(sandbox), []);
+});
+
+for (const missing of requiredMaintenanceScripts.slice(1)) {
+  test(`a ${missing}.sh that cannot be installed fails the deploy with its message and stops the copies there`, () => {
+    const sandbox = createMaintenanceSandbox([missing]);
+    const result = runMaintenanceCall(sandbox);
+    assert.equal(result.status, 1);
+    assert.ok(result.stderr.includes(`ERROR: could not install ${sandbox.bin}/${missing}.sh\n`), result.stderr);
+    assert.doesNotMatch(result.stdout, /AFTER_MAINTENANCE/);
+    assert.doesNotMatch(result.stdout + result.stderr, /Script failed at line/);
+    const before = requiredMaintenanceScripts.slice(0, requiredMaintenanceScripts.indexOf(missing)).map((name) => `${name}.sh`).sort();
+    assert.deepEqual(installedIn(sandbox), before, 'the scripts before it are installed, none after it');
+  });
+}
+
+for (const failing of requiredMaintenanceScripts) {
+  test(`a chmod of ${failing}.sh that fails fails the deploy like a failed copy does`, () => {
+    const sandbox = createMaintenanceSandbox();
+    const result = runMaintenanceCall(sandbox, { STUB_FAIL_CHMOD: `/${failing}.sh` });
+    assert.equal(result.status, 1);
+    assert.ok(result.stderr.includes(failing === 'alert-email'
+      ? `ERROR: could not install ${sandbox.bin}/alert-email.sh; the monitoring scripts would lose their alerts\n`
+      : `ERROR: could not install ${sandbox.bin}/${failing}.sh\n`), result.stderr);
+    assert.doesNotMatch(result.stdout, /AFTER_MAINTENANCE/);
+    assert.doesNotMatch(result.stdout + result.stderr, /Script failed at line/);
+  });
+}
+
+test('a release without the installer stops the deploy at the call, with the cause shown (the upload check normally refuses it first)', () => {
+  const sandbox = createMaintenanceSandbox();
+  const result = runMaintenanceCall(sandbox, { TARGET_DIR: sandbox.directory });
+  assert.equal(result.status, 127);
+  assert.match(result.stderr, /install-maintenance-scripts\.sh: No such file or directory/);
+  assert.doesNotMatch(result.stdout, /AFTER_MAINTENANCE/);
+});
+
+test('a failure that the script does not handle itself still fails the deploy, with the trap of the script naming the line', () => {
+  const sandbox = createMaintenanceSandbox();
+  // A file where the directory for the example files should be: `sudo mkdir -p` fails, and nothing there is guarded
+  writeFileSync(sandbox.etc, 'in the way\n');
+  const result = runMaintenanceCall(sandbox);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stdout, /==> Script failed at line \d+ of \S*install-maintenance-scripts\.sh/, 'the trap names the script, whose line it is');
+  assert.doesNotMatch(result.stdout, /AFTER_MAINTENANCE/);
+});
+
+// ---------------------------------------------------------------------------------------------------------------
 // GitHub's limit on the length of an expression
 
 // A workflow string that contains `${{ ... }}` is compiled into one expression, and GitHub rejects a workflow whose
@@ -1174,6 +1409,9 @@ test('the log directory of the job is created by the deploy and is not the one i
 // script holds a few `${{ secrets[...] }}` lines, so its whole text counts, comments included.
 const expressionLimit = 21000;
 const stringLimit = 20000; // leaves room, so that a few added lines do not make the next pull request the one that breaks it
+// The earlier, softer signal: past this length the test run prints a warning (and adds it to the job summary in GitHub Actions) and does not fail,
+// so the margin is seen while a pull request can still move code into a script file, not when the next one is refused
+const warningLimit = 18000;
 
 function workflowStrings(): { where: string; text: string }[] {
   const found: { where: string; text: string }[] = [];
@@ -1208,4 +1446,83 @@ test(`no workflow string that contains an expression is longer than ${stringLimi
       `${where} is ${text.length} characters and contains \${{ }} expressions: GitHub compiles the whole string into one expression and refuses a workflow whose expression is longer than ${expressionLimit} characters ("workflow file issue", every run fails with no job, no deploy can start). Shorten the comments, or move code into a script file in the repository. The limit for this test is ${stringLimit}.`,
     );
   }
+});
+
+/** The warning for a string that is past the warning length, or null. */
+function lengthWarning(where: string, length: number): string | null {
+  if (length <= warningLimit) return null;
+  return `${where} is ${length} characters and contains \${{ }} expressions. GitHub refuses a workflow whose expression is longer than ${expressionLimit} characters, and this test fails above ${stringLimit}. Move a block of the script into a script file in the repository before adding to it (issue #350).`;
+}
+
+/** The warnings for the strings that contain an expression, which is what GitHub compiles into one. */
+function lengthWarnings(strings: { where: string; text: string }[]): string[] {
+  return strings.flatMap(({ where, text }) => {
+    const warning = text.includes('${{') ? lengthWarning(where, text.length) : null;
+    return warning ? [warning] : [];
+  });
+}
+
+/**
+ * Prints the warning in the test output ("# WARNING: ..." in the TAP report) and, in GitHub Actions, adds it to the job summary
+ * of the run. It is not a `::warning::` annotation: node's test runner prefixes every line that a test file prints with "# ",
+ * and the runner only reads such a command at the start of a line. Reporting never fails the test: a summary file that cannot
+ * be written only loses the summary line.
+ */
+function reportLengthWarning(warning: string, summaryFile: string | undefined, print: (line: string) => void = (line) => process.stderr.write(line)): void {
+  print(`\nWARNING: ${warning}\n`);
+  if (!summaryFile) return;
+  try {
+    appendFileSync(summaryFile, `> [!WARNING]\n> **Workflow script length.** ${warning}\n\n`);
+  } catch (error) {
+    print(`(the warning could not be added to the job summary: ${error instanceof Error ? error.message : String(error)})\n`);
+  }
+}
+
+test('the warning length comes before the length at which the test fails, which comes before GitHub\'s limit', () => {
+  assert.ok(warningLimit < stringLimit && stringLimit < expressionLimit);
+});
+
+test('the strings that the length check looks at include the deploy script, so the warning can reach it', () => {
+  assert.ok(workflowStrings().some(({ text }) => text === deployScript));
+  const [warning] = lengthWarnings([{ where: 'the deploy script grown', text: `${deployScript}${'#'.repeat(warningLimit)}` }]);
+  assert.match(warning ?? '', /^the deploy script grown is \d+ characters and contains /);
+});
+
+test('a string past the warning length gets a warning, one at or below it gets none', () => {
+  assert.equal(lengthWarning('deploy.yml > deploy > a step > with.script', warningLimit), null);
+  const warning = lengthWarning('deploy.yml > deploy > a step > with.script', warningLimit + 1) ?? '';
+  assert.match(warning, new RegExp(`^deploy\\.yml > deploy > a step > with\\.script is ${warningLimit + 1} characters and contains \\$\\{\\{ \\}\\} expressions\\. `));
+});
+
+test('only a string that contains an expression and is past the warning length is reported', () => {
+  const long = (extra: string, length: number) => `${extra}${'x'.repeat(length - extra.length)}`;
+  const warnings = lengthWarnings([
+    { where: 'over, with an expression', text: long('${{ secrets.A }}', warningLimit + 1) },
+    { where: 'over, without one', text: long('plain', warningLimit + 1) },
+    { where: 'at the length, with an expression', text: long('${{ secrets.A }}', warningLimit) },
+    { where: 'short, with an expression', text: '${{ secrets.A }}' },
+  ]);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0] ?? '', /^over, with an expression is 18001 characters /);
+});
+
+test('a warning is printed, and added to the job summary when GitHub Actions provides a file for it, and is never an error', () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'deploy-summary-'));
+  const summary = path.join(directory, 'summary.md');
+  const printed: string[] = [];
+  reportLengthWarning('deploy.yml > a string is 18001 characters', summary, (line) => printed.push(line));
+  reportLengthWarning('a second string is 18002 characters', summary, (line) => printed.push(line));
+  assert.deepEqual(printed, ['\nWARNING: deploy.yml > a string is 18001 characters\n', '\nWARNING: a second string is 18002 characters\n']);
+  assert.equal(readFileSync(summary, 'utf8'), '> [!WARNING]\n> **Workflow script length.** deploy.yml > a string is 18001 characters\n\n> [!WARNING]\n> **Workflow script length.** a second string is 18002 characters\n\n');
+  const without: string[] = [];
+  reportLengthWarning('with no summary file', undefined, (line) => without.push(line));
+  assert.deepEqual(without, ['\nWARNING: with no summary file\n']);
+  // A summary file that cannot be written (here, a directory) is mentioned and does not fail the test
+  const unwritable: string[] = [];
+  reportLengthWarning('with a summary that cannot be written', directory, (line) => unwritable.push(line));
+  assert.match(unwritable.join(''), /could not be added to the job summary: /);
+});
+
+test(`the workflow strings that contain an expression and are longer than ${warningLimit} characters are reported as a warning, without failing`, () => {
+  for (const warning of lengthWarnings(workflowStrings())) reportLengthWarning(warning, process.env.GITHUB_STEP_SUMMARY);
 });

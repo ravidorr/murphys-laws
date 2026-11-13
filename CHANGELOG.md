@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The deploy step's script has room to grow again (issue #350). It holds `${{ secrets[...] }}` expressions, so GitHub
+  compiles the whole script into one expression and refuses a workflow whose expression is over 21,000 characters; the
+  script was at 19,765. Two self-contained blocks moved from `.github/workflows/deploy.yml` into scripts that the deploy
+  already uploads and syncs, like `install-law-of-day-cron.sh`: `backend/scripts/install-maintenance-scripts.sh` (the
+  copies of the monitoring and report scripts into `/usr/local/bin`, with the example configuration files) and
+  `backend/scripts/remove-scanner-cron.sh` (the removal of the standalone vulnerability scanner line from root's
+  crontab). The deploy output, the `==> ...` markers, the order and the exit statuses are the same (except that a failure a script
+  does not handle itself names a line of that script, with its file name, not of the deploy script): the deploy still
+  prints the marker of the crontab cleanup itself, passes the exit status of the maintenance installer on (a failed copy
+  of a script that must not go stale still fails the deploy), and treats a cleanup that cannot run as a warning, as it
+  treated every problem of that block before. A release without `install-maintenance-scripts.sh` is now refused before
+  the live site is touched, like one without a monitoring script. The crontab tests of `scripts/deploy-workflow.test.ts`
+  run the real script through the deploy's call, with every assertion kept, the installer has its own tests, and the
+  backend's deploy-wiring tests read the installer where they read the workflow's copies. The
+  deploy script is now about 15,000 characters. The test that fails above 20,000 characters stays, and a second one
+  prints a warning, in its output and in the job summary of the run, without failing, above 18,000. Secrets still
+  reach `backend/.env` the way they did. Backend bumped to `2.3.99`; root to `2.6.261`.
 - Documented that the production cron ignores `CRON_TZ=UTC` (issue #351). The server's cron is the Debian and Ubuntu
   `cron` package (`3.0pl1-184ubuntu2`, not cronie), whose `crontab(5)` documents only `TZ` and whose changelog carries a
   `No-multiple-timezones.patch`, so the Law of the Day job runs in the server's time zone, which is `Etc/UTC` (documentary
