@@ -210,6 +210,13 @@ run_health_check() {
     fi
 }
 
+# Whether a failed check (output file $1) looks like the API being restarted: nginx answers 502 (503/504) while
+# the backend is down. A deploy does that for a few seconds to a minute, so it is worth a second look before
+# it counts as an outage.
+is_transient_outage() {
+    grep -Eq 'returned status 50[234]' "$1" 2>/dev/null
+}
+
 # What a run of the check means, from its exit code ($1) and output file ($2): healthy, outage (a real
 # check failed) or monitor-problem (the check could not run). Only an outage counts towards a restart.
 classify_health_exit() {
@@ -262,16 +269,18 @@ run_health_check > "$OUTPUT_FILE" 2>&1 || health_check_exit_code=$?
 health_check_class="$(classify_health_exit "$health_check_exit_code" "$OUTPUT_FILE")"
 
 # A check that could not run says nothing about the site, and the usual cause is a deploy replacing the
-# dependencies at that moment, so wait and run it again before reporting. Exit 2 (an invalid alert recipient)
-# is a settled configuration error and is reported straight away. The last attempt decides the outcome and
-# its output is the one mailed.
+# dependencies at that moment, so wait and run it again before reporting. The same goes for an API answering
+# 502, 503 or 504, which is what a deploy's restart looks like from outside. Exit 2 (an invalid alert
+# recipient) is a settled configuration error and is reported straight away. The last attempt decides the
+# outcome and its output is the one mailed. Both causes share one retry budget, so the worst case holds.
 retry_attempt=0
-while [ "$health_check_class" = "monitor-problem" ] && [ "$health_check_exit_code" -ne 2 ] \
-    && [ "$retry_attempt" -lt "$COULD_NOT_RUN_RETRIES" ]; do
+while [ "$health_check_exit_code" -ne 2 ] && [ "$retry_attempt" -lt "$COULD_NOT_RUN_RETRIES" ] \
+    && { [ "$health_check_class" = "monitor-problem" ] \
+        || { [ "$health_check_class" = "outage" ] && is_transient_outage "$OUTPUT_FILE"; }; }; do
     retry_attempt=$((retry_attempt + 1))
     # The output is overwritten by the next attempt, so keep what this one said in the log: it is the only
-    # record of a transient crash that a later attempt recovers from.
-    log "Health check could not run (exit code: $health_check_exit_code, output: $(tail -n 3 "$OUTPUT_FILE" 2>/dev/null | tr '\n' ' ')); retrying in ${COULD_NOT_RUN_RETRY_DELAY}s (attempt $retry_attempt of $COULD_NOT_RUN_RETRIES)"
+    # record of a transient failure that a later attempt recovers from.
+    log "Health check ${health_check_class/monitor-problem/could not run} (exit code: $health_check_exit_code, output: $(tail -n 3 "$OUTPUT_FILE" 2>/dev/null | tr '\n' ' ')); retrying in ${COULD_NOT_RUN_RETRY_DELAY}s (attempt $retry_attempt of $COULD_NOT_RUN_RETRIES)"
     sleep "$COULD_NOT_RUN_RETRY_DELAY"
     health_check_exit_code=0
     run_health_check > "$OUTPUT_FILE" 2>&1 || health_check_exit_code=$?

@@ -238,6 +238,8 @@ describe('health-monitor.sh as cron runs it', () => {
     failuresUnwritable?: boolean;
     /** The fake check prints no "Health check FAILED" line when it exits 1 (as a crash would). */
     noMarker?: boolean;
+    /** The fake check also prints "API check failed: API returned status <this>". */
+    apiStatus?: string;
     env?: Record<string, string>;
     box?: Sandbox;
   }
@@ -248,7 +250,7 @@ describe('health-monitor.sh as cron runs it', () => {
    */
   function monitor(
     codes: number[],
-    { failures, failuresRaw, failuresUnwritable, noMarker, env = { EMAIL_TO: 'admin@example.com' }, box = sandbox() }: MonitorOptions = {},
+    { failures, failuresRaw, failuresUnwritable, noMarker, apiStatus, env = { EMAIL_TO: 'admin@example.com' }, box = sandbox() }: MonitorOptions = {},
   ): Run {
     const project = path.join(box.root, 'project');
     const tsx = path.join(project, 'backend/node_modules/.bin/tsx');
@@ -257,7 +259,7 @@ describe('health-monitor.sh as cron runs it', () => {
     writeFileSync(queue, codes.map(String).join('\n') + (codes.length ? '\n' : ''));
     writeFileSync(
       tsx,
-      '#!/bin/bash\necho "$*" >> "$TSX_ARGS"\ncode="$(head -n 1 "$TSX_QUEUE")"\ntail -n +2 "$TSX_QUEUE" > "$TSX_QUEUE.next" && mv "$TSX_QUEUE.next" "$TSX_QUEUE"\necho "fake health check output"\nif [ "${code:-0}" = "1" ] && [ -z "$TSX_NO_MARKER" ]; then echo "Health check FAILED." >&2; fi\nexit "${code:-0}"\n',
+      '#!/bin/bash\necho "$*" >> "$TSX_ARGS"\ncode="$(head -n 1 "$TSX_QUEUE")"\ntail -n +2 "$TSX_QUEUE" > "$TSX_QUEUE.next" && mv "$TSX_QUEUE.next" "$TSX_QUEUE"\necho "fake health check output"\nif [ -n "$TSX_API_STATUS" ]; then echo "API check failed: API returned status $TSX_API_STATUS" >&2; fi\nif [ "${code:-0}" = "1" ] && [ -z "$TSX_NO_MARKER" ]; then echo "Health check FAILED." >&2; fi\nexit "${code:-0}"\n',
     );
     chmodSync(tsx, 0o755);
     const fake = (name: string, body: string) => {
@@ -292,6 +294,7 @@ describe('health-monitor.sh as cron runs it', () => {
       TSX_QUEUE: queue,
       TSX_ARGS: path.join(box.root, 'tsx-args.log'),
       ...(noMarker ? { TSX_NO_MARKER: '1' } : {}),
+      ...(apiStatus ? { TSX_API_STATUS: apiStatus } : {}),
       PM2_LOG: path.join(box.root, 'pm2.log'),
       FAILURES_FILE: failuresFile,
       TIMEOUT_LOG: path.join(box.root, 'timeout.log'),
@@ -479,6 +482,45 @@ describe('health-monitor.sh as cron runs it', () => {
       expect(run.failures).toBe('1');
       expect(run.mail).toContain('Health Check Failed (1/3)');
       expect(run.mail).not.toContain('Could Not Run');
+    });
+  });
+
+  describe('an API that answers 502 is looked at again before it counts as an outage (a deploy restarts it)', () => {
+    const runs = (run: Run) => run.tsxArgs.trim().split('\n').length;
+
+    it('says nothing when the next run is healthy, as at the 2026-11-13 20:55 UTC deploy restart', () => {
+      const run = monitor([1, 0], { failures: 2, apiStatus: '502' });
+      expect(run.status).toBe(0);
+      expect(runs(run)).toBe(2);
+      expect(run.mail).toBe('');
+      expect(run.failures).toBe('0');
+      expect(run.pm2).toBe('');
+      expect(run.sleeps.trim()).toBe('45');
+      expect(run.log).toContain('Health check FAILED');
+      expect(run.log).toContain('retrying in 45s (attempt 1 of 2)');
+    });
+
+    it.each(['503', '504'])('treats a %s the same way', (status) => {
+      const run = monitor([1, 0], { apiStatus: status });
+      expect(run.status).toBe(0);
+      expect(run.mail).toBe('');
+    });
+
+    it('counts and mails the outage as usual when it is still there after the retries', () => {
+      const run = monitor([1, 1, 1], { apiStatus: '502' });
+      expect(run.status).toBe(1);
+      expect(runs(run)).toBe(3);
+      expect(run.failures).toBe('1');
+      expect(mails(run)).toBe(1);
+      expect(run.mail).toContain('Health Check Failed (1/3)');
+    });
+
+    it('does not retry any other failure, so a real outage is reported without delay', () => {
+      const run = monitor([1, 0], { apiStatus: '500' });
+      expect(run.status).toBe(1);
+      expect(runs(run)).toBe(1);
+      expect(run.sleeps).toBe('');
+      expect(run.failures).toBe('1');
     });
   });
 

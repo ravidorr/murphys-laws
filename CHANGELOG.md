@@ -849,6 +849,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The health monitor now looks again, twice and 45 seconds apart, when the API answers 502, 503 or 504, before it
+  counts that as an outage and emails "Health Check Failed (1/3)". What was wrong: the 2026-11-13 20:55 UTC mail
+  (`API returned status 502`) was a deploy restarting the API. The deploy of 20:52 UTC ran until about 20:55:25, the
+  5-minute monitor run at 20:55:05 hit the gap between `pm2 delete all` and `pm2 start`, and nginx logged
+  `connect() failed (111: Connection refused)` to `127.0.0.1:8787` at that second. The site was healthy again right
+  after and the server had been up for almost 11 hours. The earlier retry only covered a check that could not run;
+  this one covers a check that ran and saw the restart. Both share the same two retries, so the worst case stays under
+  the lock timeout. Any other failure (a 500, a timeout, a failed frontend check) is still counted at once, and an API
+  that is still down after the retries is counted and mailed as before. `monitoring-scripts.test.ts` covers a 502,
+  503 and 504 that recover, one that persists, and a 500 that is not retried. Backend bumped to `2.3.103`; root to
+  `2.6.269`.
 - The backend no longer sends Sentry events from local development or tests (issue #359). What was wrong: `initSentry`
   initialised Sentry whenever `SENTRY_DSN` was set, so a developer machine whose root `.env` carried the production DSN
   reported its own crashes as real errors (a fatal `EADDRINUSE` from a local run paged the team). It now returns early
