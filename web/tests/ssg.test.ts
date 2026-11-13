@@ -25,6 +25,8 @@ import {
   buildSitemapXml,
   validateGeneratedPage,
   injectBreadcrumbJsonLd,
+  holdAppEntry,
+  validateHomePage,
   buildContentBreadcrumbTrail,
   fetchWithRetry,
   fetchAllCategories,
@@ -623,6 +625,65 @@ describe('SSG Static Route Content', () => {
       const trail = buildContentBreadcrumbTrail(page);
       expect(trail[trail.length - 1]!.path).toBe(`/${page.slug}`);
     }
+  });
+});
+
+describe('holdAppEntry', () => {
+  const entry = '<script type="module" crossorigin src="/assets/index-AbCd1234.js"></script>';
+  const shell = `<head><script type="module">window.__vite_is_modern_browser=true</script>${entry}<link rel="stylesheet" crossorigin href="/assets/style-X.css"></head>`;
+
+  it('replaces the bundle script with an inert placeholder that names the bundle', () => {
+    const held = holdAppEntry(shell);
+
+    expect(held).toContain('<script type="text/plain" id="app-entry" data-src="/assets/index-AbCd1234.js"></script>');
+    expect(held).not.toContain('crossorigin src="/assets/index-AbCd1234.js"');
+  });
+
+  it('leaves the rest of the shell, including the inline module scripts and the stylesheet, as it was', () => {
+    expect(holdAppEntry(shell)).toBe(shell.replace(entry, '<script type="text/plain" id="app-entry" data-src="/assets/index-AbCd1234.js"></script>'));
+  });
+
+  it.each([
+    ['no bundle script', '<head></head>', 0],
+    ['two bundle scripts', `<head>${entry}${entry}</head>`, 2],
+    ['a bundle script written another way', '<head><script type="module" src="/assets/index-AbCd1234.js"></script></head>', 0],
+  ])('fails the build for %s, so the gain is never lost silently', (_name, html, found) => {
+    expect(() => holdAppEntry(html)).toThrow(`Expected one app module script in the page shell, found ${found}`);
+  });
+});
+
+describe('validateHomePage', () => {
+  const held = '<head><script>getElementById(\'app-entry\')</script><script type="text/plain" id="app-entry" data-src="/assets/index-AbCd1234.js"></script></head>';
+
+  it('accepts a home page that holds the bundle', () => {
+    expect(validateHomePage(held)).toEqual([]);
+  });
+
+  it('flags a page that kept the ordinary bundle script, lacks the placeholder, or lacks the loader', () => {
+    const ordinary = '<head><script type="module" crossorigin src="/assets/index-AbCd1234.js"></script></head>';
+    expect(validateHomePage(ordinary)).toEqual([
+      'expected one app entry placeholder, found 0',
+      'still has an ordinary app module script',
+      'missing the app bundle loader',
+    ]);
+    expect(validateHomePage(held.replace('<script>getElementById(\'app-entry\')</script>', ''))).toEqual(['missing the app bundle loader']);
+  });
+
+  it('flags each fault on its own', () => {
+    const ordinary = '<script type="module" crossorigin src="/assets/index-AbCd1234.js"></script>';
+    expect(validateHomePage(held + held)).toEqual(['expected one app entry placeholder, found 2']);
+    expect(validateHomePage(held + ordinary)).toEqual(['still has an ordinary app module script']);
+    expect(validateHomePage(held.replace('/assets/index-AbCd1234.js', '/x.js'))).toEqual(['expected one app entry placeholder, found 0']);
+  });
+
+  it('does not take the loader from a comment or a script that only names the placeholder', () => {
+    const commented = held.replace('<script>getElementById(\'app-entry\')</script>', '<!-- getElementById(\'app-entry\') -->');
+    expect(validateHomePage(commented)).toEqual(['missing the app bundle loader']);
+  });
+
+  it('flags a preload of the bundle or of a chunk, which would fetch it while it is held back', () => {
+    expect(validateHomePage(held + '<link rel="modulepreload" crossorigin href="/assets/vendor-X.js">'))
+      .toEqual(['preloads the app bundle or its chunks, which defeats holding it back']);
   });
 });
 

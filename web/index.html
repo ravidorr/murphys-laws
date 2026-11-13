@@ -110,8 +110,9 @@
         }
       }
 
-      // The zone exists once the page is parsed. Waiting for DOMContentLoaded would wait for the deferred app bundle,
-      // but readyState turns 'interactive' (and fires readystatechange) before deferred module scripts run.
+      // The zone exists once the page is parsed. Waiting for DOMContentLoaded could wait for a deferred app bundle (where
+      // index.html keeps its ordinary module script, such as the dev server), but readyState turns 'interactive' (and
+      // fires readystatechange) before deferred module scripts run.
       function paintWhenParsed(law) {
         if (document.readyState !== 'loading') {
           paint(law);
@@ -197,6 +198,65 @@
         }
       });
       window.__earlyLawOfDay = state;
+    })();
+  </script>
+  <!-- App bundle start. The SSG turns the module script of dist/index.html into the inert #app-entry placeholder. On a
+       cold HTTP/2 connection the small Law of the Day answer queued behind the app bundle (about 173 KB over the wire) and
+       painted the law, the largest element on the page, 300-400 ms later than it could, so the bundle is held back: the
+       hold ends when the early request settles (with the law or without it) and at the latest HOLD_MS after this script
+       ran, so a slow or hung API cannot keep the app from loading (the early request has its own 10 s window, which
+       the app's fallback request shares; the hold only decides when the bundle starts). With no early request (a path
+       other than / and /index.html, such as the routes the service worker answers with this file, a legacy /#/... hash
+       route, or a browser without fetch or Promise) the bundle starts at once, and so it does if this script throws.
+       The pages the SSG builds from the shell keep their ordinary module script and never find the placeholder; the
+       backend's runtime law and category pages are made from this file and start the bundle at once. The module is
+       added only once parsing has ended, which is when the browser would run an ordinary deferred module script, because
+       src/main.ts needs #app. Plain ES5, and before the stylesheet, which would otherwise hold this script back.
+       tests/app-entry-loader.test.ts covers it. -->
+  <script>
+    (function () {
+      var HOLD_MS = 1000;
+      var started = false;
+      var timer = 0;
+
+      function inject() {
+        var entry = document.getElementById('app-entry');
+        if (started || !entry) return;
+        var script = document.createElement('script');
+        script.type = 'module';
+        script.crossOrigin = 'anonymous';
+        script.src = entry.getAttribute('data-src');
+        document.head.appendChild(script);
+        // Only once the script is in the page: a failure above leaves the later trigger (the timer or the parser) a retry
+        started = true;
+        clearTimeout(timer);
+      }
+
+      function start() {
+        if (document.readyState !== 'loading') {
+          inject();
+          return;
+        }
+        document.addEventListener('readystatechange', function onReady() {
+          if (document.readyState === 'loading') return;
+          document.removeEventListener('readystatechange', onReady);
+          inject();
+        });
+      }
+
+      // Anything unexpected here must not leave the page without its app: the bundle starts at once instead
+      try {
+        var early = window.__earlyLawOfDay;
+        if (!early || !early.promise || typeof early.promise.then !== 'function') {
+          start();
+          return;
+        }
+        early.promise.then(start, start);
+        timer = setTimeout(start, HOLD_MS);
+      } catch (error) {
+        // Sentry is not running yet, so the cause cannot be reported here; the app must load, and that is what matters
+        start();
+      }
     })();
   </script>
   <link rel="stylesheet" href="/styles/site.css">

@@ -854,6 +854,23 @@ function injectJsonLd(html: string, jsonLd: string): string {
   return html.replace('</head>', `${jsonLd}\n</head>`);
 }
 
+const APP_ENTRY_SCRIPT = /<script type="module" crossorigin src="([^"]+)"><\/script>/g;
+
+/**
+ * Turns the app bundle's module script of dist/index.html into an inert placeholder (`#app-entry`, with the bundle URL
+ * in `data-src`) that the inline loader in index.html reads to add a real module script once the Law of the Day request
+ * has settled (or after its 1000 ms cap), so the bundle does not queue the small answer behind it. The pages the SSG
+ * builds from the shell keep the ordinary tag; the backend's runtime pages for laws and categories published after the
+ * build are made from dist/index.html itself and so carry the placeholder, which the loader starts at once because
+ * those paths make no early request. Throws when the shell has no single such tag (a Vite output change), because a
+ * build that silently kept the bundle in the way would lose the gain unnoticed.
+ */
+function holdAppEntry(html: string): string {
+  const found = html.match(APP_ENTRY_SCRIPT)?.length ?? 0;
+  if (found !== 1) throw new Error(`Expected one app module script in the page shell, found ${found}`);
+  return html.replace(APP_ENTRY_SCRIPT, (_tag, src: string) => `<script type="text/plain" id="app-entry" data-src="${src}"></script>`);
+}
+
 /**
  * Breadcrumb trail for a content page. Example subpages sit under /examples.
  */
@@ -914,6 +931,21 @@ function validateGeneratedPage(html: string, expectations: GeneratedPageExpectat
   return failures;
 }
 
+/**
+ * The built home page must hold the bundle: one placeholder naming it, no ordinary entry tag, the loader in a script of
+ * its own, and no preload of an asset (a modulepreload link would fetch chunks while the bundle is held back).
+ */
+function validateHomePage(html: string): string[] {
+  const failures: string[] = [];
+  const placeholders = html.match(/<script type="text\/plain" id="app-entry" data-src="\/assets\/index-[^"]+\.js"><\/script>/g)?.length ?? 0;
+  if (placeholders !== 1) failures.push(`expected one app entry placeholder, found ${placeholders}`);
+  if (/<script type="module" crossorigin src="\/assets\/index-/.test(html)) failures.push('still has an ordinary app module script');
+  const inlineScripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]!);
+  if (!inlineScripts.some((script) => script.includes("getElementById('app-entry')"))) failures.push('missing the app bundle loader');
+  if (/<link[^>]+rel="modulepreload"[^>]*>/.test(html)) failures.push('preloads the app bundle or its chunks, which defeats holding it back');
+  return failures;
+}
+
 function validateNotFoundPage(html: string): string[] {
   const failures: string[] = [];
   if (!html.includes('<meta name="robots" content="noindex">')) failures.push('missing noindex');
@@ -946,9 +978,12 @@ async function validateGeneratedOutput(): Promise<void> {
     }
   }
 
-  // The home page carries the inline early Law of the Day script, so it is the page where the placeholder shows first
-  const homePlaceholder = unreplacedEarlyApiBase(await fs.readFile(path.join(DIST_DIR, 'index.html'), 'utf-8'));
+  // The home page carries the inline early Law of the Day script, so it is the page where an unreplaced __API_BASE_URL__ shows first
+  const homeHtml = await fs.readFile(path.join(DIST_DIR, 'index.html'), 'utf-8');
+  const homePlaceholder = unreplacedEarlyApiBase(homeHtml);
   if (homePlaceholder) throw new Error(`Invalid generated page index.html: ${homePlaceholder}`);
+  const homeFailures = validateHomePage(homeHtml);
+  if (homeFailures.length > 0) throw new Error(`Invalid generated page index.html: ${homeFailures.join('; ')}`);
 
   const notFoundFailures = validateNotFoundPage(await fs.readFile(path.join(DIST_DIR, '404.html'), 'utf-8'));
   if (notFoundFailures.length > 0) throw new Error(`Invalid generated page 404.html: ${notFoundFailures.join('; ')}`);
@@ -1908,6 +1943,7 @@ ${articleArchive.submitAction}
   });
   
   homeHtml = injectJsonLd(homeHtml, homeJsonLd);
+  homeHtml = holdAppEntry(homeHtml);
 
   await fs.writeFile(path.join(DIST_DIR, 'index.html'), homeHtml);
   console.log('Updated index.html with static content.');
@@ -2015,11 +2051,13 @@ export {
   buildStaticArticleArchive,
   buildNotFoundPage,
   validateNotFoundPage,
+  validateHomePage,
   applyPageMetadata,
   generateLawPage,
   buildSitemapXml,
   validateGeneratedPage,
   injectBreadcrumbJsonLd,
+  holdAppEntry,
   buildContentBreadcrumbTrail,
   fetchWithRetry,
   fetchAllCategories,
