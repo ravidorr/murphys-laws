@@ -8,7 +8,11 @@ import {
   ADMIN_UI_PATH,
   buildAdminUrl,
   buildPendingApprovalsSection,
+  buildCronJobsSection,
   collectDailyReport,
+  CRON_JOBS,
+  cronJobItem,
+  parseCronJobState,
   FAIL2BAN_JAILS,
   countPendingApprovals,
   loadConfigFromEnvFiles,
@@ -824,5 +828,114 @@ describe('daily report security summary', () => {
     expect(labels).toContain('Failed SSH Attempts');
     expect(labels.filter((label) => label?.startsWith('Fail2ban'))).toEqual([]);
     expect(logged).toEqual([]);
+  });
+});
+
+describe('the nightly cron jobs section', () => {
+  const now = new Date('2026-11-14T08:00:00Z');
+  const epoch = (iso: string): number => Date.parse(iso) / 1000;
+  const job = { name: 'daily-email', label: 'Daily email (06:15 UTC)' };
+  const stateDirWith = (files: Record<string, string>): string => {
+    const dir = scratchDir('cron-state-');
+    for (const [name, text] of Object.entries(files)) writeFileSync(path.join(dir, `${name}.state`), text);
+    return dir;
+  };
+  const state = (lines: Record<string, number>): string => `${Object.entries(lines).map(([key, value]) => `${key}=${value}`).join('\n')}\n`;
+  const ranFine = state({ last_start: epoch('2026-11-14T06:15:00Z'), last_end: epoch('2026-11-14T06:15:09Z'), last_status: 0, last_success: epoch('2026-11-14T06:15:09Z'), failures: 0 });
+
+  it('parses the state file and ignores lines that are not whole numbers', () => {
+    expect(parseCronJobState(`${ranFine}last_status=abc\nnoise\n`)).toEqual({
+      lastStart: epoch('2026-11-14T06:15:00Z'),
+      lastEnd: epoch('2026-11-14T06:15:09Z'),
+      lastStatus: 0,
+      lastSuccess: epoch('2026-11-14T06:15:09Z'),
+      failures: 0,
+    });
+    expect(parseCronJobState('')).toEqual({ lastStart: null, lastEnd: null, lastStatus: null, lastSuccess: null, failures: 0 });
+  });
+
+  it('shows a job that ran fine without a flag', () => {
+    expect(cronJobItem(job, stateDirWith({ 'daily-email': ranFine }), now)).toEqual({ label: job.label, value: 'ran OK 2026-11-14 06:15 UTC', tone: 'success' });
+  });
+
+  it('flags a job that never ran: no state file, or an empty one', () => {
+    for (const dir of [scratchDir('cron-state-'), stateDirWith({ 'daily-email': '' })]) {
+      const item = cronJobItem(job, dir, now);
+      expect(item.tone).toBe('warning');
+      expect(item.value).toContain('NEVER RAN');
+    }
+  });
+
+  it('flags a job with no successful run in the last 26 hours, even one that ran fine two days ago', () => {
+    const old = state({ last_start: epoch('2026-11-12T06:15:00Z'), last_end: epoch('2026-11-12T06:15:09Z'), last_status: 0, last_success: epoch('2026-11-12T06:15:09Z'), failures: 0 });
+    const item = cronJobItem(job, stateDirWith({ 'daily-email': old }), now);
+    expect(item.tone).toBe('critical');
+    expect(item.value).toBe('NO SUCCESSFUL RUN in the last 26 hours: last success 2026-11-12 06:15 UTC');
+    // 26 hours is the edge: a success at exactly 26 hours is still fine, a second later is not
+    const edge = (seconds: number) => state({ last_start: 1, last_end: 1, last_status: 0, last_success: epoch('2026-11-14T08:00:00Z') - 26 * 3600 - seconds, failures: 0 });
+    expect(cronJobItem(job, stateDirWith({ 'daily-email': edge(0) }), now).tone).toBe('success');
+    expect(cronJobItem(job, stateDirWith({ 'daily-email': edge(1) }), now).tone).toBe('critical');
+  });
+
+  it('flags a job that ran and failed, with its exit status and the failures in a row', () => {
+    const failed = state({ last_start: epoch('2026-11-14T06:15:00Z'), last_end: epoch('2026-11-14T06:15:02Z'), last_status: 1, failures: 2 });
+    const item = cronJobItem(job, stateDirWith({ 'daily-email': failed }), now);
+    expect(item.tone).toBe('critical');
+    expect(item.value).toBe('NO SUCCESSFUL RUN in the last 26 hours: the last run failed with exit status 1 at 2026-11-14 06:15 UTC (2 in a row); no successful run recorded');
+  });
+
+  it('warns, not critical, when the last run failed but an earlier one succeeded within 26 hours', () => {
+    const mixed = state({ last_start: epoch('2026-11-14T07:00:00Z'), last_end: epoch('2026-11-14T07:00:02Z'), last_status: 2, last_success: epoch('2026-11-13T07:00:00Z'), failures: 1 });
+    const item = cronJobItem(job, stateDirWith({ 'daily-email': mixed }), now);
+    expect(item.tone).toBe('warning');
+    expect(item.value).toContain('the last run failed with exit status 2');
+    expect(item.value).toContain('last success 2026-11-13 07:00 UTC');
+  });
+
+  it('says a run started and did not finish', () => {
+    const killed = state({ last_start: epoch('2026-11-14T06:15:00Z'), last_success: epoch('2026-11-13T06:15:09Z'), failures: 0 });
+    const item = cronJobItem(job, stateDirWith({ 'daily-email': killed }), now);
+    expect(item.tone).toBe('warning');
+    expect(item.value).toContain('started 2026-11-14 06:15 UTC and did not finish');
+  });
+
+  it('logs a state file that cannot be read, and flags the job', () => {
+    const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const dir = scratchDir('cron-state-');
+    mkdirSync(path.join(dir, 'daily-email.state'));
+
+    const item = cronJobItem(job, dir, now);
+
+    expect(item.tone).toBe('warning');
+    expect(write.mock.calls.map(([chunk]) => String(chunk)).join('')).toContain('[daily-report] cron job daily-email state failed');
+  });
+
+  it('builds one row per job and counts the flagged ones', () => {
+    const dir = stateDirWith({ 'law-of-day': ranFine, 'daily-email': ranFine });
+
+    const { section, flagged } = buildCronJobsSection(dir, now);
+
+    expect(section.title).toBe('NIGHTLY CRON JOBS');
+    expect(section.items.map((item) => item.label)).toEqual(CRON_JOBS.map((cron) => cron.label));
+    expect(flagged.map((item) => item.label)).toEqual(['Daily push (06:20 UTC)']);
+  });
+
+  it('puts the section in the live report, and a flag in the at-a-glance summary', () => {
+    vi.mocked(execFileSync).mockImplementation(() => '' as never);
+    vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const repoRoot = scratchDir('daily-report-cron-');
+    mkdirSync(path.join(repoRoot, 'backend/logs/cron-state'), { recursive: true });
+    writeFileSync(path.join(repoRoot, 'backend/logs/cron-state/law-of-day.state'), ranFine);
+
+    const report = collectDailyReport({ repoRoot, now });
+
+    expect(report.sections.find((candidate) => candidate.title === 'NIGHTLY CRON JOBS')?.items).toHaveLength(3);
+    expect(report.summary).toContainEqual({ label: 'Cron jobs', value: 'Daily email (06:15 UTC), Daily push (06:20 UTC): needs attention', tone: 'warning' });
+    expect(renderPlainTextReport(report)).toContain('NIGHTLY CRON JOBS');
+
+    const healthy = scratchDir('daily-report-cron-ok-');
+    mkdirSync(path.join(healthy, 'backend/logs/cron-state'), { recursive: true });
+    for (const cron of CRON_JOBS) writeFileSync(path.join(healthy, `backend/logs/cron-state/${cron.name}.state`), ranFine);
+    expect(collectDailyReport({ repoRoot: healthy, now }).summary.find((item) => item.label === 'Cron jobs')).toBeUndefined();
   });
 });

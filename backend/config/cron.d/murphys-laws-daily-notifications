@@ -1,0 +1,14 @@
+# Sends the Law of the Day to confirmed email subscribers at 06:15 UTC and to push subscribers at 06:20 UTC, after the
+# 00:00 UTC pick (murphys-laws-law-of-day). The deploy installs this file as /etc/cron.d/murphys-laws-daily-notifications
+# (backend/scripts/install-law-of-day-cron.sh, which installs every murphys-laws-* file here), so change it in the
+# repository: an edit made on the server is overwritten by the next deploy. A name in /etc/cron.d must not contain a dot.
+# backend/scripts/run-cron-job.sh runs each job from the backend directory, appends its output to backend/logs/daily-email.log
+# or daily-push.log, records the run in backend/logs/cron-state/ and emails an alert when the job fails (both scripts exit
+# non-zero when any send failed). The installer writes the absolute path of the node the deploy runs with in place of
+# /usr/bin/node below, exactly as it does for the Law of the Day job. The Debian and Ubuntu cron package ignores CRON_TZ; the
+# server's own time zone is UTC (see murphys-laws-law-of-day).
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=UTC
+15 6 * * * root /root/murphys-laws/backend/scripts/run-cron-job.sh daily-email /usr/bin/node node_modules/tsx/dist/cli.mjs scripts/send-daily-law-email.ts
+20 6 * * * root /root/murphys-laws/backend/scripts/run-cron-job.sh daily-push /usr/bin/node node_modules/tsx/dist/cli.mjs scripts/send-daily-law-push.ts

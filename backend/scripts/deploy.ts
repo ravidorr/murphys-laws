@@ -307,7 +307,7 @@ async function deploy(): Promise<void> {
     );
   } catch (error) {
     log(
-      `WARNING: the Law of the Day schedule was not installed (${error instanceof Error ? error.message : String(error)}; see the message above); nothing picks the law at midnight until a deploy installs it, so the first request of each day does, and the deployment continues`,
+      `WARNING: the cron schedules (Law of the Day, daily email and daily push) were not installed (${error instanceof Error ? error.message : String(error)}; see the message above); until a deploy installs them nothing sends the daily email or push and no failure alert is mailed, and the first request of each day picks the law; the deployment continues`,
       'yellow'
     );
   }

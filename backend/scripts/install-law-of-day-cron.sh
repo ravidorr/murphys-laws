@@ -1,21 +1,25 @@
 #!/bin/bash
 #
-# Installs the schedule that picks the Law of the Day at 00:00 UTC (select-law-of-day.ts).
+# Installs the cron schedules of the nightly jobs: every backend/config/cron.d/murphys-laws-* file goes to /etc/cron.d
+# (murphys-laws-law-of-day, which picks the Law of the Day at 00:00 UTC, and murphys-laws-daily-notifications, which sends
+# the daily email and push). The name of this script is older than the second file.
 #
 # Run as root by both deploy paths (.github/workflows/deploy.yml and `npm run deploy`) once the release and its
 # locked dependencies are in place, so it runs on every deploy and every step is safe to repeat. It fails, before
-# changing anything, when the job could not start: the schedule file, select-law-of-day.ts, tsx, .nvmrc or `crontab`
-# is missing, or the node the job runs is missing, cannot report its version, is not the major version in .nvmrc, or
-# cannot load better-sqlite3. Otherwise it:
-#   1. creates backend/logs, where the job writes law-of-day.log, so the log redirect cannot fail
-#   2. replaces /etc/cron.d/murphys-laws-law-of-day with backend/config/cron.d/murphys-laws-law-of-day, atomically
-#      (a hand edit is overwritten), with the node of the job written into its command (see LAW_OF_DAY_NODE_BIN)
+# changing anything, when a job could not start: a schedule file, run-cron-job.sh, the script a job runs, tsx, .nvmrc or
+# `crontab` is missing, or the node the jobs run is missing, cannot report its version, is not the major version in
+# .nvmrc, or cannot load better-sqlite3. It is all or nothing: when one schedule file fails its checks, none of them is
+# installed (a schedule already installed stays as it was). Otherwise it:
+#   1. creates backend/logs, where the jobs write their logs and run-cron-job.sh keeps its state files
+#   2. replaces each /etc/cron.d/murphys-laws-* file with the one in backend/config/cron.d, atomically (a hand edit is
+#      overwritten), with the node of the jobs written into their commands (see LAW_OF_DAY_NODE_BIN)
 #   3. removes the old `select-law-of-day.mjs` line from root's crontab, and then the old .mjs script, which is kept
 #      while that line is still there. Neither is touched when the install was refused.
 #
 # Step 3 is housekeeping: a problem with root's crontab only prints a WARNING, and the crontab is never emptied (see
 # remove_retired_crontab_line). A caller that must not let this block a release can treat any non-zero exit as a
-# warning: the API picks the law on the first request of the day when the job is not installed.
+# warning: the API picks the law on the first request of the day when the Law of the Day job is not installed, but the
+# daily email and push do not go out and no alert tells anyone until the next deploy installs them.
 #
 # Usage: [LAW_OF_DAY_NODE_BIN=/path/to/node] install-law-of-day-cron.sh [APP_DIR]   (APP_DIR defaults to /root/murphys-laws)
 #
@@ -30,28 +34,36 @@ set -euo pipefail
 
 APP_DIR="${1:-/root/murphys-laws}"
 CRON_D_DIR="${CRON_D_DIR:-/etc/cron.d}"
-CRON_NAME="murphys-laws-law-of-day"
-SOURCE="$APP_DIR/backend/config/cron.d/$CRON_NAME"
+SOURCE_DIR="$APP_DIR/backend/config/cron.d"
+REQUIRED_CRON="murphys-laws-law-of-day"
 TSX_CLI="$APP_DIR/backend/node_modules/tsx/dist/cli.mjs"
-JOB_SCRIPT="$APP_DIR/backend/scripts/select-law-of-day.ts"
+RUNNER="$APP_DIR/backend/scripts/run-cron-job.sh"
 RETIRED_SCRIPT="select-law-of-day.mjs"
 
-if [ ! -f "$SOURCE" ]; then
-  echo "ERROR: $SOURCE is missing; the Law of the Day schedule was not installed" >&2
+if [ ! -f "$SOURCE_DIR/$REQUIRED_CRON" ]; then
+  echo "ERROR: $SOURCE_DIR/$REQUIRED_CRON is missing; the cron schedules (Law of the Day, daily email and push) were not installed" >&2
   exit 1
 fi
+CRON_NAMES=()
+for source in "$SOURCE_DIR"/murphys-laws-*; do
+  [ -f "$source" ] && CRON_NAMES+=("${source##*/}")
+done
 
-# The job starts tsx from backend/node_modules, which the deploy installed before running this script.
-for needed in "$TSX_CLI" "$JOB_SCRIPT"; do
+# The jobs start through run-cron-job.sh and tsx from backend/node_modules, which the deploy installed before running this script.
+for needed in "$TSX_CLI" "$RUNNER" "$APP_DIR/backend/scripts/alert-email.sh"; do
   if [ ! -f "$needed" ]; then
-    echo "ERROR: $needed is missing; the Law of the Day job could not start, so its schedule was not installed" >&2
+    echo "ERROR: $needed is missing; the cron jobs could not start, so their schedules were not installed" >&2
     exit 1
   fi
 done
+if [ ! -x "$RUNNER" ]; then
+  echo "ERROR: $RUNNER is not executable; the cron jobs could not start, so their schedules were not installed" >&2
+  exit 1
+fi
 
 # Without crontab there is no cron to run a file in cron.d (and the old line could not be looked for)
 if ! command -v crontab > /dev/null; then
-  echo "ERROR: crontab is not installed, so cron cannot run the Law of the Day job; its schedule was not installed" >&2
+  echo "ERROR: crontab is not installed, so cron cannot run the cron jobs; their schedules were not installed" >&2
   exit 1
 fi
 
@@ -64,15 +76,15 @@ fi
 NODE_BIN="${LAW_OF_DAY_NODE_BIN-/usr/bin/node}"
 safe_path='^/[A-Za-z0-9._/+@-]+$'
 if [[ ! "$NODE_BIN" =~ $safe_path ]]; then
-  echo "ERROR: the node for the Law of the Day job, '$NODE_BIN', is not an absolute path of plain characters; its schedule was not installed" >&2
+  echo "ERROR: the node for the cron jobs, '$NODE_BIN', is not an absolute path of plain characters; their schedules were not installed" >&2
   exit 1
 fi
 if [ ! -f "$APP_DIR/.nvmrc" ]; then
-  echo "ERROR: $APP_DIR/.nvmrc is missing, so the Node version of the Law of the Day job cannot be checked; its schedule was not installed" >&2
+  echo "ERROR: $APP_DIR/.nvmrc is missing, so the Node version of the cron jobs cannot be checked; their schedules were not installed" >&2
   exit 1
 fi
 if [ ! -x "$NODE_BIN" ]; then
-  echo "ERROR: $NODE_BIN is not an executable; the Law of the Day job could not start, so its schedule was not installed. Point LAW_OF_DAY_NODE_BIN at the nvm node." >&2
+  echo "ERROR: $NODE_BIN is not an executable; the cron jobs could not start, so their schedules were not installed. Point LAW_OF_DAY_NODE_BIN at the nvm node." >&2
   exit 1
 fi
 want="$(tr -d '[:space:]v' < "$APP_DIR/.nvmrc")"
@@ -81,55 +93,79 @@ have="$("$NODE_BIN" --version 2>/dev/null)" || have=""
 have="${have#v}"
 have="${have%%.*}"
 if [ -z "$have" ]; then
-  echo "ERROR: $NODE_BIN --version printed nothing or failed; the Law of the Day job could not start, so its schedule was not installed" >&2
+  echo "ERROR: $NODE_BIN --version printed nothing or failed; the cron jobs could not start, so their schedules were not installed" >&2
   exit 1
 fi
 if [ "$want" != "$have" ]; then
-  echo "ERROR: $NODE_BIN is Node $have but .nvmrc wants Node $want; the Law of the Day job would fail. Point LAW_OF_DAY_NODE_BIN at the nvm node." >&2
+  echo "ERROR: $NODE_BIN is Node $have but .nvmrc wants Node $want; the cron jobs would fail. Point LAW_OF_DAY_NODE_BIN at the nvm node." >&2
   exit 1
 fi
 # The same major version is not proof that the native module was built for this node, so load it the way the job does
 if ! load_error="$(cd "$APP_DIR/backend" && "$NODE_BIN" -e "new (require('better-sqlite3'))(':memory:').close()" 2>&1)"; then
-  echo "ERROR: $NODE_BIN cannot load better-sqlite3 from $APP_DIR/backend ($load_error); the Law of the Day job would fail, so its schedule was not installed" >&2
+  echo "ERROR: $NODE_BIN cannot load better-sqlite3 from $APP_DIR/backend ($load_error); the cron jobs would fail, so their schedules were not installed" >&2
   exit 1
 fi
 
-# Replace the file in one step: a copy made in place could be read half-written by cron. The temporary name starts
-# with a dot, which cron ignores, and is in the same directory so the final mv is a rename. The file is the repository
-# one with the node of the job in its command, which is checked before it replaces anything.
-temporary="$(mktemp "$CRON_D_DIR/.$CRON_NAME.XXXXXX")"
-trap 'rm -f "$temporary"' EXIT
-sed "/^#/!s|/usr/bin/node|$NODE_BIN|" "$SOURCE" > "$temporary"
-chmod 644 "$temporary"
-if [ ! -s "$temporary" ] || [ -n "$(tail -c 1 "$temporary")" ]; then
-  echo "ERROR: the Law of the Day schedule does not end with a newline, which cron needs; it was not installed" >&2
-  exit 1
-fi
-# Only the lines that are not comments count from here on
-job_lines="$(grep -v '^#' "$temporary" || true)"
-# A % in a cron command is a newline
-case "$job_lines" in
-  *%*)
-    echo "ERROR: the Law of the Day schedule has a % outside its comments, which cron turns into a newline; it was not installed" >&2
+# Replace each file in one step: a copy made in place could be read half-written by cron. The temporary name starts
+# with a dot, which cron ignores, and is in the same directory so the final mv is a rename. Each file is the repository
+# one with the node of the jobs in its commands. Every file is built and checked before any of them replaces anything, so
+# one bad file installs none.
+temporaries=()
+trap '[ "${#temporaries[@]}" -eq 0 ] || rm -f "${temporaries[@]}"' EXIT
+for name in "${CRON_NAMES[@]}"; do
+  temporary="$(mktemp "$CRON_D_DIR/.$name.XXXXXX")"
+  temporaries+=("$temporary")
+  sed "/^#/!s|/usr/bin/node|$NODE_BIN|" "$SOURCE_DIR/$name" > "$temporary"
+  chmod 644 "$temporary"
+  if [ ! -s "$temporary" ] || [ -n "$(tail -c 1 "$temporary")" ]; then
+    echo "ERROR: the cron schedule $name does not end with a newline, which cron needs; no schedule was installed" >&2
     exit 1
-    ;;
-esac
-case "$job_lines" in
-  *"&& $NODE_BIN node_modules/tsx/dist/cli.mjs scripts/select-law-of-day.ts;"*) ;;
-  *)
-    echo "ERROR: the Law of the Day schedule does not run $NODE_BIN on select-law-of-day.ts; it was not installed" >&2
+  fi
+  # Only the lines that are not comments count from here on
+  job_lines="$(grep -v '^#' "$temporary" || true)"
+  # A % in a cron command is a newline
+  case "$job_lines" in
+    *%*)
+      echo "ERROR: the cron schedule $name has a % outside its comments, which cron turns into a newline; no schedule was installed" >&2
+      exit 1
+      ;;
+  esac
+  # Every job line must run a script of the release through run-cron-job.sh and the node of the jobs, and there must be one
+  job_count=0
+  while IFS= read -r line; do
+    case "$line" in
+      [0-9*]*)
+        job_count=$((job_count + 1))
+        job_script="$(printf '%s\n' "$line" | sed -nE "s|^[^ ]+ [^ ]+ [^ ]+ [^ ]+ [^ ]+ root /[^ ]+/backend/scripts/run-cron-job\.sh [A-Za-z0-9_-]+ $NODE_BIN node_modules/tsx/dist/cli\.mjs (scripts/[A-Za-z0-9_.-]+\.ts)\$|\1|p")"
+        if [ -z "$job_script" ]; then
+          echo "ERROR: the cron schedule $name does not run $NODE_BIN on a script through $RUNNER in the line '$line'; no schedule was installed" >&2
+          exit 1
+        fi
+        if [ ! -f "$APP_DIR/backend/$job_script" ]; then
+          echo "ERROR: $APP_DIR/backend/$job_script is missing; a job of $name could not start, so no schedule was installed" >&2
+          exit 1
+        fi
+        ;;
+    esac
+  done <<< "$job_lines"
+  if [ "$job_count" -eq 0 ]; then
+    echo "ERROR: the cron schedule $name does not run $NODE_BIN on a script through $RUNNER; no schedule was installed" >&2
     exit 1
-    ;;
-esac
+  fi
+done
 install -d -m 755 "$APP_DIR/backend/logs"
-# Cron ignores a file in cron.d that is not owned by root
-if [ "$(id -u)" -eq 0 ]; then
-  chown root:root "$temporary"
-fi
-mv -f "$temporary" "$CRON_D_DIR/$CRON_NAME"
-echo "Installed $CRON_D_DIR/$CRON_NAME (the job runs $NODE_BIN, $("$NODE_BIN" --version 2>/dev/null || echo "version unknown"))"
+for index in "${!CRON_NAMES[@]}"; do
+  # Cron ignores a file in cron.d that is not owned by root
+  if [ "$(id -u)" -eq 0 ]; then
+    chown root:root "${temporaries[$index]}"
+  fi
+done
+for index in "${!CRON_NAMES[@]}"; do
+  mv -f "${temporaries[$index]}" "$CRON_D_DIR/${CRON_NAMES[$index]}"
+  echo "Installed $CRON_D_DIR/${CRON_NAMES[$index]} (the jobs run $NODE_BIN, $("$NODE_BIN" --version 2>/dev/null || echo "version unknown"))"
+done
 
-# The schedule says 00:00 UTC, but the Debian and Ubuntu cron package that the production server uses ignores the CRON_TZ
+# The schedules say UTC times, but the Debian and Ubuntu cron package that the production server uses ignores the CRON_TZ
 # line of the file (its crontab(5) documents only TZ), so cron.d runs the job in the server's own time zone, which is
 # UTC there. This warning covers a server in another zone; it is printed at deploy time only, does not stop the deploy, and
 # compares the current UTC offset (so it does not see a zone that is at +0000 now and changes with summer time). The

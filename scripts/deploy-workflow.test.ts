@@ -1209,7 +1209,7 @@ test('a failed install of the schedule only warns, and the deploy goes on to res
   assert.equal(result.status, 0, 'the step never ends the script under set -e');
   assert.match(result.stdout, /AFTER_INSTALL/);
   assert.match(result.stderr, /installer says no/);
-  assert.match(result.stderr, /^WARNING: the Law of the Day schedule was not installed \(exit 3, see the message above\); nothing picks the law at midnight until a deploy installs it, so the first request of each day does, and the deploy continues$/m);
+  assert.match(result.stderr, /^WARNING: the cron schedules \(Law of the Day, daily email and daily push\) were not installed \(exit 3, see the message above\); until a deploy installs them nothing sends the daily email or push and no failure alert is mailed, and the first request of each day picks the law; the deploy continues$/m);
   const step = deployScript.slice(at(deployScript, lawOfDayMarker), at(deployScript, restartMarker));
   const commands = step.split('\n').filter((line) => !line.trim().startsWith('#')).join('\n');
   assert.doesNotMatch(commands, /(^|[;&|{)]|\bthen|\belse)\s*(exit|return)\b/m, 'the step has no exit of its own');
@@ -1229,7 +1229,7 @@ test('npm run deploy installs the schedule too, as root, before it restarts PM2,
   assert.ok(deployTsSource.includes("source ~/.nvm/nvm.sh && cd ${DROPLET_PATH}/backend && LAW_OF_DAY_NODE_BIN=\\$(readlink -f \\$(command -v node)) bash scripts/install-law-of-day-cron.sh ${DROPLET_PATH} </dev/null'"), 'the installer gets the server node and no stdin');
   assert.match(deployTsSource, /rsync -avz --delete --exclude='select-law-of-day\.mjs' backend\/scripts\//, 'the old script stays on the server until the installer replaces its job');
   const handler = deployTsSource.slice(install, at(deployTsSource, "log('\\nRestarting PM2 services...'"));
-  assert.match(handler, /catch \(error\) \{[\s\S]*?WARNING: the Law of the Day schedule was not installed[\s\S]*?the deployment continues`,\s*'yellow'/, 'the failure is logged as a warning, not rethrown');
+  assert.match(handler, /catch \(error\) \{[\s\S]*?WARNING: the cron schedules \(Law of the Day, daily email and daily push\) were not installed[\s\S]*?the deployment continues`,\s*'yellow'/, 'the failure is logged as a warning, not rethrown');
   assert.doesNotMatch(handler, /\bthrow\b/);
 });
 
@@ -1238,7 +1238,9 @@ test('the log directory of the job is created by the deploy and is not the one i
   assert.match(deployScript, /sudo install -d -m 755 "\$TARGET_DIR\/backend\/logs"/);
   assert.match(deployScript, /rm -rf config modules scripts utils logs/);
   assert.ok(at(deployScript, 'rm -rf config modules scripts utils logs') < at(deployScript, 'cd "$TARGET_DIR/backend"'), 'the cleanup runs in the release root, before it moves into backend');
-  assert.match(readFileSync(path.join(rootDirectory, 'backend/config/cron.d/murphys-laws-law-of-day'), 'utf8'), /\/backend\/logs\/law-of-day\.log/);
+  // run-cron-job.sh appends to backend/logs/<job>.log, next to its state files in backend/logs/cron-state
+  assert.match(readFileSync(path.join(rootDirectory, 'backend/config/cron.d/murphys-laws-law-of-day'), 'utf8'), /run-cron-job\.sh law-of-day /);
+  assert.match(readFileSync(path.join(rootDirectory, 'backend/scripts/run-cron-job.sh'), 'utf8'), /LOG_DIR="\$\{CRON_JOB_LOG_DIR:-\$BACKEND_DIR\/logs\}"/);
 });
 
 // ---------------------------------------------------------------------------------------------------------------
