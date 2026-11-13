@@ -32,12 +32,31 @@ vi.mock('../src/utils/sanitize.js', () => ({
   escapeHtml: vi.fn((text) => text)
 }));
 
+// Every view starts a debounced filter report when a filter is typed. Flush them after each test, so a report that is
+// still waiting (800 ms of real time) cannot fire in a later test, where it would be counted by that test's pendo mock.
+const debouncedTasks = vi.hoisted(() => [] as { flush: () => void }[]);
+vi.mock('../src/utils/debounce.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/utils/debounce.js')>();
+  return {
+    ...actual,
+    createDebouncedTask: (task: () => void, wait: number) => {
+      const debounced = actual.createDebouncedTask(task, wait);
+      debouncedTasks.push(debounced);
+      return debounced;
+    }
+  };
+});
+
 interface CategoriesTestContext {
   onNavigate: Mock<OnNavigate>;
 }
 
 describe('Categories view', () => {
   const localThis = {} as CategoriesTestContext;
+
+  afterEach(() => {
+    while (debouncedTasks.length) debouncedTasks.pop()!.flush();
+  });
 
   beforeEach(() => {
     localThis.onNavigate = vi.fn<OnNavigate>() as Mock<OnNavigate>;
@@ -112,7 +131,7 @@ describe('Categories view', () => {
     expect(el.textContent).toContain('Explore laws in this category.');
   });
 
-  it('truncates long category descriptions', async () => {
+  it('keeps the whole description in the card and leaves the clamping to CSS', async () => {
     vi.mocked(api.fetchCategories).mockResolvedValue({
       data: [{
         id: 1,
@@ -126,9 +145,43 @@ describe('Categories view', () => {
     const el = Categories({ onNavigate: localThis.onNavigate });
     await vi.waitFor(() => expect(el.querySelector('.category-card-description')).toBeTruthy());
 
-    const description = el.querySelector('.category-card-description')?.textContent ?? '';
-    expect(description).toHaveLength(148);
-    expect(description.endsWith('…')).toBe(true);
+    expect(el.querySelector('.category-card-description')?.textContent).toHaveLength(180);
+  });
+
+  it('stacks the clusters in one column and gives each cluster its own grid of cards', async () => {
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await vi.waitFor(() => expect(el.querySelector('.category-cluster')).toBeTruthy());
+
+    const container = el.querySelector('#categories-grid')!;
+    expect(container.classList.contains('category-clusters')).toBe(true);
+    expect(container.classList.contains('categories-grid')).toBe(false);
+    container.querySelectorAll('.category-cluster').forEach((cluster) => {
+      expect(cluster.querySelector(':scope > .categories-grid .category-card')).toBeTruthy();
+      expect(cluster.getAttribute('aria-labelledby')).toBe(cluster.querySelector('h2')!.id);
+    });
+  });
+
+  it('renders the card with the count and an arrow that needs no icon hydration', async () => {
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await vi.waitFor(() => expect(el.querySelector('.category-cluster .category-card')).toBeTruthy());
+
+    const card = el.querySelector('.category-cluster .category-card')!;
+    expect(card.querySelector('.category-card-count')?.textContent?.trim()).toMatch(/^\d+ laws?$/);
+    expect(card.querySelector('.category-card-arrow')?.getAttribute('aria-hidden')).toBe('true');
+    expect(card.querySelector('[data-icon]')).toBeNull();
+  });
+
+  it('says nothing matches, rather than that categories are loading, when a search finds none', async () => {
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await vi.waitFor(() => expect(el.querySelector('.category-card')).toBeTruthy());
+
+    const filter = el.querySelector('#category-filter') as HTMLInputElement;
+    filter.value = 'zzzz no such category';
+    filter.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(el.textContent).toContain('No categories match');
+    expect(el.textContent).not.toContain('Categories are being loaded');
+    expect(el.querySelector('#category-filter-status')?.textContent).toBe('0 categories found');
   });
 
   it('filters categories and hides featured cards while searching', async () => {
@@ -227,6 +280,32 @@ describe('Categories view', () => {
     expect(card).toBeTruthy();
     (card as HTMLElement)!.click();
     expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-computer-laws');
+  });
+
+  it('navigates once, without following the href, when the title or arrow inside a card is clicked', async () => {
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await vi.waitFor(() => expect(el.querySelector('.category-cluster .category-card')).toBeTruthy());
+
+    for (const selector of ['.category-card-title', '.category-card-arrow']) {
+      localThis.onNavigate.mockClear();
+      const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+      el.querySelector(`.category-cluster .category-card[data-category-slug="murphys-computer-laws"] ${selector}`)!.dispatchEvent(click);
+
+      expect(click.defaultPrevented).toBe(true);
+      expect(localThis.onNavigate).toHaveBeenCalledTimes(1);
+      expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-computer-laws');
+    }
+  });
+
+  it('navigates from a featured card too', async () => {
+    vi.mocked(api.fetchCategories).mockResolvedValue({
+      data: [{ id: 1, slug: 'murphys-love-laws', title: "Murphy's Love Laws", description: 'Romance.', law_count: 2 }]
+    });
+    const el = Categories({ onNavigate: localThis.onNavigate });
+    await vi.waitFor(() => expect(el.querySelector('#featured-categories .category-card')).toBeTruthy());
+
+    (el.querySelector('#featured-categories .category-card') as HTMLElement).click();
+    expect(localThis.onNavigate).toHaveBeenCalledWith('category', 'murphys-love-laws');
   });
 
   it('navigates to category on card click', async () => {

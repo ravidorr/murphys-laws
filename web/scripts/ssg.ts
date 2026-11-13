@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
 import { generateCategoryDescription } from '../src/utils/content-generator.ts';
-import { groupCategories } from '../src/utils/category-groups.ts';
+import { renderCategoryClusters } from '../src/utils/category-cards.ts';
 import {
   getArticleArchiveLinks,
   getCalculatorScenarioLinks,
@@ -60,6 +60,7 @@ interface Law {
 interface Category {
   slug: string;
   title: string;
+  description?: string;
   law_count: number;
 }
 
@@ -402,7 +403,9 @@ async function fetchAllCategories(fetchRequest: FetchCategoriesRequest = fetchWi
     }
     slugs.add(slug);
 
-    return { slug, title, law_count: lawCount };
+    const description = typeof category.description === 'string' ? category.description.trim() : '';
+
+    return description ? { slug, title, description, law_count: lawCount } : { slug, title, law_count: lawCount };
   });
 }
 
@@ -530,6 +533,24 @@ function renderLawLinkList(laws: Law[], seoById: Map<string, LawSeo>): string {
     return `<li><a href="/law/${law.id}">${escapeHtml(label)}</a></li>`;
   });
   return `<ul class="internal-link-list">${items.join('')}</ul>`;
+}
+
+/**
+ * Static body of the categories page: the same heading, intro and grouped cards the app renders, so the pre-render
+ * and the app match. The search box and featured row need JavaScript, so they are left to the app.
+ */
+function buildStaticCategoriesContent(categories: Category[]): string {
+  return `
+    <div class="container page">
+      <h1 class="page-title"><span class="accent-text">Browse Murphy's</span> Laws by Category</h1>
+      <p class="text-muted-fg mb-6 max-w-2xl">
+        Each category groups laws by domain so you can compare patterns across industries, hobbies, and daily life. Select a category to see the most relevant laws and stories curated for that topic.
+      </p>
+      <div class="category-clusters">
+${renderCategoryClusters(categories).trim()}
+      </div>
+    </div>
+`;
 }
 
 /**
@@ -1646,46 +1667,7 @@ async function main(): Promise<void> {
     canonicalPath: '/categories'
   });
 
-  // Build grouped category cards HTML for SSG
-  const categoryCardsHtml = groupCategories(categories)
-    .map(group => {
-      const cards = group.categories.map(cat => {
-      const lawText = cat.law_count === 1 ? 'law' : 'laws';
-      return `
-      <a href="/category/${escapeHtml(cat.slug)}" class="card card--category category-card category-card--rich" data-category-slug="${escapeHtml(cat.slug)}">
-        <h3 class="category-card-title">${escapeHtml(cat.title)}</h3>
-        <p class="category-card-description">Explore ${cat.law_count} ${lawText} in this category.</p>
-        <div class="category-card-footer">
-          <span class="category-card-count">${cat.law_count} ${lawText}</span>
-        </div>
-      </a>`;
-      }).join('');
-      return `
-      <section class="category-cluster" data-category-cluster="${group.name}">
-        <header class="category-cluster-header">
-          <h2 class="category-cluster-title">${group.name}</h2>
-          <p class="category-cluster-description">${group.description}</p>
-        </header>
-        <div class="categories-grid">
-${cards.trim()}
-        </div>
-      </section>`;
-    })
-    .join('');
-
-  const categoriesContent = `
-    <div class="container page pt-0">
-      <h1 class="text-center text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-primary">
-        Browse <span class="accent-text">Murphy's</span> Laws by Category
-      </h1>
-      <p class="text-center mb-8 text-lg text-muted-fg max-w-2xl mx-auto">
-        Explore our complete collection organized into ${categories.length} categories.
-      </p>
-      <div class="categories-grid">
-${categoryCardsHtml.trim()}
-      </div>
-    </div>
-`;
+  const categoriesContent = buildStaticCategoriesContent(categories);
 
   categoriesHtml = categoriesHtml.replace(
     /<main[^>]*class="flex-1 container page"[^>]*>[\s\S]*?<\/main>/, 
@@ -2050,6 +2032,7 @@ export {
   buildStaticSubmitContent,
   buildStaticHomeContent,
   buildStaticCategoryContent,
+  buildStaticCategoriesContent,
   buildStaticCalculatorContent,
   buildStaticLawDetailContent,
   buildStaticArticleArchive,

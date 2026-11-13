@@ -8,6 +8,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- The "Browse Murphy's Laws by Category" page (`/categories`) is redesigned (issue #346). What was wrong: the page nested
+  one `.categories-grid` inside another, so the seven category groups were laid out as columns of a three-column grid
+  (a ragged 3 + 3 + 1 arrangement, "Specialized" alone in a column with 22 cards) and the page was 8,218 px tall at
+  1440 px; the links took the browser's default link look (blue, underlined, the colour of the card's `<a>`) so the
+  title, the description and the count were all underlined; an unscoped selector in `theme.css`
+  (`.category-card--rich` in the `[data-contrast="more"]` blocks, outside any theme or contrast scope) forced a 2 px
+  black border on every card in every mode; the card's dark background used `--dark-bg-secondary`, a token that does
+  not exist; the footers of cards in a row did not line up; and the pre-rendered page used different markup (centered
+  heading, no descriptions, no arrow) from the app. What changed: the groups now stack full width, each with a heading,
+  its description and a rule, over its own grid of equal-height cards (`repeat(auto-fill, minmax(min(100%, 18rem), 1fr))`,
+  so 3 columns at 1440 px, 2 at 768 px and 1 at 375 px; the page is 5,776 px tall at 1440 px); the featured row is a
+  grid that fills its row and is two columns on a phone. Nothing is underlined at rest. The card is the link and the
+  cue is the card itself: on hover and on keyboard focus the title is underlined, the border and the count take the
+  link colour and the arrow moves one step (not with `prefers-reduced-motion`, which also removes the card's transitions); a pressed card dims rather than moves, as DESIGN.md asks; the focus outline is the existing
+  3 px ring, in the light link colour in dark mode (the blue ring was about 2.7:1 against the dark page). The arrow is always
+  visible, so touch visitors, who never hover, can see the card opens. The count is no longer preceded by a list icon.
+  The footer sits at the bottom of every card, so counts line up across a row, and the description is clamped to three
+  lines by CSS only (the JavaScript cut at 147 characters is gone; the full text stays in the page). The card and the
+  groups are rendered by one module, `web/src/utils/category-cards.ts`, used by the app and by the static build, so the
+  pre-rendered `/categories` now has the same heading, intro, groups, descriptions (the API's, instead of "Explore N
+  laws in this category."), counts and arrow as the app, `[^1]` footnote markers stripped from the titles, and the
+  display-name overrides applied; `fetchAllCategories` keeps the description. A search that finds nothing now says
+  "No categories match" instead of "Categories are being loaded". The `theme.css` selectors are scoped to their theme
+  and contrast blocks. No other page uses these classes (checked), so `/category/*`, the home page and the browse
+  page are unchanged. Content note: all 55 category descriptions are longer than 150 characters, so every card shows a
+  clamped description. New tests: `category-cards.test.ts`, the categories view and static-build tests, an axe run of
+  `/categories` in both themes and `e2e/categories-cards.spec.ts` (nothing underlined at rest, title underlined on
+  hover, focus outline, stacked clusters and equal card heights). Web bumped to `3.4.124`; root to `2.6.253`.
 - The "Corollary of" banner on a corollary's law page now sits below the law card and above the "In context" section
   (issue #345); it used to sit above the card, under the breadcrumb. A parent law's Corollaries section was already in
   that place, so both pieces now follow the same order: card, then corollary pieces, then context. The order is set in
