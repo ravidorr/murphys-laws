@@ -37,15 +37,19 @@ describe('api-server', () => {
 
   describe('initSentry', () => {
     const originalNodeEnv = process.env.NODE_ENV;
+    const originalDsn = process.env.SENTRY_DSN;
     const dsn = 'https://key@o1.ingest.sentry.io/1';
 
     afterEach(() => {
       process.env.NODE_ENV = originalNodeEnv;
+      if (originalDsn === undefined) delete process.env.SENTRY_DSN;
+      else process.env.SENTRY_DSN = originalDsn;
     });
 
     it('should not call Sentry.init when SENTRY_DSN is unset in production', async () => {
       process.env.NODE_ENV = 'production';
       const { initSentry } = await import('../../src/server/api-server.ts');
+      delete process.env.SENTRY_DSN; // after the import, whose dotenv load may bring in a developer's production DSN
       initSentry();
       expect(mockSentryInit).not.toHaveBeenCalled();
     });
@@ -60,6 +64,25 @@ describe('api-server', () => {
         environment: 'production',
         tracesSampleRate: 0.1,
       });
+      expect(mockSentryInit.mock.calls.at(-1)?.[0].release).toBeUndefined();
+    });
+
+    it.each([
+      [' 0123456789abcdef0123456789abcdef01234567\n', '0123456789abcdef0123456789abcdef01234567'],
+      ['  ', undefined],
+    ])('should pass SENTRY_RELEASE %j to Sentry as the release %j', async (configured, expected) => {
+      process.env.NODE_ENV = 'production';
+      process.env.SENTRY_DSN = dsn;
+      const saved = process.env.SENTRY_RELEASE;
+      process.env.SENTRY_RELEASE = configured;
+      try {
+        const { initSentry } = await import('../../src/server/api-server.ts');
+        initSentry();
+        expect(mockSentryInit.mock.calls.at(-1)?.[0].release).toBe(expected);
+      } finally {
+        if (saved === undefined) delete process.env.SENTRY_RELEASE;
+        else process.env.SENTRY_RELEASE = saved;
+      }
     });
 
     it.each(['development', 'test', ''])(
