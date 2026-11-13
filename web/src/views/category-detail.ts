@@ -65,6 +65,10 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
   let pendingSearch = false;
   let retryPendingSearch = false;
   let loadGeneration = 0;
+  // The search component is created after an async request, so the router never sees its own cleanup: this view
+  // removes the component's WebMCP tool itself, and builds no component once the visitor has left
+  let removeSearchTool: () => void = () => {};
+  let left = false;
 
   // Format the page title, avoiding double "Laws" (e.g., "Murphy's Laws's Laws")
   // Always wraps only the first word (typically "Murphy's") in accent color
@@ -332,6 +336,10 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
         });
         if (breadcrumb) breadcrumbContainer.replaceChildren(breadcrumb);
 
+        // Building the component registers its agent tool under a global name; after the visitor has moved on
+        // that would replace the tool of the page they are on now
+        if (left) return;
+
         const searchComponent = AdvancedSearch({
           initialFilters: { category_id: category.id },
           defaultCategoryId: category.id,
@@ -372,6 +380,7 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
           }
         });
         el.querySelector('#advanced-search-container')!.appendChild(searchComponent);
+        removeSearchTool = (searchComponent as CleanableElement).cleanup!;
       }
     } catch (error) {
       Sentry.captureException(error);
@@ -523,6 +532,8 @@ export function CategoryDetail({ categoryId, onNavigate }: { categoryId: string;
 
   // Cleanup function to clear export content on unmount
   (el as CleanableElement).cleanup = () => {
+    left = true;
+    removeSearchTool();
     invalidatePendingLoad();
     clearExportContent();
   };

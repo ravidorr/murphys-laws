@@ -15,7 +15,8 @@ import {
   setCachedCategories,
   deferUntilIdle
 } from '../utils/category-cache.ts';
-import type { Category } from '../types/app.d.ts';
+import type { Category, CleanableElement } from '../types/app.d.ts';
+import { registerDraftLawTool } from '../utils/webmcp-tools.ts';
 import { isUsefulDuplicateMatch } from '@shared/modules/duplicate-similarity.ts';
 import {
   canOfferSplit,
@@ -638,6 +639,15 @@ export function SubmitLawSection({ initialText, initialCategorySlug }: SubmitLaw
     } finally {
       setLoading(false);
     }
+  });
+
+  // The tool fills the form but never accepts the terms or submits: those stay with the visitor
+  (el as CleanableElement).cleanup = registerDraftLawTool({
+    text: textArea!,
+    title: el.querySelector<HTMLInputElement>('#submit-title')!,
+    author: el.querySelector<HTMLInputElement>('#submit-author')!,
+    category: categorySelect!,
+    terms: termsCheckbox!,
   });
 
   return el;

@@ -3,7 +3,9 @@ import templateHtml from '@components/templates/sod-calculator-simple.html?raw';
 import { hydrateIcons } from '@utils/icons.ts';
 import { trackPendoEvent } from '@utils/pendo.ts';
 import { createDebouncedTask } from '@utils/debounce.ts';
-import { CALCULATOR_RISK_LEVELS, CALCULATOR_RESULT_SETTLE_MS, type CalculatorResultBand } from '@utils/calculator-state.ts';
+import { CALCULATOR_RISK_LEVELS, CALCULATOR_RESULT_SETTLE_MS } from '@utils/calculator-state.ts';
+import { calculateSodsLaw } from '@utils/sods-law.ts';
+import { registerSodsLawTool } from '@utils/webmcp-tools.ts';
 import type { CleanableElement, OnNavigate } from '../types/app.d.ts';
 
 type SliderKey = 'urgency' | 'complexity' | 'importance' | 'skill' | 'frequency';
@@ -61,52 +63,23 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
   }, CALCULATOR_RESULT_SETTLE_MS);
 
   function calculateScore() {
-    const U = parseFloat(sliders.urgency.value);
-    const C = parseFloat(sliders.complexity.value);
-    const I = parseFloat(sliders.importance.value);
-    const S = parseFloat(sliders.skill.value);
-    const F = parseFloat(sliders.frequency.value);
-    const A = 0.7;
-
-    const score = ((U + C + I) * (10 - S)) / 20 * A * (1 / (1 - Math.sin(F / 10)));
-    const displayScore = Math.min(score, 8.6);
+    const result = calculateSodsLaw({
+      urgency: parseFloat(sliders.urgency.value),
+      complexity: parseFloat(sliders.complexity.value),
+      importance: parseFloat(sliders.importance.value),
+      skill: parseFloat(sliders.skill.value),
+      frequency: parseFloat(sliders.frequency.value),
+    });
     // Same 0-100% scale as the full calculator page, so results are comparable
-    probabilityPercent = Math.round((displayScore / 8.6) * 100);
+    probabilityPercent = result.probabilityPercent;
+    riskLevel = result.riskLevel;
 
-    // Template always provides score display
-    scoreDisplay!.textContent = displayScore.toFixed(2);
-    updateInterpretation(displayScore);
-  }
-
-  function updateInterpretation(score: number) {
-    let interpretation: string;
-    let cls: CalculatorResultBand;
-
-    if (score < 2) {
-      interpretation = "You're probably safe. What could possibly go wrong?";
-      cls = 'calc-ok';
-    } else if (score < 4) {
-      interpretation = 'A bit risky. Maybe have a backup plan.';
-      cls = 'calc-warn';
-    } else if (score < 6) {
-      interpretation = 'Definitely worrying. Proceed with caution.';
-      cls = 'calc-orange';
-    } else if (score < 8) {
-      interpretation = "Disaster is looming. It's not looking good.";
-      cls = 'calc-danger';
-    } else {
-      interpretation = 'Catastrophe is almost certain. Good luck.';
-      cls = 'calc-dark';
-    }
-
-    // Template always provides interpretation display
-    interpretationDisplay!.textContent = interpretation;
-
-    // Template always provides score section
+    // Template always provides score display, interpretation display and score section
+    scoreDisplay!.textContent = result.score.toFixed(2);
+    interpretationDisplay!.textContent = result.interpretation;
     const scoreSection = el.querySelector('.sod-simple-score')!;
     scoreSection.classList.remove('calc-ok', 'calc-warn', 'calc-orange', 'calc-danger', 'calc-dark');
-    scoreSection.classList.add(cls);
-    riskLevel = CALCULATOR_RISK_LEVELS[cls];
+    scoreSection.classList.add(result.band);
   }
 
   (Object.keys(sliders) as SliderKey[]).forEach((k) => {
@@ -146,8 +119,11 @@ export function SodCalculatorSimple({ onNavigate }: { onNavigate: OnNavigate }) 
     }
   });
 
+  const unregisterTool = registerSodsLawTool();
+
   (el as CleanableElement).cleanup = () => {
     calculatorUsed.flush();
+    unregisterTool();
   };
 
   return el;

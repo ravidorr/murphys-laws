@@ -9,6 +9,8 @@ import {
   setCachedCategories,
   deferUntilIdle
 } from '../utils/category-cache.ts';
+import { registerFilterLawsTool } from '../utils/webmcp-tools.ts';
+import type { CleanableElement } from '../types/app.d.ts';
 
 const SUBMITTERS_DEBOUNCE_MS = 250;
 const SUBMITTERS_LIMIT = 20;
@@ -324,6 +326,25 @@ export function AdvancedSearch({
   populateDropdowns();
   setupLazyLoad();
   setupAttributionTypeahead();
+
+  // The agent tool shows its filters in the form before running the same callback as the Search button, so the
+  // controls always match the results and a later click on Search does not drop the tool's keyword or category
+  function applyToolFilters(filters: AdvancedSearchFilters) {
+    keywordInput.value = filters.q ?? '';
+    selectedCategory = filters.category_id === undefined ? '' : String(filters.category_id);
+    if (selectedCategory && !Array.from(categorySelect.options).some((option) => option.value === selectedCategory)) {
+      // The categories may not have loaded yet; loadFilters later rebuilds the list and keeps this one selected
+      categorySelect.add(new Option(`Category ${selectedCategory}`, String(selectedCategory)));
+    }
+    categorySelect.value = String(selectedCategory);
+    selectedAttribution = filters.attribution ?? '';
+    attributionInput.value = selectedAttribution;
+    attributionHidden.value = selectedAttribution;
+    hideListbox();
+    onSearch(filters);
+  }
+
+  (el as CleanableElement).cleanup = registerFilterLawsTool(applyToolFilters);
 
   const cachedCategories = getCachedCategories();
   if (cachedCategories && cachedCategories.length > 0) {

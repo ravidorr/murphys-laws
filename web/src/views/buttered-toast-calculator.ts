@@ -14,9 +14,10 @@ import {
   parseCalculatorState,
   serializeCalculatorState,
   CALCULATOR_RISK_LEVELS,
-  CALCULATOR_RESULT_SETTLE_MS,
-  type CalculatorResultBand
+  CALCULATOR_RESULT_SETTLE_MS
 } from '@utils/calculator-state.ts';
+import { calculateButteredToast } from '@utils/buttered-toast.ts';
+import { registerButteredToastTool } from '@utils/webmcp-tools.ts';
 import { getCalculatorScenarioLinks, renderInternalLinkList } from '@utils/internal-links.ts';
 import type { CleanableElement } from '../types/app.d.ts';
 
@@ -161,46 +162,20 @@ export function ButteredToastCalculator(): HTMLDivElement {
     sliderValues.friction.textContent = `${F}`;
     sliderValues.inertia.textContent = `${T}`;
 
-    // Calculate rotation factor
-    const totalRotationFactor = (30 * Math.sqrt(H / g) * O * B) / (T + F);
-    const landingOrientation = totalRotationFactor % 1;
-    const probability = (1 - Math.abs(landingOrientation - 0.5) * 2) * 100;
-    const finalProbability = Math.max(0, probability);
+    const result = calculateButteredToast({ height: H, gravity: g, overhang: O, butter: B, friction: F, inertia: T });
 
-    probabilityDisplay.textContent = `${Math.round(finalProbability)}%`;
-    probabilityPercent = Math.round(finalProbability);
-    updateInterpretation(finalProbability);
+    probabilityDisplay.textContent = `${result.probabilityPercent}%`;
+    probabilityPercent = result.probabilityPercent;
+    interpretationDisplay.textContent = result.interpretation;
+    resultDisplay.classList.remove('calc-ok', 'calc-warn', 'calc-orange', 'calc-danger', 'calc-dark');
+    resultDisplay.classList.add(result.band);
+    riskLevel = result.riskLevel;
 
-    const interpretation = interpretationDisplay.textContent as string;
     setExportContent({
       type: ContentType.CONTENT,
       title: 'Buttered Toast Landing Calculator',
-      data: `Probability butter-side down: ${Math.round(finalProbability)}%. ${interpretation}`
+      data: `Probability butter-side down: ${result.probabilityPercent}%. ${result.interpretation}`
     });
-  }
-
-  function updateInterpretation(probability: number) {
-    let interpretation: string;
-    let cls: CalculatorResultBand;
-
-    if (probability > 85) {
-      cls = 'calc-dark';
-      interpretation = "Catastrophe is imminent! Prepare for cleaning.";
-    } else if (probability > 60) {
-      cls = 'calc-danger';
-      interpretation = "You're in the butter zone. High risk of a mess.";
-    } else if (probability > 25) {
-      cls = 'calc-orange';
-      interpretation = "It's a toss-up. May the odds be ever in your favor.";
-    } else {
-      cls = 'calc-ok';
-      interpretation = "Looking good! Toast should land safely.";
-    }
-
-    interpretationDisplay.textContent = interpretation;
-    resultDisplay.classList.remove('calc-ok', 'calc-warn', 'calc-orange', 'calc-danger', 'calc-dark');
-    resultDisplay.classList.add(cls);
-    riskLevel = CALCULATOR_RISK_LEVELS[cls];
   }
 
   (Object.keys(sliders) as ToastSliderKey[]).forEach((k) => {
@@ -328,7 +303,10 @@ export function ButteredToastCalculator(): HTMLDivElement {
     getShareResult: () => ({ probability_percent: probabilityPercent, risk_level: riskLevel })
   });
 
+  const unregisterTool = registerButteredToastTool();
+
   (el as CleanableElement).cleanup = () => {
+    unregisterTool();
     // Report a result that was still settling when the visitor left
     calculatorUsed.flush();
     clearFormulaTimeouts();
