@@ -520,10 +520,8 @@ test('analyze-resource-peaks --format json returns metrics array', () => {
   });
 
   const parsed = JSON.parse(stdout) as { metrics: Array<{ label: string; value: string; timestamp: string }>; sampleCount: number };
-  // A fixture outside the 30-day window prints {"sampleCount":0,"metrics":[]}. The count is not exact: on day 29-31
-  // of a month whose predecessor is shorter, analyze-resource-peaks.sh can read the same month file twice (its "1 month ago"
-  // lands in the current month). A separate change fixes the script and will tighten this to an exact count.
-  assert.ok(parsed.sampleCount >= 1);
+  // A fixture outside the 30-day window prints {"sampleCount":0,"metrics":[]}.
+  assert.equal(parsed.sampleCount, 1);
   assert.deepEqual(parsed.metrics.find((metric) => metric.label === 'Min MemAvailable MB'), {
     label: 'Min MemAvailable MB',
     value: '500 MB',

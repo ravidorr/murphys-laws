@@ -52,8 +52,20 @@ if [ "$SHOW_HEADER" = true ]; then
     echo "================================================================"
 fi
 
+# The file name's month is the local one on purpose: performance-tracker.sh names the file with a local date +%Y-%m.
 CURRENT_MONTH=$(date +%Y-%m)
-PREV_MONTH=$(date -d "1 month ago" +%Y-%m 2>/dev/null || date -v-1m +%Y-%m 2>/dev/null)
+# The previous month is worked out from the current month's number, never by taking a month off today's date: when
+# today's day number is past the end of the previous month (Mar 29-31, Mar 30-31 in a leap year, and the 31st of May,
+# Jul, Oct and Dec), GNU date -d "1 month ago" lands on a day that does not exist and rolls over into the current month
+# (Mar 29 -> "Feb 29" -> Mar 1 in a year that is not a leap year), which would skip the previous month's file and list
+# the current month's twice.
+PREV_YEAR=${CURRENT_MONTH%-*}
+PREV_MONTH_NUMBER=$((10#${CURRENT_MONTH#*-} - 1))
+if [ "$PREV_MONTH_NUMBER" -eq 0 ]; then
+    PREV_YEAR=$((10#$PREV_YEAR - 1))
+    PREV_MONTH_NUMBER=12
+fi
+PREV_MONTH=$(printf '%04d-%02d' "$PREV_YEAR" "$PREV_MONTH_NUMBER")
 
 FILES=""
 PATTERNS=(
@@ -77,7 +89,9 @@ fi
 awk -v days="$DAYS" -v show_header="$SHOW_HEADER" -v role_filter="$METRICS_ROLE" -v output_format="$OUTPUT_FORMAT" -F, '
     BEGIN {
         min_mem_avail = 999999
-        cmd = "date -d \"-" days " days\" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -v-" days "d +%Y-%m-%dT%H:%M:%SZ"
+        # The CSV timestamps are UTC (performance-tracker.sh writes them with date -u), so the cutoff has to be UTC too:
+        # without -u the string carries the local wall-clock time with a Z on it and shifts the window by the zone offset.
+        cmd = "date -u -d \"-" days " days\" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-" days "d +%Y-%m-%dT%H:%M:%SZ"
         cmd | getline cutoff_date
         close(cmd)
 
