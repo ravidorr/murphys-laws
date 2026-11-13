@@ -307,12 +307,18 @@ test('the build step runs the OpenAPI export and the web build, and a failure fa
 });
 
 // ---------------------------------------------------------------------------------------------------------------
-// The nginx part of the "Deploy and restart services" step, run with stand-ins for sudo, nginx and systemctl
+// The nginx part of the "Deploy and restart services" step, run with stand-ins for sudo and nginx. The step installs
+// the new site file and tests it before anything on the live tree is replaced (the guard), and reloads nginx once the
+// new files are in place (the reload).
 
 const deployScript = String(deploySteps[indexOfStep('Deploy and restart services')]?.with?.script ?? '');
-const nginxBlockStart = deployScript.indexOf('echo "==> Deploy: testing nginx and reloading"');
-const nginxBlockEnd = deployScript.indexOf('sudo --preserve-env=GITHUB_SHA');
+const firstRsync = deployScript.indexOf('sudo rsync -a --delete "$STAGING_DIR/web/dist/" "$TARGET_DIR/web/dist/"');
+const rootPartStart = deployScript.indexOf('sudo --preserve-env=GITHUB_SHA');
+const nginxBlockStart = deployScript.indexOf('echo "==> Deploy: testing nginx.conf before the release replaces anything"');
+const nginxBlockEnd = firstRsync;
 const nginxBlock = deployScript.slice(nginxBlockStart, nginxBlockEnd);
+const reloadBlockStart = deployScript.indexOf('echo "==> Deploy: reloading nginx"');
+const reloadBlock = deployScript.slice(reloadBlockStart, rootPartStart);
 const liveSite = '/etc/nginx/sites-available/murphys-laws';
 // Without the live path the sandbox would not redirect the block, and it would run against the real /etc/nginx.
 assert.ok(nginxBlock.includes(liveSite), 'the nginx block of the deploy step names the live site file');
@@ -327,8 +333,8 @@ function createNginxSandbox(previous: string | null): NginxSandbox {
   const calls = path.join(directory, 'calls.log');
   mkdirSync(bin);
   mkdirSync(temp);
-  mkdirSync(path.join(directory, 'target'));
-  writeFileSync(path.join(directory, 'target', 'nginx.conf'), 'new config\n');
+  mkdirSync(path.join(directory, 'staging'));
+  writeFileSync(path.join(directory, 'staging', 'nginx.conf'), 'new config\n');
   if (previous !== null) writeFileSync(site, previous);
   // sudo just runs the command; nginx -t answers according to STUB_NGINX_TEST and records which file it read.
   writeFileSync(path.join(bin, 'sudo'), '#!/bin/sh\nexec "$@"\n');
@@ -344,7 +350,7 @@ function createNginxSandbox(previous: string | null): NginxSandbox {
   // cp fails for the backup (cp -p) when STUB_CP_FAIL=backup, and for the copy of the new file when it is "install".
   writeFileSync(
     path.join(bin, 'cp'),
-    `#!/bin/sh\ncase "$STUB_CP_FAIL:$1" in\n  backup:-p) [ "$STUB_CP_COUNT" = 1 ] && exit 1 ;;\n  install:*nginx.conf) exit 1 ;;\nesac\nexec /bin/cp "$@"\n`,
+    `#!/bin/sh\ncase "$STUB_CP_FAIL:$1" in\n  backup:-p) [ "$STUB_CP_COUNT" = 1 ] && exit 1 ;;\n  restore:-p) case "$3" in *murphys-laws) exit 1 ;; esac ;;\n  install:*nginx.conf) exit 1 ;;\nesac\nexec /bin/cp "$@"\n`,
   );
   for (const name of ['sudo', 'nginx', 'systemctl', 'mktemp', 'cp']) chmodSync(path.join(bin, name), 0o755);
   return { directory, site, temp, calls };
@@ -356,7 +362,7 @@ function runNginxBlock(sandbox: NginxSandbox, nginxTest: 'pass' | 'fail', after 
     env: {
       PATH: `${path.join(sandbox.directory, 'bin')}:${process.env.PATH}`,
       TMPDIR: sandbox.temp,
-      TARGET_DIR: path.join(sandbox.directory, 'target'),
+      STAGING_DIR: path.join(sandbox.directory, 'staging'),
       STUB_NGINX_TEST: nginxTest,
       STUB_CP_FAIL: cpFails,
       STUB_CP_COUNT: '1',
@@ -368,21 +374,61 @@ function runNginxBlock(sandbox: NginxSandbox, nginxTest: 'pass' | 'fail', after 
 const callsOf = (sandbox: NginxSandbox): string[] =>
   existsSync(sandbox.calls) ? readFileSync(sandbox.calls, 'utf8').trim().split('\n') : [];
 
-test('the nginx part of the deploy step is found where the tests expect it', () => {
-  assert.ok(nginxBlockStart > -1 && nginxBlockEnd > nginxBlockStart, 'the block sits before the sudo bash <<INNER section');
-  assert.ok(nginxBlock.includes(liveSite), 'it installs the live site file');
+test('the nginx parts of the deploy step are found where the tests expect them', () => {
+  assert.ok(nginxBlockStart > -1 && firstRsync > nginxBlockStart, 'the guard sits before the first rsync');
+  assert.ok(reloadBlockStart > firstRsync && rootPartStart > reloadBlockStart, 'the reload sits after the rsyncs and before the sudo bash <<INNER section');
+  assert.ok(nginxBlock.includes(liveSite), 'the guard installs the live site file');
   assert.ok(nginxBlock.includes('sudo nginx -t'), 'it tests the configuration');
-  assert.ok(nginxBlock.includes('sudo systemctl reload nginx'), 'it reloads, never restarts, nginx');
-  assert.doesNotMatch(nginxBlock, /systemctl restart/);
+  assert.ok(nginxBlock.includes('sudo cp "$STAGING_DIR/nginx.conf" "$NGINX_SITE"'), 'it installs the uploaded copy, which is there before any rsync');
+  assert.ok(!nginxBlock.includes('TARGET_DIR'), 'it reads nothing from the live tree, which the rsyncs replace');
+  assert.doesNotMatch(nginxBlock, /systemctl/, 'the guard never reloads or restarts nginx');
+  assert.ok(reloadBlock.includes('sudo systemctl reload nginx'), 'the reload reloads, never restarts, nginx');
+  assert.doesNotMatch(reloadBlock, /systemctl restart/);
+  assert.doesNotMatch(reloadBlock, /nginx -t|NGINX_SITE/, 'the reload tests and installs nothing: that was done before the release');
 });
 
-test('a configuration that nginx accepts is installed, tested and then reloaded', () => {
+test('a configuration that nginx accepts is installed and tested, the backup of the previous file is kept until the reload, and nothing is reloaded yet', () => {
   const sandbox = createNginxSandbox('old config\n');
-  const result = runNginxBlock(sandbox, 'pass');
+  const result = runNginxBlock(sandbox, 'pass', 'echo AFTER_NGINX');
   assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /AFTER_NGINX/);
   assert.equal(readFileSync(sandbox.site, 'utf8'), 'new config\n');
-  assert.deepEqual(callsOf(sandbox), ['nginx -t [site: new config]', 'systemctl reload nginx']);
-  assert.deepEqual(readdirSync(sandbox.temp), [], 'the backup of the previous file is removed');
+  assert.deepEqual(callsOf(sandbox), ['nginx -t [site: new config]'], 'tested once, and not reloaded: that waits for the new files');
+  const backups = readdirSync(sandbox.temp);
+  assert.equal(backups.length, 1, 'the backup stays, for the exit trap to put back if the release fails before the reload');
+  assert.equal(readFileSync(path.join(sandbox.temp, backups[0] as string), 'utf8'), 'old config\n');
+});
+
+test('when the exit trap cannot put the previous site file back, it says where the copy is and keeps it', () => {
+  const sandbox = createNginxSandbox('old config\n');
+  const result = runNginxBlock(sandbox, 'pass', 'false', 'restore');
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /ERROR: could not restore .*murphys-laws; the previous copy is in /);
+  const backups = readdirSync(sandbox.temp);
+  assert.equal(backups.length, 1, 'the backup is kept');
+  assert.equal(readFileSync(path.join(sandbox.temp, backups[0] as string), 'utf8'), 'old config\n');
+});
+
+test('after an accepted configuration, a later failure puts the previous site file back; success disarms the trap', () => {
+  const failed = createNginxSandbox('old config\n');
+  const failure = runNginxBlock(failed, 'pass', 'false\necho NOT_REACHED');
+  assert.notEqual(failure.status, 0);
+  assert.doesNotMatch(failure.stdout, /NOT_REACHED/);
+  assert.match(failure.stderr, /ERROR: the deploy failed after nginx accepted nginx\.conf and before nginx was reloaded; restoring the previous site file/);
+  assert.equal(readFileSync(failed.site, 'utf8'), 'old config\n', 'the new file does not stay armed on disk');
+  assert.deepEqual(readdirSync(failed.temp), [], 'the backup is removed once it is back');
+
+  const first = createNginxSandbox(null);
+  const firstFailure = runNginxBlock(first, 'pass', 'false');
+  assert.notEqual(firstFailure.status, 0);
+  assert.ok(!existsSync(first.site), 'a server that had no site file keeps none');
+
+  const done = createNginxSandbox('old config\n');
+  const success = runNginxBlock(done, 'pass', `${reloadBlock.replace('sudo systemctl reload nginx', 'sudo true')}\nfalse`);
+  assert.notEqual(success.status, 0, 'the script still fails on its own failure');
+  assert.equal(readFileSync(done.site, 'utf8'), 'new config\n', 'after the reload the trap no longer restores anything');
+  assert.deepEqual(readdirSync(done.temp), [], 'and the backup is removed');
+  assert.doesNotMatch(success.stderr, /restoring the previous site file/);
 });
 
 test('a configuration that nginx rejects (a module is missing) restores the previous file, fails the deploy and reloads nothing', () => {
@@ -426,11 +472,152 @@ test('a new file that cannot be installed restores the previous one and fails th
   assert.deepEqual(readdirSync(sandbox.temp), []);
 });
 
+// The script without its comment lines, so that a check for a command is not satisfied or broken by a comment about it.
+const commandsOf = (script: string): string =>
+  script
+    .split('\n')
+    .filter((line) => !line.trim().startsWith('#'))
+    .join('\n');
+
+test('the guard runs before anything on the live tree is replaced: no rsync, install of a file, chown or prune comes before it', () => {
+  const before = commandsOf(deployScript.slice(0, nginxBlockStart));
+  assert.ok(nginxBlockStart > -1);
+  // Only empty directories are created (sudo install -d) and the uploaded scripts are checked before the guard.
+  assert.doesNotMatch(before, /\brsync\b/);
+  assert.doesNotMatch(before, /sudo install -m/);
+  assert.doesNotMatch(before, /chown/);
+  assert.doesNotMatch(before, /prune-stale-assets/);
+  assert.doesNotMatch(before, /systemctl/);
+  assert.match(before, /sudo install -d -m 755 "\$TARGET_DIR\/web\/dist"/, 'the directories are still created first');
+  // The old copy of nginx.conf in the live tree is installed by the release, after the guard.
+  assert.ok(at(deployScript, 'sudo install -m 644 "$STAGING_DIR/nginx.conf" "$TARGET_DIR/nginx.conf"') > nginxBlockStart);
+  // The previous site file exists in /etc/nginx only: nothing of it is in the tree that the rsyncs replace.
+  assert.ok(nginxBlockStart < at(deployScript, 'sudo rsync -a --delete "$STAGING_DIR/backend/src/"'));
+});
+
+test('the reload waits for the release: it comes after every rsync, the install of the files, the chown and the pruning, and before the root section', () => {
+  for (const needle of [
+    'sudo rsync -a --delete "$STAGING_DIR/web/dist/" "$TARGET_DIR/web/dist/"',
+    'sudo rsync -a --delete "$STAGING_DIR/shared/modules/" "$TARGET_DIR/shared/modules/"',
+    'sudo install -m 644 "$STAGING_DIR/web/vite.config.js" "$TARGET_DIR/web/vite.config.js"',
+    'sudo chown -R root:root "$TARGET_DIR"',
+    'echo "==> Deploy: pruning stale build assets"',
+  ]) {
+    assert.ok(at(deployScript, needle) < reloadBlockStart, `${needle} comes before the reload`);
+  }
+  assert.ok(reloadBlockStart < at(deployScript, "<<'INNER'"));
+  assert.equal(commandsOf(deployScript).split('systemctl reload nginx').length - 1, 1, 'nginx is reloaded once');
+});
+
+// The whole part of the step that runs before the root section, with sudo replaced by a function that records each
+// command and runs only the file copies and removals inside the sandbox (the site file and its backup); every other command,
+// the rsyncs and installs of the release among them, is only recorded. This is what shows the order of the whole step.
+type OrderSandbox = { directory: string; site: string; trace: string };
+
+function runBeforeRoot(nginxTest: 'pass' | 'fail', previous: string | null, script = deployScript.slice(0, rootPartStart), extraEnv: Record<string, string> = {}) {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'deploy-order-'));
+  const home = path.join(directory, 'home');
+  const staging = path.join(home, 'deploy/murphys-laws');
+  const temp = path.join(directory, 'tmp');
+  const site = path.join(directory, 'murphys-laws');
+  const trace = path.join(directory, 'trace.log');
+  mkdirSync(path.join(staging, 'backend/scripts'), { recursive: true });
+  mkdirSync(temp);
+  for (const name of ['alert-email', 'backup-murphys', 'backup-offsite', 'health-monitor', 'ssl-monitor', 'cost-optimization-report', 'test-backup-restore']) {
+    writeFileSync(path.join(staging, 'backend/scripts', `${name}.sh`), '#!/bin/sh\n');
+  }
+  writeFileSync(path.join(staging, 'nginx.conf'), 'new config\n');
+  if (previous !== null) writeFileSync(site, previous);
+  const sudo = [
+    'sudo() {',
+    '  echo "sudo $*" >> "$TRACE"',
+    '  case "$1" in',
+    '    nginx) [ "$STUB_NGINX_TEST" != fail ] ;;',
+    '    rsync) [ -z "$STUB_RSYNC_FAIL" ] ;;',
+    '    systemctl) [ -z "$STUB_RELOAD_FAIL" ] ;;',
+    '    mktemp) command mktemp "$TMPDIR/nginx-site.XXXXXX" ;;',
+    '    cp|rm) case "${!#}" in "$SANDBOX"/*) command "$@" ;; esac ;;',
+    '  esac',
+    '}',
+  ].join('\n');
+  const result = spawnSync('bash', ['-e', '-c', `${sudo}\n${script.replaceAll(liveSite, site)}`], {
+    env: { PATH: process.env.PATH, HOME: home, TMPDIR: temp, SANDBOX: directory, TRACE: trace, STUB_NGINX_TEST: nginxTest, ...extraEnv },
+    encoding: 'utf8',
+  });
+  const commands = existsSync(trace) ? readFileSync(trace, 'utf8').trim().split('\n') : [];
+  return { result, commands, sandbox: { directory, site, trace } as OrderSandbox };
+}
+
+const touchesTheLiveTree = /^sudo (rsync|install -m|chown|env )/;
+
+test('an accepted configuration is tested first, then the release replaces the live tree, and only then is nginx reloaded', () => {
+  const { result, commands, sandbox } = runBeforeRoot('pass', 'old config\n');
+  assert.equal(result.status, 0, result.stderr);
+  const tested = commands.findIndex((command) => command === 'sudo nginx -t');
+  const mutations = commands.flatMap((command, index) => (touchesTheLiveTree.test(command) ? [index] : []));
+  const reload = commands.findIndex((command) => command === 'sudo systemctl reload nginx');
+  assert.ok(tested > -1 && mutations.length >= 10 && reload > -1, commands.join('\n'));
+  assert.ok(mutations.every((index) => index > tested), 'every replacement of the live tree comes after nginx -t');
+  assert.ok(mutations.every((index) => index < reload), 'every replacement of the live tree comes before the reload');
+  assert.deepEqual(commands.slice(reload + 1).filter((command) => !command.startsWith('sudo rm -f ')), [], 'after the reload the step only removes the backup of the previous site file');
+  assert.deepEqual(
+    commands.slice(0, tested).filter((command) => !/^sudo (install -d|mktemp|cp)/.test(command)),
+    [],
+    'before nginx -t the step only creates directories, backs up and installs the site file (sudo install -d, mktemp, cp)',
+  );
+  assert.equal(readFileSync(sandbox.site, 'utf8'), 'new config\n');
+  assert.deepEqual(readdirSync(path.join(sandbox.directory, 'tmp')), [], 'the backup of the previous site file is removed once nginx is reloaded');
+});
+
+for (const [label, env] of [
+  ['an rsync of the release fails', { STUB_RSYNC_FAIL: '1' }],
+  ['the reload fails', { STUB_RELOAD_FAIL: '1' }],
+] as const) {
+  for (const previous of ['old config\n', null]) {
+    test(`when ${label} after nginx accepted the configuration${previous === null ? ' (a server with no site file)' : ''}, the previous site file is back and the deploy fails`, () => {
+      const { result, commands, sandbox } = runBeforeRoot('pass', previous, undefined, env);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /restoring the previous site file/);
+      if (previous === null) assert.ok(!existsSync(sandbox.site), 'no site file is left armed');
+      else assert.equal(readFileSync(sandbox.site, 'utf8'), previous, 'the new file does not wait on disk for an unrelated reload');
+      assert.deepEqual(readdirSync(path.join(sandbox.directory, 'tmp')), [], 'no backup is left');
+      if ('STUB_RSYNC_FAIL' in env) assert.ok(!commands.some((command) => command.includes('systemctl')), 'nothing is reloaded after the failed rsync');
+    });
+  }
+}
+
+test('a rejected configuration stops the step before anything is replaced or reloaded, and the previous site file is back', () => {
+  for (const previous of ['old config\n', null]) {
+    const { result, commands, sandbox } = runBeforeRoot('fail', previous);
+    assert.notEqual(result.status, 0, 'the deploy fails');
+    assert.match(result.stderr, /ERROR: nginx\.conf could not be installed or nginx rejected it; restoring the previous site file; nginx is not reloaded and nothing on the live tree was replaced/);
+    assert.ok(commands.includes('sudo nginx -t'), 'nginx tested it');
+    assert.deepEqual(commands.filter((command) => touchesTheLiveTree.test(command)), [], 'nothing of the release was installed');
+    assert.deepEqual(commands.filter((command) => /systemctl|--delete/.test(command)), [], 'no reload and no rsync --delete');
+    if (previous === null) {
+      assert.ok(!existsSync(sandbox.site), 'a server that had no site file keeps none');
+    } else {
+      assert.equal(readFileSync(sandbox.site, 'utf8'), previous);
+    }
+  }
+});
+
+test('the harness would catch the old order: with the nginx test moved behind the release, a rejected file is seen after the live tree changed', () => {
+  // The same step with the guard moved to where it used to be (just before the reload, after the prune): the checks
+  // above must then fail, or they would pass for any order.
+  const guard = deployScript.slice(nginxBlockStart, nginxBlockEnd);
+  const withoutGuard = deployScript.slice(0, nginxBlockStart) + deployScript.slice(nginxBlockEnd, rootPartStart);
+  const old = `${withoutGuard.slice(0, withoutGuard.indexOf('echo "==> Deploy: reloading nginx"'))}${guard}${withoutGuard.slice(withoutGuard.indexOf('echo "==> Deploy: reloading nginx"'))}`;
+  const { result, commands } = runBeforeRoot('fail', 'old config\n', old);
+  assert.notEqual(result.status, 0);
+  assert.ok(commands.some((command) => touchesTheLiveTree.test(command)), 'in the old order the release was already installed when nginx said no');
+});
+
 // ---------------------------------------------------------------------------------------------------------------
 // The stale-asset pruning part of the same step, run with a stand-in for sudo against throwaway directories
 
 const pruneBlockStart = deployScript.indexOf('echo "==> Deploy: pruning stale build assets"');
-const pruneBlock = deployScript.slice(pruneBlockStart, nginxBlockStart);
+const pruneBlock = deployScript.slice(pruneBlockStart, reloadBlockStart);
 const liveLogs = '/var/log/nginx/access.log*';
 const rootNvm = '/root/.nvm';
 const pruneScript = path.join(rootDirectory, 'backend/scripts/prune-stale-assets.mjs');
@@ -498,7 +685,7 @@ test('the pruning part of the deploy step is found where the tests expect it', (
   const scriptsRsync = deployScript.indexOf(`sudo rsync -a --delete --exclude='select-law-of-day.mjs' "$STAGING_DIR/backend/scripts/" "$TARGET_DIR/backend/scripts/"`);
   assert.ok(rsync > -1 && scriptsRsync > -1, 'the web root and the scripts are synced');
   assert.ok(pruneBlockStart > rsync && pruneBlockStart > scriptsRsync, 'pruning runs after both rsyncs, so the script and the new build are in place');
-  assert.ok(pruneBlockStart > -1 && pruneBlockStart < nginxBlockStart, 'pruning runs before nginx is tested and reloaded');
+  assert.ok(pruneBlockStart > nginxBlockStart && pruneBlockStart < reloadBlockStart, 'pruning runs after nginx accepted the configuration and before it is reloaded');
   assert.match(pruneBlock, /"\$STAGING_DIR\/web\/dist" "\$TARGET_DIR\/web\/dist" 2>&1'/, 'it covers the staging copy and the web root, both quoted');
   assert.doesNotMatch(pruneBlock, /--dry-run|rm -r/);
   assert.match(pruneBlock, /timeout 180 node /, 'a hang is cut off well before the ssh action gives up');
@@ -908,13 +1095,13 @@ test('the scripts sync keeps the old .mjs on the server and does not bring the s
 
 test('the deploy installs the Law of the Day schedule once the files and the dependencies are in place', () => {
   const install = at(deployScript, installer);
-  const nginxStart = at(deployScript, 'echo "==> Deploy: testing nginx and reloading"');
+  const nginxStart = at(deployScript, 'echo "==> Deploy: testing nginx.conf before the release replaces anything"');
   const rootPart = at(deployScript, "<<'INNER'");
   assert.ok(install > rootPart, 'it runs in the part of the script that runs as root');
   assert.ok(install > at(deployScript, 'npm run migrate'), 'after the dependencies are installed and the migrations ran');
   assert.ok(install > at(deployScript, 'echo "✓ Standalone vulnerability scanner cron job removed"'), 'after the crontab cleanup');
   assert.ok(install < at(deployScript, restartMarker), 'before the restart, where a failure would only be a warning');
-  assert.ok(!deployScript.slice(nginxStart, rootPart).includes(installer), 'the nginx guard does not run it');
+  assert.ok(!deployScript.slice(nginxStart, rootPart).includes(installer), 'the nginx guard and reload do not run it');
 });
 
 /** The install step of the deploy script, run with a stand-in for the installer that exits with the given status. */

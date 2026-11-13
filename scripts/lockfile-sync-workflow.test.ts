@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -45,8 +45,13 @@ const jobs = workflow.jobs ?? {};
 const requiredCheckName = 'lockfile-sync';
 // Intentionally a hard-coded list: adding a job to the workflow means adding it here and to the gate's needs list, which
 // is exactly the review step this test exists to force (a job outside the gate can fail without blocking a merge).
-const checkJobIds = ['lockfile-versions', 'scripts-tests'];
+const checkJobIds = ['lockfile-versions', 'nginx-config', 'scripts-tests'];
 const gateId = 'ci-gate';
+// The steps that install a package from the apt mirror of the runner or the container, retried and bounded.
+const aptSteps = [
+  { job: 'scripts-tests', name: 'Install bc' },
+  { job: 'nginx-config', name: 'Install nginx, its brotli module and openssl' },
+];
 
 function jobNamed(id: string): Job {
   const job = jobs[id];
@@ -108,9 +113,10 @@ test('the jobs are exactly the checks plus the gate, and nothing in them can swa
       assert.equal(step.if, undefined, `${label} has a condition`);
       assert.equal(step['continue-on-error'], undefined, `${label} has continue-on-error`);
       assert.equal(step.shell, undefined, `${label} overrides the shell, which is bash -e by default`);
-      // The only `||` allowed records a failing command's status (`|| status=$?`, in the bc step, which then reports it).
-      const isBcStep = id === 'scripts-tests' && step.name === 'Install bc';
-      const run = isBcStep ? (step.run ?? '').replaceAll('|| status=$?', '') : (step.run ?? '');
+      // The only `||` allowed records a failing command's status (`|| status=$?`, in the apt install steps, which then
+      // report it).
+      const isAptStep = aptSteps.some((apt) => apt.job === id && apt.name === step.name);
+      const run = isAptStep ? (step.run ?? '').replaceAll('|| status=$?', '') : (step.run ?? '');
       assert.ok(!/\|\||;\s*(true|:)(\s|;|$)|set \+[eo]/.test(run), `${label} could swallow a failing command`);
     }
   }
@@ -214,11 +220,11 @@ test('the gate script passes only when every job it needs succeeded', () => {
   assert.equal(combinations, outcomes.length ** variables.length);
 });
 
-// Runs the "Install bc" step with fake timeout, sudo, apt-get and sleep and a PATH that holds nothing else, so the real
+// Runs an apt install step with fake timeout, sudo, apt-get and sleep and a PATH that holds nothing else, so the real
 // package manager is never touched. apt-get fails its first `updateFailures` update calls and, when `installFails`, every
 // install call.
-function runInstallBc(options: { updateFailures: number; installFails?: boolean; bcPresent?: boolean }) {
-  const directory = mkdtempSync(path.join(os.tmpdir(), 'install-bc-'));
+function runAptStep(script: string, options: { updateFailures: number; installFails?: boolean; presentCommand?: string }) {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'apt-step-'));
   try {
     const bin = path.join(directory, 'bin');
     const log = path.join(directory, 'log');
@@ -231,6 +237,7 @@ function runInstallBc(options: { updateFailures: number; installFails?: boolean;
     fake('timeout', 'echo "timeout $1" >> "$LOG"\nshift\nexec "$@"');
     fake('sudo', 'echo "sudo $1" >> "$LOG"\nexec "$@"');
     fake('sleep', 'echo "sleep $1" >> "$LOG"');
+    fake('dpkg', 'echo "dpkg $*" >> "$LOG"');
     fake(
       'apt-get',
       [
@@ -246,11 +253,10 @@ function runInstallBc(options: { updateFailures: number; installFails?: boolean;
         'fi',
       ].join('\n'),
     );
-    if (options.bcPresent) {
-      fake('bc', 'exit 0');
+    if (options.presentCommand) {
+      fake(options.presentCommand, 'exit 0');
     }
 
-    const script = stepRunning('scripts-tests', /apt-get install[^\n]* bc\b/).step.run ?? '';
     const result = runScript(script, {
       PATH: bin,
       LOG: log,
@@ -263,6 +269,7 @@ function runInstallBc(options: { updateFailures: number; installFails?: boolean;
     const arguments_ = (prefix: string) => lines.filter((line) => line.startsWith(`${prefix} `)).map((line) => line.slice(prefix.length + 1));
     return {
       status: result.status,
+      stdout: result.stdout,
       updates: count('apt-get update'),
       installs: count('apt-get install'),
       sleeps: count('sleep'),
@@ -276,6 +283,26 @@ function runInstallBc(options: { updateFailures: number; installFails?: boolean;
     rmSync(directory, { recursive: true, force: true });
   }
 }
+
+type AptOptions = { updateFailures: number; installFails?: boolean };
+
+function runInstallBc(options: AptOptions & { bcPresent?: boolean }) {
+  const script = stepRunning('scripts-tests', /apt-get install[^\n]* bc\b/).step.run ?? '';
+  return runAptStep(script, { ...options, presentCommand: options.bcPresent ? 'bc' : undefined });
+}
+
+const nginxPackages = ['nginx', 'libnginx-mod-http-brotli-static', 'openssl', 'git', 'ca-certificates'];
+
+function runInstallNginx(options: AptOptions) {
+  const script = stepRunning('nginx-config', /apt-get install[^\n]* nginx\b/).step.run ?? '';
+  return runAptStep(script, options);
+}
+
+// Both apt steps are retried and bounded in the same way; the tests below hold each of them to the same rules.
+const aptInstallers = [
+  { label: 'bc', jobId: 'scripts-tests', run: (options: AptOptions) => runInstallBc(options) },
+  { label: 'nginx', jobId: 'nginx-config', run: (options: AptOptions) => runInstallNginx(options) },
+];
 
 test('the bc step does nothing when bc is already installed', () => {
   const run = runInstallBc({ updateFailures: 0, bcPresent: true });
@@ -297,30 +324,85 @@ test('the bc step installs bc, and retries the apt mirror with a wait between tr
   assert.deepEqual(retried.sleepSeconds, [20, 40], 'each try waits longer than the one before');
 });
 
-test('every apt call in the bc step runs under a timeout, so a hung mirror cannot hold the job', () => {
-  const run = runInstallBc({ updateFailures: 1 });
+test('the nginx step installs nginx, its brotli module, openssl and what checkout needs, and retries the apt mirror with a wait between tries', () => {
+  const first = runInstallNginx({ updateFailures: 0 });
+  assert.equal(first.status, 0);
+  assert.deepEqual(first.commands, ['update -qq', `install -y -qq ${nginxPackages.join(' ')}`], 'a non-interactive install, after an update');
+  assert.equal(first.sudos, 0, 'the container runs as root and has no sudo');
+  assert.deepEqual([first.sleeps, first.timeouts], [0, 2]);
 
-  assert.equal(run.timeouts, run.updates + run.installs);
+  const retried = runInstallNginx({ updateFailures: 2 });
+  assert.equal(retried.status, 0);
+  assert.deepEqual([retried.updates, retried.installs, retried.timeouts], [3, 1, 4]);
+  assert.deepEqual(retried.sleepSeconds, [20, 40], 'each try waits longer than the one before');
 });
 
-test('the bc step cannot outlast the scripts job: three tries, each apt call bounded, fit inside the job timeout', () => {
-  const run = runInstallBc({ updateFailures: 0, installFails: true });
-  const minutes = jobNamed('scripts-tests')['timeout-minutes'] as number;
+for (const { label, jobId, run: runStep } of aptInstallers) {
+  test(`every apt call in the ${label} step runs under a timeout, so a hung mirror cannot hold the job`, () => {
+    const run = runStep({ updateFailures: 1 });
 
-  assert.equal(run.updates, 3, 'three tries, no more');
-  assert.ok(run.timeoutSeconds.length > 0 && run.timeoutSeconds.every((seconds) => Number.isInteger(seconds) && seconds > 0), 'every bound is a positive number of seconds (0 would disable it)');
-  const worstCase = run.timeoutSeconds.reduce((sum, seconds) => sum + seconds, 0) + run.sleepSeconds.reduce((sum, seconds) => sum + seconds, 0);
-  assert.ok(worstCase <= (minutes * 60) / 2, `the retries (${worstCase} s) leave half of the ${minutes} minute job timeout for everything else`);
-});
+    assert.equal(run.timeouts, run.updates + run.installs);
+  });
 
-test('the bc step fails the job when the package never installs, and does not wait after the last try', () => {
-  for (const options of [{ updateFailures: 99 }, { updateFailures: 0, installFails: true }]) {
-    const run = runInstallBc(options);
+  test(`the ${label} step cannot outlast its job: three tries, each apt call bounded, fit inside the job timeout`, () => {
+    const run = runStep({ updateFailures: 0, installFails: true });
+    const minutes = jobNamed(jobId)['timeout-minutes'] as number;
 
-    assert.equal(run.status, 1, JSON.stringify(options));
-    assert.ok(run.updates > 1, 'it retried');
-    assert.equal(run.sleeps, run.updates - 1, 'no wait after the last try');
+    assert.equal(run.updates, 3, 'three tries, no more');
+    assert.ok(run.timeoutSeconds.length > 0 && run.timeoutSeconds.every((seconds) => Number.isInteger(seconds) && seconds > 0), 'every bound is a positive number of seconds (0 would disable it)');
+    const worstCase = run.timeoutSeconds.reduce((sum, seconds) => sum + seconds, 0) + run.sleepSeconds.reduce((sum, seconds) => sum + seconds, 0);
+    assert.ok(worstCase <= (minutes * 60) / 2, `the retries (${worstCase} s) leave half of the ${minutes} minute job timeout for everything else`);
+  });
+
+  test(`the ${label} step fails the job when the package never installs, says so, and does not wait after the last try`, () => {
+    for (const options of [{ updateFailures: 99 }, { updateFailures: 0, installFails: true }]) {
+      const run = runStep(options);
+
+      assert.equal(run.status, 1, JSON.stringify(options));
+      assert.ok(run.updates > 1, 'it retried');
+      assert.equal(run.sleeps, run.updates - 1, 'no wait after the last try');
+      assert.match(run.stdout, /::warning::installing .* failed with exit status 1 \(attempt 1 of 3\)/);
+      assert.match(run.stdout, /::error::installing .* failed three times/);
+    }
+  });
+}
+
+test("the nginx job tests nginx.conf with the server's nginx: the ubuntu:24.04 container, packages installed, then checkout, then the check last", () => {
+  const job = jobNamed('nginx-config') as Job & { container?: unknown; 'runs-on'?: unknown };
+  const steps = stepsOf('nginx-config');
+  const install = stepRunning('nginx-config', /apt-get install[^\n]* nginx\b/);
+  const check = stepRunning('nginx-config', /^bash scripts\/check-nginx-config\.sh nginx\.conf$/);
+  const checkoutIndex = steps.findIndex((step) => step.uses?.split('@')[0] === 'actions/checkout');
+
+  // Ubuntu 24.04 is the server's distribution, and its archive has the nginx 1.24 and the brotli module the server runs;
+  // ubuntu-latest does not stay on it. No tag that moves to another release, and no other image.
+  assert.equal(job.container, 'ubuntu:24.04');
+  assert.equal(job['runs-on'], 'ubuntu-latest');
+  assert.ok(checkoutIndex !== -1, 'the repository is checked out');
+  assert.ok(install.index < checkoutIndex, 'the git client and the certificate bundle are installed before checkout needs them');
+  assert.ok(checkoutIndex < check.index, 'nginx.conf is checked out before it is tested');
+  assert.equal(check.index, steps.length - 1, 'the check is the last step, so nothing after it can mask its result');
+  assert.equal(install.step.env?.DEBIAN_FRONTEND, 'noninteractive', 'apt never waits for an answer');
+  assert.ok((job['timeout-minutes'] as number) <= 15, 'a few minutes, not the 6-hour default');
+  for (const step of steps) {
+    assert.ok(!/\bsudo\b/.test(step.run ?? ''), 'the container runs as root and has no sudo');
   }
+});
+
+test('the nginx check script exists, is executable, parses, and tests the nginx.conf that both deploys install', () => {
+  const script = path.join(rootDirectory, 'scripts/check-nginx-config.sh');
+
+  assert.ok(statSync(script).mode & 0o111, 'scripts/check-nginx-config.sh is executable');
+  assert.equal(spawnSync('bash', ['-n', script], { encoding: 'utf8' }).status, 0, 'it parses');
+  assert.ok(existsSync(path.join(rootDirectory, 'nginx.conf')), 'nginx.conf is at the repository root, where the job and both deploys read it');
+});
+
+test('the gate names every job in its failure message, so a red check says which job failed', () => {
+  const run = jobNamed(gateId).steps?.[0]?.run ?? '';
+
+  assert.match(run, /lockfile-versions=\$LOCKFILE_VERSIONS_RESULT/);
+  assert.match(run, /scripts-tests=\$SCRIPTS_TESTS_RESULT/);
+  assert.match(run, /nginx-config=\$NGINX_CONFIG_RESULT/);
 });
 
 test('npm run test:scripts runs every scripts/*.test.ts file, among them the workflow contract tests', () => {

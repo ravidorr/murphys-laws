@@ -8,6 +8,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- A bad `nginx.conf` can no longer be half-deployed. (1) CI: a new `nginx config` job in `lockfile-sync.yml` (a `needs`
+  of the required `lockfile-sync` gate, whose name and the names of the other jobs are unchanged, so a failing nginx
+  check fails that check) runs `scripts/check-nginx-config.sh` in an `ubuntu:24.04` container, the server's
+  distribution, with the distribution nginx 1.24.0 and `libnginx-mod-http-brotli-static`: the file is installed as
+  `sites-available/murphys-laws`, enabled through `sites-enabled` with the default site removed, next to throwaway
+  stand-ins for the certificate, the key, the Diffie-Hellman parameters (the RFC 7919 group Certbot ships) and Certbot's
+  `options-ssl-nginx.conf`, and `nginx -t` runs on it. The package install retries three times with a timeout on each
+  `apt-get` call (the apt calls take at most 7 minutes, as in the `bc` step), finishes an interrupted `dpkg` before each
+  try (a timeout can kill `apt-get` mid-unpack) and fails the job with the exit status when it never succeeds. The
+  script refuses to run where a certificate or the site file already exists, so it cannot replace the real ones on a
+  server. Run against the real `nginx.conf` in the container it passes; with an unknown directive added it fails with
+  `unknown directive "brotli_nonexistent"`, with an unterminated block with `unexpected end of file, expecting "}"`, and
+  with the brotli package missing the script says so, while a plain `nginx -t` on the same file fails with `unknown
+  directive "brotli_static"` (the job installs the package itself, so it does not say whether the production server has
+  it). (2) The GitHub Actions deploy installed `nginx.conf` and ran `nginx -t` only after `rsync --delete` had replaced
+  `web/dist`, the backend, the scripts, the database schema and migrations and the config and after the asset pruning,
+  so a rejected file left the new frontend next to the old backend until the next deploy. It now copies the uploaded
+  `nginx.conf` into `sites-available` and runs `nginx -t` before the first `rsync`, with the restore-on-rejection and
+  `exit` behaviour unchanged (the previous site file is put back, or the new one removed on a server that had none, and
+  the deploy fails with the nginx message), so nothing on the live tree changes when nginx says no. Only the reload
+  stays late: it still comes after the rsyncs, the installs and the pruning, so nginx does not serve the new
+  configuration next to the old web build. Until the reload the previous site file is kept, and an exit trap puts it
+  back if a sync, an install or the reload fails, so on any failure the script can see the new file does not wait on
+  disk for an unrelated reload (Certbot renewal, a package upgrade, a reboot) to load it next to a half-copied release;
+  after a successful reload the backup is removed (a removal that fails only warns) and a later failure leaves the site
+  file alone. (3) `npm run deploy` ran `cp && nginx -t && reload` with no restore, after the other syncs, so a rejected
+  file stayed in `sites-available` for the next reload or restart to fail on. It now uploads `nginx.conf` as
+  `nginx.conf.next`, and one `ssh` command backs up the site file, installs the upload, runs `nginx -t` and on rejection
+  restores the previous file (or removes the new one), deletes the upload and fails, before the first sync. On
+  acceptance the backup stays; a failure of a sync or of the reload restores the previous file by a second `ssh`
+  command, and after the reload the upload becomes the repository copy `nginx.conf` and the backup is removed (a failure
+  of that last step only warns). The reload comes after the syncs. Tests: `scripts/lockfile-sync-workflow.test.ts` pins
+  the new job (container, order of steps, retries and bounds for both apt steps, the gate matrix now over three results,
+  125 combinations); `scripts/check-nginx-config.test.ts` runs the script with stand-ins for nginx and openssl;
+  `scripts/deploy-workflow.test.ts` runs the whole part of the deploy step that precedes the root section with a
+  recording `sudo` and pins that nothing on the live tree is replaced before `nginx -t`, that a rejection replaces and
+  reloads nothing, and (against the old order) that the check would notice; `scripts/deploy-script-nginx.test.ts` runs
+  `npm run deploy` itself with stand-ins for `npm`, `rsync`, `ssh`, `tsx` and, on the server side, `sudo` (which stands
+  in for `nginx` and `systemctl` too), run by `sh`, so the quoting chain of the remote commands is the real one; both
+  deploy paths are also tested for a failure after nginx accepted the file (a sync, the reload) and after the reload.
+  `shared/docs/DEPLOYMENT.md` ("A rejected nginx configuration") and `shared/docs/DISASTER-RECOVERY.md` describe it.
+  Backend bumped to `2.3.94` (`backend/scripts/deploy.ts`); root to `2.6.249`.
 - `analyze-resource-peaks.sh` now checks its window and reads every month file the window touches. The review of the
   earlier month-boundary fix found six older faults, all fixed here. (1) The 30-day cutoff was read from `date` inside
   `awk` and never checked: when `date` failed or printed nothing the cutoff was empty, every row passed the filter and

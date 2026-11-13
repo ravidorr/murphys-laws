@@ -1044,7 +1044,9 @@ describe('deploy wiring', () => {
   it('npm run deploy checks its scripts exist before the first sync', () => {
     const text = readFileSync(path.join(scriptsDir, 'deploy.ts'), 'utf8');
     expect(text.indexOf('nothing was changed on the server')).toBeGreaterThan(-1);
-    expect(text.indexOf('nothing was changed on the server')).toBeLessThan(text.indexOf('Syncing web dist folder'));
+    // The first change to the server is now the upload of nginx.conf, and the syncs sit in a function that deploy() calls.
+    expect(text.indexOf('nothing was changed on the server')).toBeLessThan(text.indexOf("'Uploading nginx config'"));
+    expect(text.indexOf('nothing was changed on the server')).toBeLessThan(text.indexOf('await syncReleaseAndReloadNginx()'));
   });
 
   it('the workflow writes the recipient secrets to the server .env, and the cleanup removes only the empty optional ones', () => {

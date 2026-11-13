@@ -1,12 +1,15 @@
 name: Root checks
 
-# The checks that belong to the repository as a whole rather than to one package: the lockfile versions and the tests
-# of the root scripts, workflows and deploy tooling (scripts/*.test.ts, npm run test:scripts).
+# The checks that belong to the repository as a whole rather than to one package: the lockfile versions, the tests
+# of the root scripts, workflows and deploy tooling (scripts/*.test.ts, npm run test:scripts), and nginx.conf, which
+# the server's own nginx must accept (nginx -t).
 #
 # There is no path filter, so every pull request gets these checks and the lockfile-sync gate below can be a required
 # status check. The scripts tests read files all over the repository (backend/scripts, the workflows, lighthouserc.json,
 # mcp/ and more) and some of them depend on the clock, so no list of paths could say when they need to run. They take
-# about 20 seconds (the suite alone; the job around it takes longer).
+# about 20 seconds (the suite alone; the job around it takes longer). The nginx check cannot be a script test: it needs
+# nginx 1.24 and the brotli module, and only an ubuntu:24.04 container pins that release (ubuntu-latest will move), so
+# it is a job of its own.
 #
 # The file keeps its old name, lockfile-sync.yml, and so does the required status check, lockfile-sync; only the
 # workflow's display name changed. The required status check is reported by the gate job at the end of this file, which
@@ -96,12 +99,53 @@ jobs:
       - name: Run the scripts tests
         run: npm run test:scripts
 
+  # nginx.conf is deployed to /etc/nginx by both deploy paths, and a file that the server's nginx rejects used to be
+  # found only by the deploy itself. This job runs `nginx -t` on it with the distribution nginx of the server (Ubuntu
+  # 24.04, nginx 1.24) and the libnginx-mod-http-brotli-static package that brotli_static needs; scripts/
+  # check-nginx-config.sh sets the file up as the server has it, with throwaway TLS files. The container is what pins
+  # the nginx version: ubuntu-latest will move to another release, the server will not move with it.
+  nginx-config:
+    name: nginx config
+    runs-on: ubuntu-latest
+    container: ubuntu:24.04
+    timeout-minutes: 15
+
+    steps:
+      # The minimal image has no git client and no certificate bundle (checkout needs both for a normal fetch), and nginx
+      # comes from the container's apt mirror, which can be slow or unreachable, so retry it like the bc step above:
+      # bounded so that the apt calls of all tries together (at most 7 minutes) fit in the job timeout. The container
+      # runs as root, so there is no sudo. A timeout that kills apt-get in the middle of an unpack leaves dpkg
+      # half-done and every later try would fail on it, so each try first finishes any interrupted configuration (a
+      # no-op on a clean system).
+      - name: Install nginx, its brotli module and openssl
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          for attempt in 1 2 3; do
+            status=0
+            dpkg --configure -a && timeout 45 apt-get update -qq && timeout 75 apt-get install -y -qq nginx libnginx-mod-http-brotli-static openssl git ca-certificates || status=$?
+            if [ "$status" -eq 0 ]; then
+              exit 0
+            fi
+            echo "::warning::installing nginx failed with exit status ${status} (attempt ${attempt} of 3)"
+            if [ "$attempt" -lt 3 ]; then
+              sleep $((attempt * 20))
+            fi
+          done
+          echo "::error::installing nginx failed three times"
+          exit 1
+
+      - uses: actions/checkout@v7
+
+      - name: Test nginx.conf with nginx -t
+        run: bash scripts/check-nginx-config.sh nginx.conf
+
   # The status check that branch protection requires. It runs even when a job above failed or was cancelled
   # (if: always()), and passes only when every one of them succeeded, so a skipped job is a failure here. A job
   # missing from the needs list is not seen by the gate; the workflow test keeps that list complete.
   ci-gate:
     name: lockfile-sync
-    needs: [lockfile-versions, scripts-tests]
+    needs: [lockfile-versions, scripts-tests, nginx-config]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -110,10 +154,11 @@ jobs:
         env:
           LOCKFILE_VERSIONS_RESULT: ${{ needs.lockfile-versions.result }}
           SCRIPTS_TESTS_RESULT: ${{ needs.scripts-tests.result }}
+          NGINX_CONFIG_RESULT: ${{ needs.nginx-config.result }}
         run: |
-          if [ "$LOCKFILE_VERSIONS_RESULT" = "success" ] && [ "$SCRIPTS_TESTS_RESULT" = "success" ]; then
+          if [ "$LOCKFILE_VERSIONS_RESULT" = "success" ] && [ "$SCRIPTS_TESTS_RESULT" = "success" ] && [ "$NGINX_CONFIG_RESULT" = "success" ]; then
             echo "Root checks completed successfully."
             exit 0
           fi
-          echo "::error::Root checks did not all succeed: lockfile-versions=$LOCKFILE_VERSIONS_RESULT scripts-tests=$SCRIPTS_TESTS_RESULT"
+          echo "::error::Root checks did not all succeed: lockfile-versions=$LOCKFILE_VERSIONS_RESULT scripts-tests=$SCRIPTS_TESTS_RESULT nginx-config=$NGINX_CONFIG_RESULT"
           exit 1

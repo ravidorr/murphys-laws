@@ -4,8 +4,9 @@
  *
  * This script:
  * 1. Builds the web project locally
- * 2. Syncs web dist and backend source/runtime files to the server
- * 3. Restarts PM2 services safely
+ * 2. Installs nginx.conf and has nginx test it first, restoring the previous site file and stopping when it is rejected
+ * 3. Syncs web dist and backend source/runtime files to the server
+ * 4. Reloads nginx, runs the migrations and restarts PM2 services safely
  *
  * Usage: npm run deploy (from repo root)
  */
@@ -46,6 +47,55 @@ function exec(cmd: string, description: string): void {
   }
 }
 
+const NGINX_SITE = '/etc/nginx/sites-available/murphys-laws';
+const NGINX_UPLOAD = `${DROPLET_PATH}/nginx.conf.next`;
+const NGINX_PREVIOUS = `${DROPLET_PATH}/nginx.site.previous`;
+
+// The nginx commands below run on the server, each as one command under the user's shell (no bash-only syntax, no variables,
+// so nothing in them needs the local shell to be told to leave a `$` alone, and no double quote, which would end the
+// argument of ssh).
+//
+// Puts the previous site file back (or, on a server that had none, removes the new one) and deletes the upload. It exits
+// non-zero when it cannot restore, and says where the previous copy is.
+const NGINX_RESTORE = [
+  `if sudo test -f ${NGINX_PREVIOUS}; then`,
+  `sudo cp -p ${NGINX_PREVIOUS} ${NGINX_SITE} || { echo 'ERROR: could not restore ${NGINX_SITE}; the previous copy is in ${NGINX_PREVIOUS}' >&2; exit 1; };`,
+  `sudo rm -f ${NGINX_PREVIOUS};`,
+  `else sudo rm -f ${NGINX_SITE}; fi;`,
+  `sudo rm -f ${NGINX_UPLOAD}`,
+].join(' ');
+
+// Keeps the previous site file, puts the uploaded one in its place and tests it. When nginx rejects it, or it cannot be
+// installed, the previous file goes back and the command exits non-zero, which stops the deploy before anything else is
+// synced. When nginx accepts it, the previous file and the upload stay (deploy() restores the previous file if the release
+// fails before nginx is reloaded, so on any failure the script can see the new file does not wait on disk for an unrelated
+// reload; a killed deploy skips that, and the previous copy is then in nginx.site.previous) and nothing is reloaded.
+const NGINX_INSTALL_AND_TEST = [
+  `sudo rm -f ${NGINX_PREVIOUS} || exit 1;`,
+  `if sudo test -f ${NGINX_SITE}; then sudo cp -p ${NGINX_SITE} ${NGINX_PREVIOUS} || exit 1; fi;`,
+  `if sudo cp ${NGINX_UPLOAD} ${NGINX_SITE} && sudo nginx -t; then :; else`,
+  `echo 'ERROR: nginx.conf could not be installed or nginx rejected it; restoring the previous site file, nginx is not reloaded and nothing on the server was replaced' >&2;`,
+  `${NGINX_RESTORE};`,
+  `exit 1;`,
+  `fi`,
+].join(' ');
+
+// After nginx was reloaded with the new file: the upload becomes the repository copy, nginx.conf, like the one the other
+// syncs leave there, and the backup of the previous site file is no longer needed.
+const NGINX_FINISH = `sudo mv -f ${NGINX_UPLOAD} ${DROPLET_PATH}/nginx.conf && sudo rm -f ${NGINX_PREVIOUS}`;
+
+function restoreNginxSite(): void {
+  log('\nThe release failed before nginx was reloaded; putting the previous nginx site file back...', 'yellow');
+  try {
+    exec(`ssh ${DROPLET_HOST} "${NGINX_RESTORE}"`, 'Restoring the previous nginx site file');
+  } catch (error) {
+    log(
+      `WARNING: the previous nginx site file was not restored (${error instanceof Error ? error.message : String(error)}); ${NGINX_SITE} holds the new, tested file and the previous copy is in ${NGINX_PREVIOUS} if it exists, so put it back before anything reloads nginx`,
+      'red'
+    );
+  }
+}
+
 // Installed on the server without ignoring errors, because they load the shared alert helper.
 const STRICT_MONITORING_SCRIPTS = [
   'alert-email.sh',
@@ -57,18 +107,7 @@ const STRICT_MONITORING_SCRIPTS = [
   'test-backup-restore.sh',
 ];
 
-async function deploy(): Promise<void> {
-  log('\nStarting deployment to production droplet\n', 'blue');
-
-  // Check before the first sync, so a missing file cannot leave a half-applied release.
-  for (const script of STRICT_MONITORING_SCRIPTS) {
-    if (!existsSync(resolve(BACKEND_ROOT, 'scripts', script))) {
-      throw new Error(`backend/scripts/${script} is missing; nothing was changed on the server`);
-    }
-  }
-
-  exec('npm run build', 'Building project locally');
-
+async function syncReleaseAndReloadNginx(): Promise<void> {
   log('\nSyncing web/dist/ folder to droplet...', 'blue');
   exec(
     `rsync -avz --delete web/dist/ ${DROPLET_HOST}:${DROPLET_PATH}/web/dist/`,
@@ -115,16 +154,58 @@ async function deploy(): Promise<void> {
     'Syncing web vite config'
   );
 
+  // The site file was installed and accepted by nginx -t before the first sync, so only the reload is left. It waits
+  // until the new files are in place so that nginx does not serve the new configuration next to the old web build.
+  log('\nReloading nginx...', 'blue');
   exec(
-    `rsync -avz nginx.conf ${DROPLET_HOST}:${DROPLET_PATH}/`,
-    'Syncing nginx config'
+    `ssh ${DROPLET_HOST} "sudo systemctl reload nginx"`,
+    'Reloading nginx'
+  );
+}
+
+async function deploy(): Promise<void> {
+  log('\nStarting deployment to production droplet\n', 'blue');
+
+  // Check before the first sync, so a missing file cannot leave a half-applied release.
+  for (const script of STRICT_MONITORING_SCRIPTS) {
+    if (!existsSync(resolve(BACKEND_ROOT, 'scripts', script))) {
+      throw new Error(`backend/scripts/${script} is missing; nothing was changed on the server`);
+    }
+  }
+
+  exec('npm run build', 'Building project locally');
+
+  // A bad nginx.conf must stop the deploy before anything on the server is replaced, or the new frontend would run next
+  // to the old backend until the next deploy. nginx only tests the files under /etc/nginx, so the new file goes
+  // into sites-available, where nginx -t reads it, and the previous one is put back when nginx rejects it. The old
+  // "cp && nginx -t && reload" left the rejected file there, and the next reload or restart of nginx failed on it.
+  exec(
+    `rsync -avz nginx.conf ${DROPLET_HOST}:${NGINX_UPLOAD}`,
+    'Uploading nginx config'
+  );
+  log('\nTesting the nginx configuration...', 'blue');
+  exec(
+    `ssh ${DROPLET_HOST} "${NGINX_INSTALL_AND_TEST}"`,
+    'Installing and testing the nginx config'
   );
 
-  log('\nUpdating nginx configuration...', 'blue');
-  exec(
-    `ssh ${DROPLET_HOST} "sudo cp ${DROPLET_PATH}/nginx.conf /etc/nginx/sites-available/murphys-laws && sudo nginx -t && sudo systemctl reload nginx"`,
-    'Updating and reloading nginx'
-  );
+  // From here to the reload the new site file is installed but not loaded: a failure in between puts the previous file back.
+  try {
+    await syncReleaseAndReloadNginx();
+  } catch (error) {
+    restoreNginxSite();
+    throw error;
+  }
+  // Only bookkeeping is left, and nginx already runs the new file: a failure here must neither restore the previous file
+  // (it would undo what nginx loaded) nor stop the deploy before the migrations and the restart.
+  try {
+    exec(`ssh ${DROPLET_HOST} "${NGINX_FINISH}"`, 'Keeping nginx.conf as the repository copy');
+  } catch (error) {
+    log(
+      `WARNING: nginx.conf was not kept as the repository copy and the backup of the previous site file was not removed (${error instanceof Error ? error.message : String(error)}); nginx runs the new file, and ${NGINX_UPLOAD} and ${NGINX_PREVIOUS} may still be on the server`,
+      'yellow'
+    );
+  }
 
   log('\nUpdating server maintenance scripts...', 'blue');
   // Sourced by the monitoring scripts below to resolve the alert address. They fall back to the repo

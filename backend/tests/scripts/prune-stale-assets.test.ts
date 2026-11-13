@@ -957,12 +957,13 @@ describe('deploy wiring', () => {
     return index;
   };
 
-  it('prunes after the web root is synced and before nginx is reloaded', () => {
+  it('prunes after the nginx configuration was accepted and the web root is synced, and before nginx is reloaded', () => {
     const prune = lineOf('prune-stale-assets.mjs');
 
     expect(prune).toBeGreaterThan(lineOf('sudo rsync -a --delete "$STAGING_DIR/web/dist/" "$TARGET_DIR/web/dist/"'));
     expect(prune).toBeGreaterThan(lineOf(`sudo rsync -a --delete --exclude='select-law-of-day.mjs' "$STAGING_DIR/backend/scripts/" "$TARGET_DIR/backend/scripts/"`));
-    expect(prune).toBeLessThan(lineOf('echo "==> Deploy: testing nginx and reloading"'));
+    expect(prune).toBeGreaterThan(lineOf('echo "==> Deploy: testing nginx.conf before the release replaces anything"'));
+    expect(prune).toBeLessThan(lineOf('echo "==> Deploy: reloading nginx"'));
   });
 
   it('covers the staging copy and the web root, and never removes a directory', () => {
