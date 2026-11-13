@@ -149,12 +149,22 @@ describe('LawService.selectLawOfTheDay', () => {
       const other = addLaw(db, 'Other law');
       upvote(popular);
 
-      feature(popular, sqliteDay('-364 days'));
-      expect(service.selectLawOfTheDay('2026-01-01')).toEqual({ lawId: other, featuredDate: '2026-01-01', created: true });
+      // SQLite reads the real clock, so the test is run again if the UTC date changes while it runs (00:00 UTC)
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        db.prepare('DELETE FROM law_of_the_day_history').run();
+        const before = sqliteDay('+0 days');
+        feature(popular, sqliteDay('-364 days'));
+        const stillCounts = service.selectLawOfTheDay('2026-01-01');
+        db.prepare('DELETE FROM law_of_the_day_history').run();
+        feature(popular, sqliteDay('-365 days'));
+        const overAgain = service.selectLawOfTheDay('2026-01-02');
+        if (sqliteDay('+0 days') !== before) continue;
 
-      db.prepare('DELETE FROM law_of_the_day_history').run();
-      feature(popular, sqliteDay('-365 days'));
-      expect(service.selectLawOfTheDay('2026-01-02')).toEqual({ lawId: popular, featuredDate: '2026-01-02', created: true });
+        expect(stillCounts).toEqual({ lawId: other, featuredDate: '2026-01-01', created: true });
+        expect(overAgain).toEqual({ lawId: popular, featuredDate: '2026-01-02', created: true });
+        return;
+      }
+      throw new Error('the UTC date kept changing during the test');
     });
 
     it('falls back to any published law when every one was featured in the last year', () => {

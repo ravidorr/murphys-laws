@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, utimesSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, utimesSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -495,7 +495,7 @@ const assertNothingDeleted = (sandbox: PruneSandbox) => {
 
 test('the pruning part of the deploy step is found where the tests expect it', () => {
   const rsync = deployScript.indexOf('sudo rsync -a --delete "$STAGING_DIR/web/dist/" "$TARGET_DIR/web/dist/"');
-  const scriptsRsync = deployScript.indexOf('sudo rsync -a --delete "$STAGING_DIR/backend/scripts/" "$TARGET_DIR/backend/scripts/"');
+  const scriptsRsync = deployScript.indexOf(`sudo rsync -a --delete --exclude='select-law-of-day.mjs' "$STAGING_DIR/backend/scripts/" "$TARGET_DIR/backend/scripts/"`);
   assert.ok(rsync > -1 && scriptsRsync > -1, 'the web root and the scripts are synced');
   assert.ok(pruneBlockStart > rsync && pruneBlockStart > scriptsRsync, 'pruning runs after both rsyncs, so the script and the new build are in place');
   assert.ok(pruneBlockStart > -1 && pruneBlockStart < nginxBlockStart, 'pruning runs before nginx is tested and reloaded');
@@ -878,12 +878,32 @@ const at = (text: string, needle: string): number => {
   return index;
 };
 
-test('the stale select-law-of-day.mjs is dropped from staging before the scripts are synced from it', () => {
-  // The upload never deletes, so the Feb 22 copy in staging would be rsynced back to the server on every deploy
-  const removal = deployScript.indexOf('rm -f "$STAGING_DIR/backend/scripts/select-law-of-day.mjs"');
-  const sync = deployScript.indexOf('rsync -a --delete "$STAGING_DIR/backend/scripts/"');
-  assert.ok(removal >= 0, 'the stale script is removed from staging');
-  assert.ok(sync > removal, 'and that happens before the scripts are synced');
+const realRsync = spawnSync('sh', ['-c', 'command -v rsync'], { encoding: 'utf8' }).stdout.trim();
+const scriptsSyncLine = deployScript.split('\n').find((line) => line.includes('"$STAGING_DIR/backend/scripts/"')) ?? '';
+
+test('the old select-law-of-day.mjs is neither copied back from staging nor deleted from the server by the scripts sync', () => {
+  assert.match(scriptsSyncLine, /rsync -a --delete --exclude='select-law-of-day\.mjs' "\$STAGING_DIR\/backend\/scripts\/" "\$TARGET_DIR\/backend\/scripts\/"/);
+  // Nothing before the installer removes the old script or its crontab line, so a refused install leaves the old job as it was
+  const beforeInstaller = deployScript.slice(0, at(deployScript, lawOfDayMarker));
+  assert.doesNotMatch(beforeInstaller, /rm\b[^\n]*select-law-of-day\.mjs/);
+});
+
+test('the scripts sync keeps the old .mjs on the server and does not bring the stale staging copy', { skip: realRsync ? false : 'rsync is not installed' }, () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'deploy-rsync-'));
+  const staging = path.join(directory, 'staging');
+  const target = path.join(directory, 'target');
+  for (const dir of [staging, target]) mkdirSync(path.join(dir, 'backend/scripts'), { recursive: true });
+  writeFileSync(path.join(staging, 'backend/scripts/select-law-of-day.mjs'), 'stale staging copy\n');
+  writeFileSync(path.join(staging, 'backend/scripts/select-law-of-day.ts'), 'new\n');
+  writeFileSync(path.join(target, 'backend/scripts/select-law-of-day.mjs'), 'server copy\n');
+  writeFileSync(path.join(target, 'backend/scripts/gone.sh'), 'left the repository\n');
+
+  const result = spawnSync('bash', ['-e', '-c', `STAGING_DIR="${staging}"\nTARGET_DIR="${target}"\n${scriptsSyncLine.trim().replace(/^sudo /, '')}`], { encoding: 'utf8' });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(readFileSync(path.join(target, 'backend/scripts/select-law-of-day.mjs'), 'utf8'), 'server copy\n');
+  assert.equal(readFileSync(path.join(target, 'backend/scripts/select-law-of-day.ts'), 'utf8'), 'new\n');
+  assert.equal(existsSync(path.join(target, 'backend/scripts/gone.sh')), false, 'other scripts that left the repository are still deleted');
 });
 
 test('the deploy installs the Law of the Day schedule once the files and the dependencies are in place', () => {
@@ -902,15 +922,22 @@ function runInstallStep(installerStatus: number) {
   const directory = mkdtempSync(path.join(os.tmpdir(), 'deploy-law-of-day-'));
   const scripts = path.join(directory, 'backend/scripts');
   mkdirSync(scripts, { recursive: true });
-  writeFileSync(path.join(scripts, installer), `echo "installer ran with: $*"\n[ "${installerStatus}" -eq 0 ] || echo "installer says no" >&2\nexit ${installerStatus}\n`);
+  writeFileSync(path.join(scripts, installer), `echo "installer ran with: $*"\necho "node: $LAW_OF_DAY_NODE_BIN"\necho "stdin: [$(cat)]"\n[ "${installerStatus}" -eq 0 ] || echo "installer says no" >&2\nexit ${installerStatus}\n`);
   const step = deployScript.slice(at(deployScript, lawOfDayMarker), at(deployScript, restartMarker));
-  return spawnSync('bash', ['-e', '-c', `TARGET_DIR="${directory}"\n${step}\necho AFTER_INSTALL`], { encoding: 'utf8' });
+  // The rest of the real script is on stdin of the step; the installer must not be able to read it
+  return spawnSync('bash', ['-e', '-c', `TARGET_DIR="${directory}"\n${step}\necho AFTER_INSTALL`], { encoding: 'utf8', input: 'REST OF THE DEPLOY SCRIPT' });
 }
 
 test('the install step passes the release directory to the installer and prints no warning when it succeeds', () => {
   const result = runInstallStep(0);
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /installer ran with: \/[^\n]*deploy-law-of-day-[^\n]*\nAFTER_INSTALL/);
+  assert.match(result.stdout, /installer ran with: \/[^\n]*deploy-law-of-day-[^\n]*\n/);
+  assert.match(result.stdout, /stdin: \[\]\nAFTER_INSTALL/, 'the installer reads nothing from the rest of the deploy script');
+  assert.match(result.stdout, /AFTER_INSTALL/);
+  // The job runs the node the deploy runs with, as an absolute path with symlinks resolved
+  const nodePath = /node: (.*)\n/.exec(result.stdout)?.[1] ?? '';
+  assert.equal(nodePath, realpathSync(String(spawnSync('sh', ['-c', 'command -v node'], { encoding: 'utf8' }).stdout.trim())));
+  assert.ok(path.isAbsolute(nodePath));
   assert.doesNotMatch(result.stderr, /WARNING/);
 });
 
@@ -919,7 +946,7 @@ test('a failed install of the schedule only warns, and the deploy goes on to res
   assert.equal(result.status, 0, 'the step never ends the script under set -e');
   assert.match(result.stdout, /AFTER_INSTALL/);
   assert.match(result.stderr, /installer says no/);
-  assert.match(result.stderr, /^WARNING: the Law of the Day schedule was not installed \(exit 3, see the message above\); the first request of each day picks the law until a deploy installs it, and the deploy continues$/m);
+  assert.match(result.stderr, /^WARNING: the Law of the Day schedule was not installed \(exit 3, see the message above\); nothing picks the law at midnight until a deploy installs it, so the first request of each day does, and the deploy continues$/m);
   const step = deployScript.slice(at(deployScript, lawOfDayMarker), at(deployScript, restartMarker));
   const commands = step.split('\n').filter((line) => !line.trim().startsWith('#')).join('\n');
   assert.doesNotMatch(commands, /(^|[;&|{)]|\bthen|\belse)\s*(exit|return)\b/m, 'the step has no exit of its own');
@@ -935,7 +962,9 @@ test('npm run deploy installs the schedule too, as root, before it restarts PM2,
   const install = at(deployTsSource, installer);
   assert.ok(install > at(deployTsSource, "'Applying database migrations'"), 'after the dependencies and the migrations');
   assert.ok(install < at(deployTsSource, 'pm2 restart ecosystem.config.cjs'), 'and a failure is handled before the restart');
-  assert.match(deployTsSource, /ssh \$\{DROPLET_HOST\} "sudo bash \$\{DROPLET_PATH\}\/backend\/scripts\/install-law-of-day-cron\.sh \$\{DROPLET_PATH\}"/);
+  // The node of the server (root's nvm node, which npm ci used), resolved there; not the node of the machine that runs the deploy
+  assert.ok(deployTsSource.includes("source ~/.nvm/nvm.sh && cd ${DROPLET_PATH}/backend && LAW_OF_DAY_NODE_BIN=\\$(readlink -f \\$(command -v node)) bash scripts/install-law-of-day-cron.sh ${DROPLET_PATH} </dev/null'"), 'the installer gets the server node and no stdin');
+  assert.match(deployTsSource, /rsync -avz --delete --exclude='select-law-of-day\.mjs' backend\/scripts\//, 'the old script stays on the server until the installer replaces its job');
   const handler = deployTsSource.slice(install, at(deployTsSource, "log('\\nRestarting PM2 services...'"));
   assert.match(handler, /catch \(error\) \{[\s\S]*?WARNING: the Law of the Day schedule was not installed[\s\S]*?the deployment continues`,\s*'yellow'/, 'the failure is logged as a warning, not rethrown');
   assert.doesNotMatch(handler, /\bthrow\b/);

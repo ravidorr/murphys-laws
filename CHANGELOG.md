@@ -21,11 +21,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   step (a dot-named temporary file in `/etc/cron.d`, which cron ignores, then a rename; mode 644, owned by root; a hand
   edit is overwritten), creates `backend/logs` (the job's log is `backend/logs/law-of-day.log`, in a directory the
   deploy keeps), and removes the old `select-law-of-day.mjs` line from root's crontab so the job cannot run twice, and
-  the stale `.mjs` (the workflow also removes it from staging). It refuses to install, before changing anything, a
+  the old `.mjs` itself, but only after the new job is installed and the old line is gone: both deploy paths keep rsync
+  from deleting the old script (`--exclude`, which also keeps the stale staging copy from being copied back), so a
+  refused install, or an old line that could not be removed, leaves the line and the file it runs as they were. The job runs the node that the deploy runs with, not a fixed
+  `/usr/bin/node`: both paths pass it as `LAW_OF_DAY_NODE_BIN` (`deploy.yml`: the nvm node on the PATH of the root
+  part of the script; `npm run deploy`: the nvm node on the server, not `process.execPath`, which is the node of the
+  machine running the deploy) and the installer writes that absolute path into the job's command in place of
+  `/usr/bin/node` (the default when none is given), so a Node upgrade is picked up by the next deploy; the path must be
+  plain characters (an empty one, from a deploy that could not find its node, is refused, not replaced by the default),
+  and the written file is checked (final newline, no `%` outside the comments, the node on the script in a line that
+  is not a comment) before it replaces anything. The installer is run with stdin closed. It refuses to install, before changing anything, a
   job that could not start: no schedule file, `select-law-of-day.ts`, `backend/node_modules/tsx`, `.nvmrc` or
-  `crontab`, or a `/usr/bin/node` (which the job runs) that is missing, cannot report its version, is not the major
+  `crontab`, or a node (the one the job runs) that is missing, cannot report its version, is not the major
   version of `.nvmrc` or cannot load `better-sqlite3`. The crontab edit follows the rule of the
-  scanner cleanup above: root's crontab is read into a variable and written back only from a successful read, only
+  scanner cleanup above (including its warning when `crontab -l` prints something): root's crontab is read into a variable and written back only from a successful read, only
   when the old line was there and only when something other than blank lines remains, so it is never emptied (an old
   line that is the only entry stays, with a warning); every other failure leaves it as it was and only prints a
   `WARNING:` line. Both deploy paths treat a failed install as a warning and go on with the release, since the API
@@ -42,16 +51,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lock first (the 5 s busy timeout covers a wait), so when the job and a request meet at midnight, or two jobs start
   together, exactly one picks and the others use that pick; the replacement pick for a law unpublished during the day
   is kept. Every run logs one timestamped result line (picked, already picked, or an error with a non-zero exit), after the
-  database service's own untimestamped connection line, and a missing database file is an error instead of a new,
-  empty one. Tests
+  database service's own untimestamped connection line, and the database is opened the way the API does
+  (`resolveDatabasePath`, so a missing file is an error instead of a new, empty one). Tests
   cover the pick with two real connections to one database file (the lock, and finding the other process's pick), the
   tiebreak, the script, the exact cron command run through `sh -c` against a real database (twice in a row, and three
   at the same moment), the installer (crontab with and without the old line, only the old line, no crontab, every
-  failing step, the checks of tsx, `.nvmrc` and Node, the time zone, mode and temporary files of the cron file), the
-  schedule file, and both deploy paths, including the install step of the deploy script run with an installer that
+  failing step, the checks of tsx, `.nvmrc` and Node, the node written into the job and the paths refused, the time
+  zone, mode and temporary files of the cron file), the schedule file, a pick that waits for a held write lock, and both
+  deploy paths, including the real scripts rsync and the install step of the deploy script run with an installer that
   fails. The documented daily email and notification jobs wrote to `../logs` (the same missing directory); their docs
   now use `backend/logs`, but they are still not installed on the server and stay that way until SMTP and the VAPID
-  keys are set. Backend bumped to `2.3.91`; root to `2.6.243`.
+  keys are set. Backend bumped to `2.3.92`; root to `2.6.244`.
 - The deploy can no longer empty root's crontab, and the asset pruning gets more time. The deploy step that removes the
   retired standalone vulnerability scanner cron job ran
   `sudo crontab -l | grep -v vulnerability-scanner.sh | sudo crontab - || true`: when `crontab -l` failed for any reason
