@@ -344,6 +344,7 @@ jobs:
             HEALTH_CHECK_EMAIL_TO=${{ secrets['HEALTH_CHECK_EMAIL_TO'] }}
             ALLOWED_ORIGINS=${{ secrets['ALLOWED_ORIGINS'] }}
             SENTRY_DSN=${{ secrets['SENTRY_DSN'] }}
+            SENTRY_RELEASE=${{ github.sha }}
             ADMIN_API_TOKEN=${{ secrets['ADMIN_API_TOKEN'] }}
             GITHUB_OAUTH_CLIENT_ID=${{ secrets['ADMIN_GITHUB_OAUTH_CLIENT_ID'] }}
             GITHUB_OAUTH_CLIENT_SECRET=${{ secrets['ADMIN_GITHUB_OAUTH_CLIENT_SECRET'] }}

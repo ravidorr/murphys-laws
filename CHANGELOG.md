@@ -838,6 +838,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The backend now names its Sentry release (issue #360). What was missing: the web bundle sets `release` from
+  `VITE_APP_VERSION` (the commit SHA) and uploads its source maps to it, but `initSentry` set none, so an API error
+  could only be resolved outright (no "resolve in next release"), and Sentry could not say which deploy introduced or
+  reopened it. `initSentry` now passes `release` from `SENTRY_RELEASE` (trimmed; unset or blank leaves it undefined),
+  and `deploy.yml` writes `SENTRY_RELEASE=${{ github.sha }}` into the backend `.env` beside `SENTRY_DSN`: the name the
+  web build gets from `resolveAppRelease` when `VITE_APP_VERSION` is the SHA, so web and API releases line up. Tests
+  cover a set, a blank and an unset variable, and that the deploy writes it and uses the same name as the web build.
+  Not done: creating the release and associating commits from the deploy (suspect commits), which needs a Sentry
+  step with `sentry-cli`. Backend bumped to `2.3.103`, root to `2.6.269`.
+
 - A "Crane's Law: No Free Lunch" article at `/cranes-law`, for readers who search for Crane's law. Crane's law is the name
   Arthur Bloch's 1977 Murphy's Law collection gives to "there is no such thing as a free lunch", and the archive already
   had it as a bare law page. The article explains the saying, the saloon free lunch behind it and how it spread, and
