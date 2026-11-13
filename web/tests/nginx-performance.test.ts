@@ -67,6 +67,8 @@ describe('nginx compression', () => {
   it('turns gzip on for the site with the response headers a cache needs', () => {
     expect(apex).toMatch(/^\s*gzip on;$/m);
     expect(apex).toMatch(/^\s*gzip_vary on;$/m);
+    // Vary: Accept-Encoding of the .br and .gz responses comes from it, so it must be inherited by every location.
+    expect(serverLevelDirectives(apex)).toMatch(/^\s*gzip_vary on;$/m);
     expect(apex).toMatch(/^\s*gzip_proxied any;$/m);
     expect(apex).toMatch(/^\s*gzip_comp_level 5;$/m);
     expect(apex).toMatch(/^\s*gzip_min_length 256;$/m);
@@ -94,9 +96,19 @@ describe('nginx compression', () => {
     expect(gzipTypes).not.toContain('text/html');
   });
 
-  it('does not enable brotli until the module is installed on the server', () => {
-    // An unknown directive fails nginx -t in the deploy step and leaves a broken file in sites-available.
-    expect(conf).not.toMatch(/^\s*brotli\w*\s/m);
+  it('uses exactly one brotli directive, brotli_static on, and enables no dynamic brotli', () => {
+    // Dynamic compression (brotli on, brotli_types, brotli_comp_level) stays out: the precompressed .br files cover
+    // the hashed assets and gzip the rest. Comment lines are dropped so the prose may mention brotli; a directive
+    // anywhere on a line counts. The module that provides brotli_static is installed on the server before this file
+    // is deployed (shared/docs/DEPLOYMENT.md).
+    const source = conf.replace(/^\s*#.*$/gm, '');
+    expect(source.match(/\bbrotli\w*\s[^;]*;/g)).toEqual(['brotli_static on;']);
+  });
+
+  it('has the disaster-recovery runbook install the nginx module that provides brotli_static', () => {
+    // Without the package nginx -t fails with: unknown directive "brotli_static".
+    const runbook = readFileSync(resolve(root, 'shared', 'docs', 'DISASTER-RECOVERY.md'), 'utf8');
+    expect(runbook).toMatch(/^\s*apt install -y [^\n]*\blibnginx-mod-http-brotli-static\b/m);
   });
 });
 
@@ -138,6 +150,7 @@ describe('nginx hashed asset caching', () => {
 
   it('serves precompressed files and sets one immutable Cache-Control header', () => {
     expect(hashed).toMatch(/^\s*gzip_static on;$/m);
+    expect(hashed).toMatch(/^\s*brotli_static on;$/m);
     expect(hashed.match(CACHE_CONTROL_DIRECTIVE)).toHaveLength(1);
     expect(hashed).toContain('add_header Cache-Control "public, max-age=31536000, immutable";');
     // expires would add a second Cache-Control header next to add_header.
@@ -163,6 +176,8 @@ describe('nginx hashed asset caching', () => {
     '/styles/fallback-pages.css',
     '/assets/main.js',
     '/assets/index-DZClfRb6.js.map',
+    '/assets/index-DZClfRb6.js.br',
+    '/assets/index-DZClfRb6.js.gz',
     '/img/logo-ABCDEFGH.png',
   ])('keeps %s out of the immutable rule', (uri) => {
     expect(pattern.test(uri)).toBe(false);
@@ -175,7 +190,8 @@ describe('nginx hashed asset caching', () => {
   });
 
   it('relies on Vite keeping its 8-character content hash in the file names', () => {
-    // A [hash:12] or a custom file-name pattern would silently turn off immutable caching and gzip_static.
+    // A [hash:12] or a custom file-name pattern would silently turn off immutable caching, gzip_static and
+    // brotli_static.
     const viteConfig = readFileSync(resolve(root, 'web', 'vite.config.ts'), 'utf8');
     expect(viteConfig).not.toMatch(/assetFileNames|chunkFileNames|entryFileNames/);
   });

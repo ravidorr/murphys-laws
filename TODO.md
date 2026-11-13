@@ -9,10 +9,6 @@ This document outlines additional tasks and potential improvements for the Murph
 
 ## Performance
 
-- [ ] **Enable brotli for the precompressed assets:** `npm run build` already writes `.br` copies next to the hashed JS and CSS, but nginx
-  does not serve them because the brotli module is not installed on the droplet (an unknown directive would fail `nginx -t` in the
-  deploy step). Install `libnginx-mod-http-brotli-filter` and `libnginx-mod-http-brotli-static` first, then add `brotli_static on;` to
-  the hashed-assets location of `nginx.conf` (steps, verification and rollback in `shared/docs/DEPLOYMENT.md`).
 - [ ] **Serve `/manifest.webmanifest` with its real type:** the server sends the manifest as `application/octet-stream`
   (`/etc/nginx/mime.types` has no `webmanifest` entry), so it is not compressed either (`gzip_types` lists
   `application/manifest+json`). Add a new `location = /manifest.webmanifest` with `types { application/manifest+json webmanifest; }`,
