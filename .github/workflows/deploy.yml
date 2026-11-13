@@ -205,9 +205,9 @@ jobs:
               sudo chmod 644 /etc/murphys-laws/infrastructure-inventory.json
             fi
 
-            # The monitoring scripts below are installed with failures not ignored, so make sure they all
-            # arrived before the live site is touched; failing later would leave a half-applied release.
-            for script in alert-email backup-murphys backup-offsite health-monitor ssl-monitor cost-optimization-report test-backup-restore; do
+            # The monitoring scripts are installed (by install-maintenance-scripts.sh, below) with failures not ignored, so
+            # make sure they and that script arrived before the live site is touched; failing later would leave a half-applied release.
+            for script in alert-email backup-murphys backup-offsite health-monitor ssl-monitor cost-optimization-report test-backup-restore install-maintenance-scripts; do
               [ -f "$STAGING_DIR/backend/scripts/$script.sh" ] \
                 || { echo "ERROR: $script.sh is missing from the uploaded release; nothing was changed on the server" >&2; exit 1; }
             done
@@ -393,88 +393,18 @@ jobs:
             echo "==> Running migrations"
             npm run migrate
 
-            # Update server maintenance scripts
-            # Sourced by the monitoring scripts below to resolve the alert address. They fall back to the repo
-            # copy, but the installed one is preferred, so a failure here fails the deploy instead of being
-            # ignored
-            sudo cp "$TARGET_DIR/backend/scripts/alert-email.sh" /usr/local/bin/alert-email.sh \
-              && sudo chmod +x /usr/local/bin/alert-email.sh \
-              && test -f /usr/local/bin/alert-email.sh \
-              || { echo "ERROR: could not install /usr/local/bin/alert-email.sh; the monitoring scripts would lose their alerts" >&2; exit 1; }
-            # These scripts also load that helper, so a copy that fails would leave an old script running with
-            # the old behavior. Fail the deploy and show the cause instead of hiding it. (The other copies
-            # below do not load the helper and keep ignoring errors.)
-            for script in backup-murphys backup-offsite health-monitor ssl-monitor cost-optimization-report test-backup-restore; do
-              sudo cp "$TARGET_DIR/backend/scripts/$script.sh" "/usr/local/bin/$script.sh" \
-                && sudo chmod +x "/usr/local/bin/$script.sh" \
-                || { echo "ERROR: could not install /usr/local/bin/$script.sh" >&2; exit 1; }
-            done
-            sudo cp "$TARGET_DIR/backend/scripts/daily-report.sh" /usr/local/bin/daily-report.sh 2>/dev/null || true
-            sudo cp "$TARGET_DIR/backend/scripts/vulnerability-scanner.sh" /usr/local/bin/vulnerability-scanner.sh 2>/dev/null || true
-            sudo cp "$TARGET_DIR/backend/scripts/performance-tracker.sh" /usr/local/bin/performance-tracker.sh 2>/dev/null || true
-            sudo cp "$TARGET_DIR/backend/scripts/analyze-resource-peaks.sh" /usr/local/bin/analyze-resource-peaks.sh 2>/dev/null || true
-            sudo mkdir -p /etc/murphys-laws
-            sudo cp "$TARGET_DIR/backend/config/operational-metrics-main-app.env.example" /etc/murphys-laws/operational-metrics.env.example 2>/dev/null || true
-            sudo cp "$TARGET_DIR/backend/config/infrastructure-inventory.json.example" /etc/murphys-laws/infrastructure-inventory.json.example 2>/dev/null || true
-            sudo cp "$TARGET_DIR/backend/scripts/log-analyzer.sh" /usr/local/bin/log-analyzer.sh 2>/dev/null || true
-            sudo chmod +x /usr/local/bin/*.sh 2>/dev/null || true
+            # Installs the monitoring and report scripts on the server (backend/scripts/install-maintenance-scripts.sh).
+            # A failed copy of a script that must not go stale fails the deploy with that script's exit status. Its stdin
+            # is /dev/null, because the real one is the rest of this script.
+            bash "$TARGET_DIR/backend/scripts/install-maintenance-scripts.sh" "$TARGET_DIR" </dev/null || exit $?
 
-            # The daily report runs the vulnerability scanner, so a standalone cron entry for it is removed. This is
-            # housekeeping and must never block a release (failing here would leave the old API running against the
-            # migrated schema), so every problem below only prints a WARNING and the deploy goes on; nothing here
-            # calls exit. What can never happen is an empty crontab: piping `crontab -l` into `crontab -` replaced
-            # the whole crontab with nothing whenever the read failed, and nothing reported it. The crontab is now
-            # read into a variable and written back only from a read that succeeded, only when a scanner line was
-            # there and only when something other than blank lines remains. "No crontab for root" is not a problem.
-            # Any other failed read, a grep that errors (exit 2, which must never look like "no match" or "nothing
-            # left") or a failed write leaves the crontab as it was (`crontab -` replaces it atomically).
+            # The daily report runs the vulnerability scanner, so a standalone cron entry for it is removed from root's
+            # crontab (backend/scripts/remove-scanner-cron.sh, which explains why it never empties the crontab). This is
+            # housekeeping and must never block a release: every problem only prints a WARNING, and so does a script that
+            # cannot run. Its stdin is /dev/null, as above.
             echo "==> Removing the standalone vulnerability scanner cron job, if there is one"
-            scanner_script="vulnerability-scanner.sh"
-            crontab_error_file="$(mktemp)" || crontab_error_file=""
-            if [ -z "$crontab_error_file" ]; then
-              echo "WARNING: could not create a temporary file to read root's crontab; it was left unchanged and the deploy continues" >&2
-            else
-              crontab_status=0
-              crontab_current="$(sudo env LC_ALL=C crontab -l 2>"$crontab_error_file" </dev/null)" || crontab_status=$?
-              crontab_error="$(cat "$crontab_error_file")" || crontab_error=""
-              rm -f "$crontab_error_file" || echo "WARNING: could not remove the temporary file $crontab_error_file; the deploy continues" >&2
-              if [ "$crontab_status" -ne 0 ]; then
-                # sudo may print a line of its own first, so only the last line of the error is the crontab's answer
-                case "${crontab_error##*$'\n'}" in
-                  "no crontab for "*) echo "Root has no crontab; nothing to remove" ;;
-                  *) echo "WARNING: could not read root's crontab (exit $crontab_status: $crontab_error); it was left unchanged and the deploy continues" >&2 ;;
-                esac
-              else
-                [ -z "$crontab_error" ] || echo "WARNING: crontab -l printed: $crontab_error" >&2
-                # Each grep below exits 0 for "yes", 1 for "no" and 2 for an error, which is never read as "no". They
-                # read a pipe and print nothing (no -q, so printf is never cut off by a closed pipe), because a failed
-                # here-string redirection would look like "no".
-                # content_check is 0 when something other than blank lines remains and 1 when nothing does.
-                scanner_found=0
-                printf '%s\n' "$crontab_current" | LC_ALL=C grep -aF -- "$scanner_script" > /dev/null || scanner_found=$?
-                crontab_filtered=""
-                scanner_removed=0
-                content_check=0
-                if [ "$scanner_found" -eq 0 ]; then
-                  crontab_filtered="$(printf '%s\n' "$crontab_current" | LC_ALL=C grep -avF -- "$scanner_script")" || scanner_removed=$?
-                  if [ "$scanner_removed" -le 1 ]; then
-                    printf '%s\n' "$crontab_filtered" | LC_ALL=C grep -a '[^[:space:]]' > /dev/null || content_check=$?
-                  fi
-                fi
-                if [ "$scanner_found" -gt 1 ] || [ "$scanner_removed" -gt 1 ] || [ "$content_check" -gt 1 ]; then
-                  echo "WARNING: could not search root's crontab for $scanner_script; it was left unchanged and the deploy continues" >&2
-                elif [ "$scanner_found" -eq 1 ]; then
-                  echo "No standalone vulnerability scanner cron job; the crontab was left unchanged"
-                elif [ "$content_check" -eq 1 ]; then
-                  # Removing the entry would leave nothing, and an empty crontab is never written
-                  echo "WARNING: the vulnerability scanner entry is the only entry in root's crontab; it was left in place" >&2
-                elif printf '%s\n' "$crontab_filtered" | sudo crontab -; then
-                  echo "✓ Standalone vulnerability scanner cron job removed"
-                else
-                  echo "WARNING: could not write root's crontab; it was left as it was and the deploy continues" >&2
-                fi
-              fi
-            fi
+            bash "$TARGET_DIR/backend/scripts/remove-scanner-cron.sh" </dev/null \
+              || echo "WARNING: the scanner cron cleanup did not finish (exit $?, see the message above); root's crontab may be unchanged and the deploy continues" >&2
 
             # The Law of the Day schedule (/etc/cron.d, from backend/config/cron.d). The release files and the locked
             # dependencies are in place, and the job first runs at 00:00 UTC, so this does not wait for the restart.

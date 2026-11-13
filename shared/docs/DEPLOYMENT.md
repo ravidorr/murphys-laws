@@ -203,7 +203,7 @@ protected: after a failed `nginx -t` there, copy the old file back before anythi
 ### Root's crontab during a deploy
 
 The vulnerability scanner runs from the daily report, so the GitHub Actions deploy removes any standalone
-`vulnerability-scanner.sh` entry from root's crontab. This is housekeeping and never blocks a release: it reads the
+`vulnerability-scanner.sh` entry from root's crontab, with `backend/scripts/remove-scanner-cron.sh`. This is housekeeping and never blocks a release: it reads the
 crontab first, writes it back only from a read that succeeded, only when such a line was there and only when something
 other than blank lines remains, and every problem only prints a `WARNING:` line in the deploy log while the deploy goes
 on. A server with no crontab for root is left alone. A failed read (for example a permissions error), a failing `grep`,
@@ -212,6 +212,17 @@ cannot be removed only warns), and so does a crontab
 whose only entry is the scanner line (an empty crontab is never written). So a failed read can no longer delete the
 other scheduled jobs. If the log shows one of these warnings, run `sudo crontab -l` on the server to see why; the
 standalone entry, if it is still there, would run the scan a second time next to the daily report.
+
+### The length of the deploy script
+
+The `script:` of the "Deploy and restart services" step in `.github/workflows/deploy.yml` holds `${{ secrets[...] }}`
+expressions, so GitHub compiles the whole script into one expression, and a workflow whose expression is over 21,000
+characters is refused: every run fails with no job and no deploy can start. `actionlint` and a green pull request do not
+show it. `scripts/deploy-workflow.test.ts` prints a warning (in its output and in the job summary of the run) above 18,000 characters and fails above 20,000.
+Past the warning, move a block of the script into a file under `backend/scripts/` (the deploy uploads and syncs that
+directory) and call it from the step, as `install-maintenance-scripts.sh`, `remove-scanner-cron.sh`,
+`install-law-of-day-cron.sh` and `prune-stale-assets.mjs` are. After merging a change to a workflow, check that the run
+started jobs (`gh api repos/ravidorr/murphys-laws/actions/runs/<id>/jobs --jq .total_count` is not 0).
 
 ### Brotli for the precompressed assets
 
