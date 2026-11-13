@@ -212,6 +212,47 @@ jobs:
                 || { echo "ERROR: $script.sh is missing from the uploaded release; nothing was changed on the server" >&2; exit 1; }
             done
 
+            # A bad nginx.conf must stop the deploy before anything on the live tree is replaced, or the new frontend
+            # would run next to the old backend until the next deploy. nginx only tests the files under /etc/nginx, so
+            # the uploaded copy is installed as the site file here and tested; when nginx rejects it (or it cannot be
+            # installed) the previous site file is put back and the deploy fails. Install and test explicitly: a
+            # failure inside an && list that is not its last command does not stop a set -e script. A typical cause is
+            # a directive from a module that the server lacks (an unknown directive fails nginx -t); see
+            # shared/docs/DEPLOYMENT.md, "Compression and HTTP/2". The reload comes after the release is in place
+            # (below), and until then the previous site file is kept: if the release fails in between, the exit trap
+            # puts it back, so on any failure the script can see the new file does not wait on disk for an unrelated
+            # reload to load it (a killed connection skips the trap; the previous copy is then in the mktemp file).
+            echo "==> Deploy: testing nginx.conf before the release replaces anything"
+            NGINX_SITE=/etc/nginx/sites-available/murphys-laws
+            NGINX_PREVIOUS=""
+            if [ -f "$NGINX_SITE" ]; then
+              NGINX_PREVIOUS="$(sudo mktemp)"
+              sudo cp -p "$NGINX_SITE" "$NGINX_PREVIOUS" \
+                || { echo "ERROR: could not back up $NGINX_SITE; nothing was changed" >&2; sudo rm -f "$NGINX_PREVIOUS"; exit 1; }
+            fi
+            if ! { sudo cp "$STAGING_DIR/nginx.conf" "$NGINX_SITE" && sudo nginx -t; }; then
+              echo "ERROR: nginx.conf could not be installed or nginx rejected it; restoring the previous site file; nginx is not reloaded and nothing on the live tree was replaced" >&2
+              if [ -n "$NGINX_PREVIOUS" ]; then
+                sudo cp -p "$NGINX_PREVIOUS" "$NGINX_SITE" \
+                  || { echo "ERROR: could not restore $NGINX_SITE; the previous copy is in $NGINX_PREVIOUS" >&2; exit 1; }
+                sudo rm -f "$NGINX_PREVIOUS"
+              else
+                sudo rm -f "$NGINX_SITE"
+              fi
+              exit 1
+            fi
+            nginx_restore_after_failure() {
+              echo "ERROR: the deploy failed after nginx accepted nginx.conf and before nginx was reloaded; restoring the previous site file" >&2
+              if [ -n "$NGINX_PREVIOUS" ]; then
+                sudo cp -p "$NGINX_PREVIOUS" "$NGINX_SITE" \
+                  && sudo rm -f "$NGINX_PREVIOUS" \
+                  || echo "ERROR: could not restore $NGINX_SITE; the previous copy is in $NGINX_PREVIOUS" >&2
+              else
+                sudo rm -f "$NGINX_SITE" || echo "ERROR: could not remove $NGINX_SITE" >&2
+              fi
+            }
+            trap 'if [ "$?" -ne 0 ]; then nginx_restore_after_failure; fi' EXIT
+
             sudo rsync -a --delete "$STAGING_DIR/web/dist/" "$TARGET_DIR/web/dist/"
             sudo rsync -a --delete "$STAGING_DIR/backend/src/" "$TARGET_DIR/backend/src/"
             # select-law-of-day.mjs was replaced by select-law-of-day.ts. The upload never deletes, so the old copy
@@ -248,31 +289,18 @@ jobs:
               echo "WARNING: stale asset pruning did not complete (exit $prune_rc: 1 means a safety check stopped it before any deletion or the script could not run, 3 means some deletions failed, 124 means it timed out, anything else means it could not start, for example no node; see its output above); the deploy continues"
             fi
 
-            # "sudo nginx -t && sudo systemctl reload nginx" does not stop this script under set -e (a failure
-            # inside an && list that is not its last command is ignored), so install and test explicitly: keep the
-            # previous site file, put it back when the new one cannot be installed or nginx rejects it, and fail the
-            # deploy. A typical cause is a directive from a module that the server lacks (an unknown directive fails
-            # nginx -t); see shared/docs/DEPLOYMENT.md, "Compression and HTTP/2".
-            echo "==> Deploy: testing nginx and reloading"
-            NGINX_SITE=/etc/nginx/sites-available/murphys-laws
-            NGINX_PREVIOUS=""
-            if [ -f "$NGINX_SITE" ]; then
-              NGINX_PREVIOUS="$(sudo mktemp)"
-              sudo cp -p "$NGINX_SITE" "$NGINX_PREVIOUS"
-            fi
-            if ! { sudo cp "$TARGET_DIR/nginx.conf" "$NGINX_SITE" && sudo nginx -t; }; then
-              echo "ERROR: nginx.conf could not be installed or nginx rejected it; restoring the previous site file and not reloading nginx" >&2
-              if [ -n "$NGINX_PREVIOUS" ]; then
-                sudo cp -p "$NGINX_PREVIOUS" "$NGINX_SITE" \
-                  || { echo "ERROR: could not restore $NGINX_SITE; the previous copy is in $NGINX_PREVIOUS" >&2; exit 1; }
-                sudo rm -f "$NGINX_PREVIOUS"
-              else
-                sudo rm -f "$NGINX_SITE"
-              fi
-              exit 1
-            fi
-            [ -z "$NGINX_PREVIOUS" ] || sudo rm -f "$NGINX_PREVIOUS"
+            # The new site file was installed and accepted by nginx -t before the release replaced anything (see
+            # "Deploy: testing nginx.conf" above), so only the reload is left. It waits until the new files are in
+            # place so that nginx does not serve the new configuration next to the old web build (the backend runs
+            # its old process until the PM2 restart below). A reload that fails fails the deploy, and the exit trap
+            # puts the previous site file back; once nginx is reloaded the trap is disarmed and the backup removed.
+            echo "==> Deploy: reloading nginx"
             sudo systemctl reload nginx
+            trap - EXIT
+            # Only bookkeeping is left, and nginx already runs the new file: a backup that cannot be removed warns
+            # instead of stopping the deploy before the migrations and the restart.
+            [ -z "$NGINX_PREVIOUS" ] || sudo rm -f "$NGINX_PREVIOUS" \
+              || echo "WARNING: could not remove the backup $NGINX_PREVIOUS of the previous site file" >&2
 
             sudo --preserve-env=GITHUB_SHA,GITHUB_ACTOR bash <<'INNER'
             set -e

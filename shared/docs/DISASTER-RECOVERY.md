@@ -269,6 +269,12 @@ EOF
  systemctl restart nginx
  ```
 
+ The `nginx config` CI job (`scripts/check-nginx-config.sh`; on every pull request and every push to main, in an
+ `ubuntu:24.04` container) reproduces the nginx and brotli-module packages, the site file in sites-available and
+ sites-enabled and the removal of the default site from this section and the package step above, with throwaway stand-ins
+ for the Certbot files; when those steps change (another module, another site layout), change the script and the job's
+ package list with them.
+
 1. **Install the scanner jail** (it bans the addresses that the nginx scanner defense drops, and needs the repository's root `nginx.conf`, which writes `/var/log/nginx/scanner.log`):
  ```bash
  cp /root/murphys-laws/config/fail2ban/filter.d-nginx-scanner.conf /etc/fail2ban/filter.d/nginx-scanner.conf

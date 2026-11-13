@@ -153,14 +153,52 @@ if you prune files by hand on the server, remove the matching `.gz` and `.br` fi
 
 ### A rejected nginx configuration
 
-The deploy copies `nginx.conf` into `/etc/nginx/sites-available/murphys-laws`, runs `nginx -t` and only then reloads
-nginx. A configuration that `nginx -t` rejects (for example a directive from a module the server does not have) makes
-the GitHub Actions deploy put the previous site file back, skip the reload and fail at that step, so nothing after it
-(migrations, PM2 restart) runs and the running nginx keeps its previous configuration. Fix the cause (install the module
-or correct the file) and deploy again. `npm run deploy` and a manual `cp` do not restore the previous file: after a
-failed `nginx -t` there, copy the old file back before anything reloads or restarts nginx. An `nginx -t` that passes
-does not prove the reload took effect: `systemctl reload` only signals nginx, so look at `/var/log/nginx/error.log`
-after a release that changes the listeners.
+A `nginx.conf` that nginx would reject is stopped twice: in CI, and before either deploy replaces anything.
+
+**In CI.** The `nginx config` job of `.github/workflows/lockfile-sync.yml` (part of the required `lockfile-sync` check, so a
+failure blocks the merge) runs `scripts/check-nginx-config.sh` in an `ubuntu:24.04` container: the distribution nginx 1.24
+with `libnginx-mod-http-brotli-static`, the file installed as `sites-available/murphys-laws` and enabled through
+`sites-enabled` with the stock default site removed, and throwaway stand-ins for the certificate, the key, the
+Diffie-Hellman parameters and Certbot's `options-ssl-nginx.conf`. It then runs `nginx -t`. An unknown directive, a syntax
+error or a directive of a module that the job does not install fails it. The job installs the brotli package itself, so it
+does not say whether the production server has it (see "Brotli for the precompressed assets" below). The container pins
+the nginx release to the server's; when the server moves to another Ubuntu release, change the image there as well. To
+run the same check by hand, see the header of the script (a `docker run` of `ubuntu:24.04`); it writes under `/etc`, and
+refuses to run where a certificate or the site file already exists, so never run it on a server.
+
+**In the deploy.** Both deploys install and test the new site file first, then replace the release, then reload nginx:
+
+- The GitHub Actions deploy copies the uploaded `nginx.conf` from the staging directory into
+  `/etc/nginx/sites-available/murphys-laws` (keeping the previous file) and runs `nginx -t` before the first `rsync`.
+  When nginx rejects it, the previous site file is put back and the deploy fails at that step: the live tree (`web/dist`,
+  the backend, the scripts, the config), the pruning of old assets, the migrations and the PM2 restart are all untouched,
+  and the running nginx keeps its configuration. When nginx accepts it, the previous file stays as a backup while the
+  release is copied; if a sync, the installs or the reload then fail, the deploy puts the previous site file back
+  (an exit trap), so on any failure the script can see, the new file does not wait on disk for an unrelated reload (a
+  Certbot renewal, a package upgrade, a reboot) to load it next to a half-copied release. A killed connection skips
+  the trap: the previous copy is then in the `mktemp` file that the log names, and the new file is the live site file. Nginx is reloaded after the release is in place (the rsyncs, the
+  installs, the pruning), so it does not serve the new configuration next to the old web build; the backend keeps running
+  its old process until the PM2 restart further down. Once nginx has reloaded, the backup is removed (a backup that
+  cannot be removed only warns), and a later failure (migrations, PM2) does not touch the site file: nginx is already
+  running the new one. The repository copy `/root/murphys-laws/nginx.conf` is installed with the rest of the release, so after
+  a failed deploy it can be the new file while the site file is the previous one; nothing reads it during a deploy.
+- `npm run deploy` follows the same order: it uploads `nginx.conf` as `nginx.conf.next`, then one `ssh` command backs up the site
+  file to `nginx.site.previous` (both next to the release in `/root/murphys-laws`), installs the upload and runs
+  `nginx -t`. On rejection it puts the previous file back (or removes the new one on a server that had none), deletes
+  the upload and fails, before the first sync. On acceptance the backup and the upload stay while the release is synced;
+  a failure before the reload restores the previous file the same way (the repository copy `nginx.conf` is
+  replaced only after the reload). After the reload the upload becomes the repository copy and the backup is removed; if
+  that fails the deploy only warns and goes on. An interrupted `npm run deploy` (Ctrl-C) skips the restore, and the next
+  run starts by deleting `nginx.site.previous`: copy it back first if the site must return to the previous file. If the previous file cannot be put back, the error says
+  where its copy is.
+
+A typical cause of a rejection is a directive from a module that the server does not have: install the module or correct
+the file and deploy again. A manual `cp` (the runbook steps above and in `shared/docs/DEPLOY-MONITORING.md`) is not
+protected: after a failed `nginx -t` there, copy the old file back before anything reloads or restarts nginx. An
+`nginx -t` that passes does not prove the reload took effect: `systemctl reload` only signals nginx, so look at
+`/var/log/nginx/error.log` after a release that changes the listeners. The test reads the file through
+`sites-enabled/murphys-laws`, which must be the symbolic link to the `sites-available` file (the setup in
+`shared/docs/DISASTER-RECOVERY.md`); with a regular copy there, `nginx -t` tests the copy and not the new file.
 
 ### Root's crontab during a deploy
 
@@ -189,7 +227,8 @@ distribution's nginx 1.24; `libnginx-mod-http-brotli-filter` is only needed for 
 package is installed on the production droplet (since 2026-11-13, version `1.0.0~rc-5build1`, with
 `/etc/nginx/modules-enabled/50-mod-http-brotli-static.conf` in place). It must be installed on a server before a
 release containing `brotli_static` is deployed to it: without it `nginx -t` rejects the file as an unknown directive (see
-"A rejected nginx configuration" above for what the deploy does then). The same holds on a new droplet and after a
+"A rejected nginx configuration" above for what the deploy does then; the CI job installs the package itself, so it
+cannot tell you whether a server has it). The same holds on a new droplet and after a
 rollback that removed the package, and an nginx that does not come from the Ubuntu archive cannot load the Ubuntu
 module either.
 
