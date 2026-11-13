@@ -1516,10 +1516,9 @@ kbd {
    Clusters stack full width, one under the other; each cluster has its own grid of equal-height cards.
    ========================== */
 
-.category-clusters {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-12);
+/* Explicit margin between clusters: the Kindle browser ignores flex gap (DESIGN.md, Kindle browser baseline) */
+.category-cluster + .category-cluster {
+  margin-top: var(--space-12);
 }
 
 .category-cluster-header {

@@ -36,7 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   clamped description. New tests: `category-cards.test.ts`, the categories view and static-build tests, an axe run of
   `/categories` in both themes and `e2e/categories-cards.spec.ts` (nothing underlined at rest, title underlined on
   hover, focus outline, stacked clusters and equal card heights). The text helper of the static-build test reads the page with `DOMParser` instead of stripping tags with a regular
-  expression (CodeQL `js/incomplete-multi-character-sanitization`). Web bumped to `3.4.125`; root to `2.6.254`.
+  expression (CodeQL `js/incomplete-multi-character-sanitization`). The space between the clusters is a margin (`.category-cluster + .category-cluster`, `var(--space-12)`) and not a flex
+  `gap`, which the Kindle browser ignores (DESIGN.md, Kindle browser baseline): the wrapper is no longer a flex column, and
+  the e2e test checks the 48 px as a margin. The card footer is a flex row without `gap`, and the card grids use grid
+  `gap`, which the contract does not list as unsupported. Web bumped to `3.4.126`; root to `2.6.255`.
 - The "Corollary of" banner on a corollary's law page now sits below the law card and above the "In context" section
   (issue #345); it used to sit above the card, under the breadcrumb. A parent law's Corollaries section was already in
   that place, so both pieces now follow the same order: card, then corollary pieces, then context. The order is set in
