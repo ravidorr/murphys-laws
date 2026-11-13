@@ -17,7 +17,7 @@ export interface RetentionPlan {
 export function requestedNames(logPaths: string[]): Set<string>;
 export function namesIn(text: string, names: Set<string>): Set<string>;
 export function entryAssets(indexHtml: string): { scripts: string[]; styles: string[] };
-export function planDirectory(dist: string, options?: { now?: number; maxAgeDays?: number; requested?: Set<string> }): RetentionPlan;
+export function planDirectory(dist: string, options?: { now?: number; maxAgeDays?: number; requested?: Set<string>; maxDeleteFraction?: number }): RetentionPlan;
 export function run(
   argv: string[],
   options?: { log?: (line: string) => void; error?: (line: string) => void; now?: number },

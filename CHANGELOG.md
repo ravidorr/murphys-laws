@@ -25,20 +25,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   file or access log (or one that does not look like an nginx access log, such as an `.xz` rotation), no access log
   that exists or no asset request in them (the glob passes the literal pattern when no log matches, so a missing log
   stops the run instead of switching the log rule off), fewer than five files kept, or a plan that would delete more
-  than 90% of the files (on the first deploy after the backlog this may stop the run: the log says so, and
-  `--dry-run` shows the plan). All directories are planned before the first deletion, and only regular files outside
-  `assets/` are read (a named pipe would block it). `--dry-run` reports without deleting, a second run finds nothing,
-  and a file that cannot be deleted is named and counted (exit code 3) without stopping the rest. The deploy only
-  warns, with the exit code and as a `::warning::` annotation, when the script does not complete (it is cut off after
-  5 minutes): it never blocks a release. Tests cover the keep rules, the age limit to the millisecond, each abort,
-  the deletion failures and the deploy wiring; the script reaches 100% line and branch coverage in its own test file
-  (the backend coverage gate only covers `src/`). The deploy step's pruning block is also run as written, with
-  stand-ins for `sudo` and `timeout`, against throwaway staging and web-root copies in
-  `scripts/deploy-workflow.test.ts`: stale files go from both, and a missing access log, a failed safety check, a
-  `node` that exits 127 (as a missing one does) or a crashing script (exit 1, 3 or 127) only warn while the deploy
-  goes on. The script also starts when it is reached through a symbolic link (its entry-point check compares real
-  paths).
-  Root bumped to `2.6.235` and backend to `2.3.88`.
+  than 90% of the files. A run over a big backlog that the limit would stop can be allowed by hand with
+  `--max-delete-fraction <0 to 1>` (look at a `--dry-run` first); the deploy never passes it. All directories are
+  planned before the first deletion, and only regular files outside `assets/` are read (a named pipe would block it;
+  a dangling link among the text files stops the run, which deletes nothing). A name counts as mentioned whatever its
+  extension (`.mp3`, `.eot`) and however it is written (`logo@2x-HASH.webp`, a name with a space, written out or as `%20`), and kept SVG,
+  JSON and HTML files in `assets/` are traced like scripts, so none of these depends on the 30-day
+  rule. `--dry-run` reports without deleting, a second run finds nothing, and a file that cannot be deleted is named
+  and counted (exit code 3) without stopping the rest. The deploy only warns, with a plain `WARNING:` line in the
+  deploy log that has the exit code, when the script does not complete (it is cut off after 90 seconds): it never
+  blocks a release. Tests cover the keep rules, the age limit to the millisecond, each abort, the deletion failures,
+  the new flag and the deploy wiring; the script reaches 100% line and branch coverage in its own test file (the
+  backend coverage gate only covers `src/`). The deploy step's pruning block is also run as written, with stand-ins
+  for `sudo` and `timeout`, against throwaway staging and web-root copies in `scripts/deploy-workflow.test.ts`:
+  stale files go from both, and a missing access log, a failed safety check, a `node` that exits 127 (as a missing
+  one does) or a crashing script (exit 1, 3 or 127) only warn while the deploy goes on. The script also starts when it
+  is reached through a symbolic link (its entry-point check compares real paths).
+  Root bumped to `2.6.236` and backend to `2.3.89`.
 - The root scripts tests (`scripts/*.test.ts`, `npm run test:scripts`) now run in CI on every pull request and every
   push to `main`. Only four of them (the workflow and lockfile contract tests) ran before, so a fixture dated 2026-10-10
   went stale on 2026-11-09 (the metrics analyzers only read the last 30 days) and failed unnoticed for days. They run in
