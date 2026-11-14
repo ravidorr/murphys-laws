@@ -715,6 +715,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `/var/log/nginx/*.log` logrotate rule covers it.
 
 ### Fixed
+- Daily 404 report of 14 November 2026 (15 requests in the 404 list; the report showed 12 and the other 3 were found in
+  the access log: `/mcp`, `/api/mcp` and a FortiGate probe, `/remote/login`): more scanner probes are dropped and one
+  old backlink is redirected. Dropped (`444`, logged to `scanner.log`): `/login` and `/status` at the root (guessed pages;
+  the site has no visitor login or status page, and they were asked for on many days by changing addresses),
+  `/remote/login` (FortiGate SSL-VPN), `/sdk/vimServiceVersions.xml` (VMware vSphere, 2 addresses), `/mics/api/...`
+  (MobileIron Sentry, a `POST` from 4 addresses in 11 days), `/?rest_route=...` (WordPress REST API) and the
+  `wp2shell-rce` user agent, which sent `POST /?rest_route=/batch/v1` (the `POST /` rule does not match a request with a
+  query string). They are anchored at the root (`/login` and `/status` as exact names, `/sdk/vimServiceVersions.xml` and `/mics/api/` as prefixes, `rest_route` only in the root query string), so `/api/status`, `/law/login`, `/sdk` and a
+  search such as `/browse?q=login` still pass. `/Murphy/Murphy-true.html` (capital M, browsers from three addresses in a
+  week) now redirects to `/origin-story` like `/murphy/murphy-true.html`; locations are case-sensitive, so neither the
+  lower-case rule nor the `/murphy/` 410 matched it. Left alone on purpose: `/sellers.json` (ad-network crawlers; we publish
+  `ads.txt` but a seller list is the ad network's file), `/news-sitemap.xml` and `/sitemap-news.xml` (a news sitemap is not
+  the flat `sitemap.xml`, so no redirect), `/sse`, `/mcp` and `/api/mcp` (MCP discovery from Infrawatch; the MCP server is
+  stdio-only), CensysInspect's random-token canaries (`/rco_bau2q`, `/n790b4n1qkd76k8b6`), `OPTIONS /`, and two `499` API
+  requests from YouBot (the client closed the connection; not a 404).
+  Web bumped to `3.4.134`; root to `2.6.271`.
 - The daily report could name a Law of the Day that visitors never saw (issue #356). `render-daily-report.ts` read the
   day's law from `law_of_the_day_history` with `LIMIT 1` and no `ORDER BY`, and did not check that the law is still
   published. The table only has `UNIQUE(law_id, featured_date)`, so a day can have two rows (a pick that was
