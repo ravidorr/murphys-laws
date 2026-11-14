@@ -97,15 +97,23 @@ Before it reports that, it waits 45 seconds and runs the check again, up to twic
 configuration error), because a deploy's `npm ci` empties `backend/node_modules` for usually under a minute (longer
 when `npm ci` itself is retried) and a check started then crashes. The last attempt decides: a run that then works
 is healthy and sends no "could not run" mail (the output of the failed attempts stays in the monitor log), and one
-that finds an outage is counted as one. A retry can land while the same deploy restarts the API and then send
+that finds an outage is counted as one. Without a deploy marker (see below) a retry can land while a deploy restarts the API and then send
 "Health Check Failed (1/3)"; the next healthy run clears it.
 The same two retries apply when the check ran but the API answered 502, 503 or 504, which is what a deploy
 restarting the API looks like from outside (the 2026-11-13 20:55 UTC mail). Other failures are counted at once.
-While a deploy runs, the monitor does not check at all. The deploy writes the time to
-`/var/tmp/murphys-deploy-in-progress` before `npm ci` and removes it when its script ends (an exit trap). A run that
-finds the marker less than 15 minutes old logs "A deploy is in progress" and exits without counting a failure or
-sending a mail, and a run that sees the marker appear during its retries does the same. A marker that is empty, not a
-number, in the future or older than 15 minutes is ignored and logged, so a killed deploy cannot silence the monitor.
+From the start of the GitHub Actions deploy's server-side script (before `npm ci`) until it ends, the monitor skips its
+check. The deploy writes `<its pid> <the time>` to `/var/tmp/murphys-deploy-in-progress` and removes it with an exit
+trap, which also records the end time in `/var/tmp/murphys-deploy-finished`. A run that finds a live marker logs "A deploy
+has been in progress for Ns" and exits without counting a failure, sending a mail, restarting anything or pinging the
+dead-man switch (the Healthchecks grace period must be longer than the longest deploy, 10 minutes, plus one cron
+interval). The marker is checked again before each retry and once more after the last attempt, and a failure from a run
+that a deploy overlapped (the marker is gone, but the end time is later than the start of the run) is not counted either.
+A marker that is not a regular file (a symlink is refused), does not hold a pid and a time, names a process that no
+longer exists, is dated in the future or is 15 minutes old or more is logged, removed and ignored, so a deploy that was
+killed, which skips its cleanup, ends the silence at the next run. A marker that cannot be written only warns in the
+deploy log. This covers the GitHub Actions deploy only: `npm run deploy` and a manual `pm2 restart` write no marker, and
+a failure while they run is still counted, after the retries above. While the marker is there a real outage that has
+nothing to do with the deploy is not mailed either; a release that leaves the API down fails its own health check step.
 What it emails, and how often:
 
 - First failure: "Health Check Failed (1/3)". If that mail could not be sent, the next failing run tries

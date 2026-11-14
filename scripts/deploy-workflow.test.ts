@@ -1554,3 +1554,56 @@ test('the backend .env names the commit as the Sentry release, like the web buil
   assert.match(script, /^\s*SENTRY_RELEASE=\$\{\{ github\.sha \}\}$/m, 'SENTRY_RELEASE is written into the backend .env');
   assert.equal(buildStep?.env?.VITE_APP_VERSION, '${{ github.sha }}', 'the web bundle and the API use the same release name');
 });
+
+// The health monitor skips its run while the deploy's marker file is there (backend/scripts/health-monitor.sh). The
+// deploy and the monitor name that file separately, so nothing but these tests notices if one of them is edited alone.
+const monitorSource = readFileSync(path.join(rootDirectory, 'backend/scripts/health-monitor.sh'), 'utf8');
+const monitorConstant = (name: string): string => monitorSource.match(new RegExp(`^${name}="([^"]+)"`, 'm'))?.[1] ?? '';
+
+test('the deploy writes the marker and the finished file the health monitor reads', () => {
+  const marker = monitorConstant('DEPLOY_MARKER');
+  const finished = monitorConstant('DEPLOY_FINISHED');
+  assert.equal(marker, '/var/tmp/murphys-deploy-in-progress');
+  assert.equal(finished, '/var/tmp/murphys-deploy-finished');
+  const trapLine = deployScript.indexOf(`trap 'date +%s > ${finished}`);
+  const writeLine = deployScript.indexOf(`> ${marker}`);
+  assert.ok(trapLine > 0, 'the exit trap records the end time');
+  assert.ok(deployScript.includes(`rm -f ${marker}' EXIT`), 'the exit trap removes the marker');
+  assert.ok(writeLine > trapLine, 'the trap is installed before the marker is written, so a failed write is cleaned up');
+  assert.ok(writeLine < deployScript.indexOf('npm ci'), 'the marker is written before the dependencies are replaced');
+  assert.ok(writeLine < deployScript.indexOf('pm2 delete all'), 'and before the API is stopped');
+  assert.ok(deployScript.indexOf(`trap - EXIT`, trapLine) === -1, 'nothing after the trap resets it');
+});
+
+test('the marker block leaves a pid and a time, is gone after any exit, and a failed write only warns', () => {
+  const start = deployScript.indexOf("trap 'date +%s > /var/tmp/murphys-deploy-finished");
+  const end = deployScript.indexOf('echo "==> Loading nvm');
+  assert.ok(start > 0 && end > start);
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'deploy-marker-'));
+  const block = deployScript.slice(start, end).replaceAll('/var/tmp/', `${directory}/`);
+  const run = (body: string) => spawnSync('bash', ['-c', `set -e\n${block}\n${body}`], { encoding: 'utf8' });
+  const marker = path.join(directory, 'murphys-deploy-in-progress');
+  const finished = path.join(directory, 'murphys-deploy-finished');
+
+  const during = run(`cat ${marker}; exit 0`);
+  assert.equal(during.status, 0);
+  assert.match(during.stdout, /^\d+ \d+\n$/, 'the marker holds the pid and the time');
+  assert.equal(existsSync(marker), false, 'removed on a normal end');
+  assert.match(readFileSync(finished, 'utf8'), /^\d+\n$/, 'the end time is recorded');
+
+  const failing = run('ls ' + path.join(directory, 'nothing-here'));
+  assert.notEqual(failing.status, 0, 'a failing command still fails the script');
+  assert.equal(existsSync(marker), false, 'removed when set -e stops the script');
+
+  const blocked = mkdtempSync(path.join(os.tmpdir(), 'deploy-marker-'));
+  const unwritable = deployScript.slice(start, end).replaceAll('/var/tmp/', `${blocked}/missing/`);
+  const warned = spawnSync('bash', ['-c', `set -e\n${unwritable}\nexit 0`], { encoding: 'utf8' });
+  assert.equal(warned.status, 0, 'a marker that cannot be written does not fail the deploy');
+  assert.match(warned.stderr, /WARNING: could not write .*the health monitor may report this deploy as an outage/);
+});
+
+test('only one production deploy runs at a time, so two runs never share the marker', () => {
+  const workflow = readWorkflow('deploy.yml') as { concurrency?: { group?: string; 'cancel-in-progress'?: boolean } };
+  assert.equal(workflow.concurrency?.group, 'production-deploy');
+  assert.equal(workflow.concurrency?.['cancel-in-progress'], false, 'a deploy that has started is never cancelled');
+});
