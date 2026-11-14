@@ -101,6 +101,11 @@ that finds an outage is counted as one. A retry can land while the same deploy r
 "Health Check Failed (1/3)"; the next healthy run clears it.
 The same two retries apply when the check ran but the API answered 502, 503 or 504, which is what a deploy
 restarting the API looks like from outside (the 2026-11-13 20:55 UTC mail). Other failures are counted at once.
+While a deploy runs, the monitor does not check at all. The deploy writes the time to
+`/var/tmp/murphys-deploy-in-progress` before `npm ci` and removes it when its script ends (an exit trap). A run that
+finds the marker less than 15 minutes old logs "A deploy is in progress" and exits without counting a failure or
+sending a mail, and a run that sees the marker appear during its retries does the same. A marker that is empty, not a
+number, in the future or older than 15 minutes is ignored and logged, so a killed deploy cannot silence the monitor.
 What it emails, and how often:
 
 - First failure: "Health Check Failed (1/3)". If that mail could not be sent, the next failing run tries

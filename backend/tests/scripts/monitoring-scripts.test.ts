@@ -240,6 +240,10 @@ describe('health-monitor.sh as cron runs it', () => {
     noMarker?: boolean;
     /** The fake check also prints "API check failed: API returned status <this>". */
     apiStatus?: string;
+    /** The raw content of the deploy marker already on disk (a time in seconds, or anything else). */
+    marker?: string;
+    /** The deploy marker (a current time) appears when the monitor first sleeps, as when a deploy starts mid-run. */
+    markerOnSleep?: boolean;
     env?: Record<string, string>;
     box?: Sandbox;
   }
@@ -250,7 +254,7 @@ describe('health-monitor.sh as cron runs it', () => {
    */
   function monitor(
     codes: number[],
-    { failures, failuresRaw, failuresUnwritable, noMarker, apiStatus, env = { EMAIL_TO: 'admin@example.com' }, box = sandbox() }: MonitorOptions = {},
+    { failures, failuresRaw, failuresUnwritable, noMarker, apiStatus, marker, markerOnSleep, env = { EMAIL_TO: 'admin@example.com' }, box = sandbox() }: MonitorOptions = {},
   ): Run {
     const project = path.join(box.root, 'project');
     const tsx = path.join(project, 'backend/node_modules/.bin/tsx');
@@ -270,7 +274,11 @@ describe('health-monitor.sh as cron runs it', () => {
     fake('pm2', 'if [ "$1" = "jlist" ]; then echo "[]"; else echo "pm2 $* count=$(cat "$FAILURES_FILE" 2>/dev/null)" >> "$PM2_LOG"; exit "${PM2_RESTART_EXIT:-0}"; fi');
     // The real `timeout` is missing on macOS; this one records its arguments and runs the command.
     fake('timeout', 'echo "timeout $1" >> "$TIMEOUT_LOG"; shift; exec "$@"');
-    fake('sleep', 'echo "$1" >> "$SLEEP_LOG"; exit 0');
+    fake('sleep', 'echo "$1" >> "$SLEEP_LOG"; if [ -n "$MARKER_ON_SLEEP" ]; then date +%s > "$MARKER_ON_SLEEP"; fi; exit 0');
+    const markerFile = path.join(box.root, 'murphys-deploy-in-progress');
+    if (marker !== undefined) {
+      writeFileSync(markerFile, marker);
+    }
     fake('curl', 'echo "curl $*" >> "$CURL_LOG"');
     const failuresFile = path.join(box.root, 'health-check-failures');
     if (failuresUnwritable) {
@@ -295,6 +303,7 @@ describe('health-monitor.sh as cron runs it', () => {
       TSX_ARGS: path.join(box.root, 'tsx-args.log'),
       ...(noMarker ? { TSX_NO_MARKER: '1' } : {}),
       ...(apiStatus ? { TSX_API_STATUS: apiStatus } : {}),
+      ...(markerOnSleep ? { MARKER_ON_SLEEP: markerFile } : {}),
       PM2_LOG: path.join(box.root, 'pm2.log'),
       FAILURES_FILE: failuresFile,
       TIMEOUT_LOG: path.join(box.root, 'timeout.log'),
@@ -521,6 +530,50 @@ describe('health-monitor.sh as cron runs it', () => {
       expect(runs(run)).toBe(1);
       expect(run.sleeps).toBe('');
       expect(run.failures).toBe('1');
+    });
+  });
+
+  describe('a deploy in progress is not an outage (the deploy writes a marker while it restarts the API)', () => {
+    const now = () => Math.floor(Date.now() / 1000);
+    const runs = (run: Run) => run.tsxArgs.trim().split('\n').filter(Boolean).length;
+
+    it('skips the run: no check, no failure counted, no mail, no restart', () => {
+      const run = monitor([1], { failures: 2, apiStatus: '502', marker: `${now()}\n` });
+      expect(run.status).toBe(0);
+      expect(runs(run)).toBe(0);
+      expect(run.failures).toBe('2');
+      expect(run.mail).toBe('');
+      expect(run.pm2).toBe('');
+      expect(run.log).toContain('A deploy is in progress; skipping this health check');
+    });
+
+    it.each([
+      ['older than 15 minutes', () => `${now() - 901}\n`],
+      ['dated in the future', () => `${now() + 3600}\n`],
+      ['empty', () => ''],
+      ['not a time', () => 'deploying\n'],
+    ])('ignores a marker that is %s, so a crashed deploy cannot silence the monitor', (_name, content) => {
+      const run = monitor([1], { apiStatus: '500', marker: content() });
+      expect(run.status).toBe(1);
+      expect(runs(run)).toBe(1);
+      expect(run.failures).toBe('1');
+      expect(run.log).toContain('Ignoring the deploy marker');
+      expect(run.mail).toContain('Health Check Failed (1/3)');
+    });
+
+    it('honors a marker that appears while the check is being retried, and counts nothing', () => {
+      const run = monitor([1, 1, 1], { failures: 2, apiStatus: '502', markerOnSleep: true });
+      expect(run.status).toBe(0);
+      expect(run.failures).toBe('2');
+      expect(run.mail).toBe('');
+      expect(run.pm2).toBe('');
+      expect(run.log).toContain('A deploy started during the health check');
+    });
+
+    it('does not change a healthy run when there is no marker', () => {
+      const run = monitor([0]);
+      expect(run.status).toBe(0);
+      expect(run.log).not.toContain('deploy');
     });
   });
 
