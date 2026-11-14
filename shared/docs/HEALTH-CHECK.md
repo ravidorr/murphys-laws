@@ -107,7 +107,7 @@ trap, which also records the end time in `/var/tmp/murphys-deploy-finished`. A r
 has been in progress for Ns" and exits without counting a failure, sending a mail, restarting anything or pinging the
 dead-man switch (the Healthchecks grace period must be longer than the longest deploy, 10 minutes, plus one cron
 interval). The marker is checked again before each retry and once more after the last attempt, and a failure from a run
-that a deploy overlapped (the marker is gone, but the end time is later than the start of the run) is not counted either.
+that a deploy overlapped (the marker is gone, but the end time is between the start of the run and now) is not counted either.
 A marker that is not a regular file (a symlink is refused), does not hold a pid and a time, names a process that no
 longer exists, is dated in the future or is 15 minutes old or more is logged, removed and ignored, so a deploy that was
 killed, which skips its cleanup, ends the silence at the next run. A marker that cannot be written only warns in the

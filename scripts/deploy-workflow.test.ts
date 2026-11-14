@@ -1603,7 +1603,8 @@ test('the marker block leaves a pid and a time, is gone after any exit, and a fa
 });
 
 test('only one production deploy runs at a time, so two runs never share the marker', () => {
-  const workflow = readWorkflow('deploy.yml') as { concurrency?: { group?: string; 'cancel-in-progress'?: boolean } };
-  assert.equal(workflow.concurrency?.group, 'production-deploy');
-  assert.equal(workflow.concurrency?.['cancel-in-progress'], false, 'a deploy that has started is never cancelled');
+  const workflow = readWorkflow('deploy.yml') as { jobs?: Record<string, { concurrency?: { group?: string; 'cancel-in-progress'?: boolean } }> };
+  const concurrency = workflow.jobs?.deploy?.concurrency;
+  assert.equal(concurrency?.group, 'production-deploy');
+  assert.equal(concurrency?.['cancel-in-progress'], false, 'a deploy that has started is never cancelled');
 });

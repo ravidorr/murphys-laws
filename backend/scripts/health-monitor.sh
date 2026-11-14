@@ -270,11 +270,15 @@ deploy_in_progress() {
     return 0
 }
 
-# Whether a deploy ended after the time $1: it overlapped a run that began then, so a failure that run saw may be its restart.
+# Whether a deploy ended between the time $1 and now: it overlapped a run that began then, so a failure that run saw
+# may be its restart. A time in the future (the clock went back after the deploy) is not trusted, or every failure
+# would be hidden until the clock caught up.
 deploy_finished_since() {
     local finished
     finished="$(cat "$DEPLOY_FINISHED" 2>/dev/null)"
-    [[ "$finished" =~ ^[0-9]+$ ]] && [ $((10#$finished)) -ge "$1" ]
+    [[ "$finished" =~ ^[0-9]+$ ]] || return 1
+    finished=$((10#$finished))
+    [ "$finished" -ge "$1" ] && [ "$finished" -le "$(date +%s)" ]
 }
 
 # A few words for the "could not run" mail.
