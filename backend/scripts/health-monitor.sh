@@ -15,8 +15,11 @@ COULD_NOT_RUN_COOLDOWN=21600  # at most one "could not run" mail per exit code e
 WARNING_COOLDOWN=86400        # at most one slow-site warning mail a day
 OUTAGE_REPORT_WINDOW=21600    # an outage mail covers the next 6 hours, in case no healthy run ever clears it
 LOCK_DIR="/var/tmp/health-monitor.lock"
-DEPLOY_MARKER="/var/tmp/murphys-deploy-in-progress"  # written by the deploy while it replaces dependencies and restarts the API
-DEPLOY_MARKER_MAX_AGE=900     # a marker older than this is ignored, so a deploy that was killed cannot silence the monitor
+DEPLOY_MARKER="/var/tmp/murphys-deploy-in-progress"  # "<pid> <time>", written by the GitHub Actions deploy from the start of its server-side script (before npm ci) until it ends
+DEPLOY_FINISHED="/var/tmp/murphys-deploy-finished"   # the time the last such deploy ended, so a run that was overlapped by it knows
+# The deploy's ssh step stops its script after 10 minutes, so a marker older than this is from a deploy that is gone
+# (and is ignored); a marker whose process no longer exists is ignored at once.
+DEPLOY_MARKER_MAX_AGE=900
 LOCK_STALE_SECONDS=900        # a lock older than this is taken over even if its process still exists
 CHECK_TIMEOUT_SECONDS=120     # backstop for one run of the check, which bounds its own requests to 10 seconds
 # A deploy's `npm ci` empties backend/node_modules for about 20 to 60 seconds, so a check that starts then
@@ -235,24 +238,43 @@ classify_health_exit() {
     esac
 }
 
-# Whether a deploy is under way: the deploy writes the time to $DEPLOY_MARKER first and removes it when it ends. A
-# marker that is empty, not a number, in the future (the clock went back) or older than DEPLOY_MARKER_MAX_AGE is
-# ignored and says so in the log, so a crashed deploy can never keep the monitor quiet.
+# Whether a deploy is under way: the GitHub Actions deploy writes "<its pid> <the time>" to $DEPLOY_MARKER first and
+# removes it when its script ends. (`npm run deploy` and a manual restart write nothing.) A marker that is not a
+# regular file, does not hold a pid and a time, is dated in the future (the clock went back), is older than
+# DEPLOY_MARKER_MAX_AGE, or names a process that no longer exists is not trusted: it is logged and removed, so a deploy
+# that was killed (which skips its cleanup) ends the silence at the next run instead of after 15 minutes.
 deploy_in_progress() {
-    local started now
-    [ -e "$DEPLOY_MARKER" ] || return 1
-    started="$(cat "$DEPLOY_MARKER" 2>/dev/null)"
+    local pid started now
+    [ -e "$DEPLOY_MARKER" ] || [ -L "$DEPLOY_MARKER" ] || return 1
     now="$(date +%s)"
-    if [[ ! "$started" =~ ^[0-9]+$ ]]; then
-        log "Ignoring the deploy marker $DEPLOY_MARKER: it does not hold a time"
+    if [ -f "$DEPLOY_MARKER" ] && [ ! -L "$DEPLOY_MARKER" ]; then
+        read -r pid started _ < "$DEPLOY_MARKER" 2>/dev/null || true
+    fi
+    if [[ ! "$pid" =~ ^[0-9]+$ ]] || [[ ! "$started" =~ ^[0-9]+$ ]]; then
+        log "Ignoring and removing the deploy marker $DEPLOY_MARKER: it is not a file holding a pid and a time"
+        rm -f -- "$DEPLOY_MARKER"
         return 1
     fi
     started=$((10#$started))
     if [ "$started" -gt "$now" ] || [ $((now - started)) -ge "$DEPLOY_MARKER_MAX_AGE" ]; then
-        log "Ignoring the deploy marker $DEPLOY_MARKER: it is stale or dated in the future"
+        log "Ignoring and removing the deploy marker $DEPLOY_MARKER: it is $((now - started)) seconds old (or dated in the future); the deploy that wrote it is gone"
+        rm -f -- "$DEPLOY_MARKER"
         return 1
     fi
+    if ! kill -0 "$((10#$pid))" 2>/dev/null; then
+        log "Ignoring and removing the deploy marker $DEPLOY_MARKER: process $pid is gone, so the deploy died without cleaning up"
+        rm -f -- "$DEPLOY_MARKER"
+        return 1
+    fi
+    DEPLOY_MARKER_AGE=$((now - started))
     return 0
+}
+
+# Whether a deploy ended after the time $1: it overlapped a run that began then, so a failure that run saw may be its restart.
+deploy_finished_since() {
+    local finished
+    finished="$(cat "$DEPLOY_FINISHED" 2>/dev/null)"
+    [[ "$finished" =~ ^[0-9]+$ ]] && [ $((10#$finished)) -ge "$1" ]
 }
 
 # A few words for the "could not run" mail.
@@ -286,8 +308,9 @@ cd "$PROJECT_DIR" || exit 1
 
 # A deploy replaces the dependencies and restarts the API, which looks like an outage from outside. Skip the run
 # without counting a failure or sending a mail; the deploy's own health check fails the release if the API stays down.
+run_started="$(date +%s)"
 if deploy_in_progress; then
-    log "A deploy is in progress; skipping this health check"
+    log "A deploy has been in progress for ${DEPLOY_MARKER_AGE}s; skipping this health check"
     exit "$(delivery_exit_code 0)"
 fi
 
@@ -306,6 +329,11 @@ retry_attempt=0
 while [ "$health_check_exit_code" -ne 2 ] && [ "$retry_attempt" -lt "$COULD_NOT_RUN_RETRIES" ] \
     && { [ "$health_check_class" = "monitor-problem" ] \
         || { [ "$health_check_class" = "outage" ] && is_transient_outage "$OUTPUT_FILE"; }; }; do
+    # A deploy may have started since the last attempt: stop at once instead of waiting and checking again.
+    if deploy_in_progress; then
+        log "A deploy started during the health check (${health_check_class}); not counting it"
+        exit "$(delivery_exit_code 0)"
+    fi
     retry_attempt=$((retry_attempt + 1))
     # The output is overwritten by the next attempt, so keep what this one said in the log: it is the only
     # record of a transient failure that a later attempt recovers from.
@@ -316,8 +344,8 @@ while [ "$health_check_exit_code" -ne 2 ] && [ "$retry_attempt" -lt "$COULD_NOT_
     health_check_class="$(classify_health_exit "$health_check_exit_code" "$OUTPUT_FILE")"
 done
 
-# A deploy can start part-way through a run, so look once more before a failure is counted.
-if [ "$health_check_class" != "healthy" ] && deploy_in_progress; then
+# A deploy can start, or start and end, while the last attempt runs, so look once more before a failure is counted.
+if [ "$health_check_class" != "healthy" ] && { deploy_in_progress || deploy_finished_since "$run_started"; }; then
     log "A deploy started during the health check (${health_check_class}); not counting it"
     exit "$(delivery_exit_code 0)"
 fi

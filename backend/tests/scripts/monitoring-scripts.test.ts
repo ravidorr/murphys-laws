@@ -242,8 +242,12 @@ describe('health-monitor.sh as cron runs it', () => {
     apiStatus?: string;
     /** The raw content of the deploy marker already on disk (a time in seconds, or anything else). */
     marker?: string;
-    /** The deploy marker (a current time) appears when the monitor first sleeps, as when a deploy starts mid-run. */
+    /** The deploy marker (this test process's pid and a current time) appears each time the monitor sleeps, as when a deploy starts mid-run. */
     markerOnSleep?: boolean;
+    /** The raw content of the "deploy finished" file already on disk. */
+    finished?: string;
+    /** Make the marker a symlink to this file (created in the sandbox) instead of a regular file. */
+    markerSymlinkTo?: string;
     env?: Record<string, string>;
     box?: Sandbox;
   }
@@ -254,7 +258,7 @@ describe('health-monitor.sh as cron runs it', () => {
    */
   function monitor(
     codes: number[],
-    { failures, failuresRaw, failuresUnwritable, noMarker, apiStatus, marker, markerOnSleep, env = { EMAIL_TO: 'admin@example.com' }, box = sandbox() }: MonitorOptions = {},
+    { failures, failuresRaw, failuresUnwritable, noMarker, apiStatus, marker, markerOnSleep, finished, markerSymlinkTo, env = { EMAIL_TO: 'admin@example.com' }, box = sandbox() }: MonitorOptions = {},
   ): Run {
     const project = path.join(box.root, 'project');
     const tsx = path.join(project, 'backend/node_modules/.bin/tsx');
@@ -274,10 +278,17 @@ describe('health-monitor.sh as cron runs it', () => {
     fake('pm2', 'if [ "$1" = "jlist" ]; then echo "[]"; else echo "pm2 $* count=$(cat "$FAILURES_FILE" 2>/dev/null)" >> "$PM2_LOG"; exit "${PM2_RESTART_EXIT:-0}"; fi');
     // The real `timeout` is missing on macOS; this one records its arguments and runs the command.
     fake('timeout', 'echo "timeout $1" >> "$TIMEOUT_LOG"; shift; exec "$@"');
-    fake('sleep', 'echo "$1" >> "$SLEEP_LOG"; if [ -n "$MARKER_ON_SLEEP" ]; then date +%s > "$MARKER_ON_SLEEP"; fi; exit 0');
+    fake('sleep', 'echo "$1" >> "$SLEEP_LOG"; if [ -n "$MARKER_ON_SLEEP" ]; then echo "$PID_FOR_MARKER $(date +%s)" > "$MARKER_ON_SLEEP"; fi; exit 0');
     const markerFile = path.join(box.root, 'murphys-deploy-in-progress');
     if (marker !== undefined) {
       writeFileSync(markerFile, marker);
+    }
+    if (markerSymlinkTo !== undefined) {
+      writeFileSync(path.join(box.root, markerSymlinkTo), `${process.pid} ${Math.floor(Date.now() / 1000)}\n`);
+      symlinkSync(path.join(box.root, markerSymlinkTo), markerFile);
+    }
+    if (finished !== undefined) {
+      writeFileSync(path.join(box.root, 'murphys-deploy-finished'), finished);
     }
     fake('curl', 'echo "curl $*" >> "$CURL_LOG"');
     const failuresFile = path.join(box.root, 'health-check-failures');
@@ -303,7 +314,7 @@ describe('health-monitor.sh as cron runs it', () => {
       TSX_ARGS: path.join(box.root, 'tsx-args.log'),
       ...(noMarker ? { TSX_NO_MARKER: '1' } : {}),
       ...(apiStatus ? { TSX_API_STATUS: apiStatus } : {}),
-      ...(markerOnSleep ? { MARKER_ON_SLEEP: markerFile } : {}),
+      ...(markerOnSleep ? { MARKER_ON_SLEEP: markerFile, PID_FOR_MARKER: String(process.pid) } : {}),
       PM2_LOG: path.join(box.root, 'pm2.log'),
       FAILURES_FILE: failuresFile,
       TIMEOUT_LOG: path.join(box.root, 'timeout.log'),
@@ -535,33 +546,56 @@ describe('health-monitor.sh as cron runs it', () => {
 
   describe('a deploy in progress is not an outage (the deploy writes a marker while it restarts the API)', () => {
     const now = () => Math.floor(Date.now() / 1000);
+    const live = (age = 0) => `${process.pid} ${now() - age}\n`;
+    const DEAD_PID = 2147483646;
     const runs = (run: Run) => run.tsxArgs.trim().split('\n').filter(Boolean).length;
+    const markerGone = (run: Run) => !existsSync(path.join(run.box.root, 'murphys-deploy-in-progress'));
 
-    it('skips the run: no check, no failure counted, no mail, no restart', () => {
-      const run = monitor([1], { failures: 2, apiStatus: '502', marker: `${now()}\n` });
+    it('skips the run: no check, no failure counted, no mail, no restart, no lock left behind', () => {
+      const run = monitor([1], { failures: 2, apiStatus: '502', marker: live() });
       expect(run.status).toBe(0);
       expect(runs(run)).toBe(0);
       expect(run.failures).toBe('2');
       expect(run.mail).toBe('');
       expect(run.pm2).toBe('');
-      expect(run.log).toContain('A deploy is in progress; skipping this health check');
+      expect(run.log).toMatch(/A deploy has been in progress for \d+s; skipping this health check/);
+      expect(existsSync(path.join(run.box.root, 'health-monitor.lock'))).toBe(false);
+      expect(markerGone(run)).toBe(false);
+    });
+
+    it('honors a marker one second short of the limit and ignores one at the limit', () => {
+      expect(monitor([1], { apiStatus: '500', marker: live(899) }).status).toBe(0);
+      const run = monitor([1], { apiStatus: '500', marker: live(900) });
+      expect(run.status).toBe(1);
+      expect(run.log).toContain('Ignoring and removing the deploy marker');
     });
 
     it.each([
-      ['older than 15 minutes', () => `${now() - 901}\n`],
-      ['dated in the future', () => `${now() + 3600}\n`],
+      ['older than 15 minutes', () => live(901)],
+      ['dated in the future', () => `${process.pid} ${now() + 5}\n`],
       ['empty', () => ''],
+      ['a bare time with no pid', () => `${now()}\n`],
       ['not a time', () => 'deploying\n'],
-    ])('ignores a marker that is %s, so a crashed deploy cannot silence the monitor', (_name, content) => {
+      ['written by a deploy that died (its pid is gone)', () => `${DEAD_PID} ${now()}\n`],
+      ['zero-padded and old', () => '0000000000 0000000000\n'],
+    ])('ignores and removes a marker that is %s, so a crashed deploy cannot silence the monitor', (_name, content) => {
       const run = monitor([1], { apiStatus: '500', marker: content() });
       expect(run.status).toBe(1);
       expect(runs(run)).toBe(1);
       expect(run.failures).toBe('1');
-      expect(run.log).toContain('Ignoring the deploy marker');
+      expect(run.log).toContain('Ignoring and removing the deploy marker');
       expect(run.mail).toContain('Health Check Failed (1/3)');
+      expect(markerGone(run)).toBe(true);
     });
 
-    it('honors a marker that appears while the check is being retried, and counts nothing', () => {
+    it('does not trust a marker that is a symlink, which anyone with write access to /var/tmp could plant', () => {
+      const run = monitor([1], { apiStatus: '500', markerSymlinkTo: 'planted' });
+      expect(run.status).toBe(1);
+      expect(run.log).toContain('Ignoring and removing the deploy marker');
+      expect(markerGone(run)).toBe(true);
+    });
+
+    it('stops at once, without waiting, when a marker appears while it is retrying a 502', () => {
       const run = monitor([1, 1, 1], { failures: 2, apiStatus: '502', markerOnSleep: true });
       expect(run.status).toBe(0);
       expect(run.failures).toBe('2');
@@ -570,10 +604,34 @@ describe('health-monitor.sh as cron runs it', () => {
       expect(run.log).toContain('A deploy started during the health check');
     });
 
-    it('does not change a healthy run when there is no marker', () => {
-      const run = monitor([0]);
+    it('does the same when the check could not run (npm ci had emptied node_modules)', () => {
+      const run = monitor([127, 127, 127], { failures: 2, markerOnSleep: true });
       expect(run.status).toBe(0);
-      expect(run.log).not.toContain('deploy');
+      expect(run.failures).toBe('2');
+      expect(run.mail).toBe('');
+      expect(run.log).toContain('A deploy started during the health check');
+    });
+
+    it('does not count a failure from a run that a deploy overlapped, even when the marker is already gone', () => {
+      const run = monitor([1], { failures: 2, apiStatus: '500', finished: `${now() + 60}\n` });
+      expect(run.status).toBe(0);
+      expect(run.failures).toBe('2');
+      expect(run.mail).toBe('');
+      expect(run.log).toContain('A deploy started during the health check');
+    });
+
+    it('counts a failure when the last deploy ended before the run began, or the finished file is unusable', () => {
+      expect(monitor([1], { apiStatus: '500', finished: `${now() - 3600}\n` }).failures).toBe('1');
+      expect(monitor([1], { apiStatus: '500', finished: 'soon\n' }).failures).toBe('1');
+    });
+
+    it('does not change a healthy run when there is no marker, and a deploy that ended mid-run does not hide a healthy result', () => {
+      const none = monitor([0]);
+      expect(none.status).toBe(0);
+      expect(none.log).not.toContain('deploy');
+      const overlapped = monitor([0], { failures: 2, finished: `${now() + 60}\n` });
+      expect(overlapped.status).toBe(0);
+      expect(overlapped.failures).toBe('0');
     });
   });
 
