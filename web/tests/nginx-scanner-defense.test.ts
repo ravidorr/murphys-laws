@@ -264,6 +264,27 @@ describe('nginx scanner defense', () => {
     '/doh?dns=YRsBAAABAAAAAAAAA2RvaAhvdmVyc2VhcwMxNjcCOTkCNTMCOTAIMjAyNjExMTIEdGVzdAl3aGl0ZWNodW4Ec2hvcAAAAQAB',
     '/resolve',
     '/resolve?dns=YAsBAAABAAAAAAAAA2RvaAhvdmVyc2VhcwMxNjcCOTkCNTMCOTAIMjAyNjExMTIEdGVzdAl3aGl0ZWNodW4Ec2hvcAAAAQAB',
+    '/login',
+    '/login/',
+    '/login?next=/',
+    '/Login',
+    '/status',
+    '/status?x=1',
+    '/remote/login',
+    '/remote/login?lang=en',
+    '/sdk/vimServiceVersions.xml',
+    '/mics/api/v2/sentry/mics-config/handleMessage',
+    '/?rest_route=/batch/v1',
+    '/?a=1&rest_route=/wp/v2/users',
+    // The patterns are case-insensitive
+    '/LOGIN',
+    '/Remote/Login',
+    '/status/',
+    '/remote/login/',
+    '/SDK/vimserviceversions.xml',
+    '/sdk/vimServiceVersions.xml?x=1',
+    '/MICS/API/v2/sentry',
+    '/?REST_ROUTE=/batch/v1',
   ])('flags %s as a scanner path', (uri) => {
     expect(isScannerPath(uri)).toBe(true);
   });
@@ -483,6 +504,29 @@ describe('nginx scanner defense', () => {
     '/now',
     '/env-notes',
     '/laws/key.pemx',
+    // Names next to the login, status, appliance and REST-route rules
+    '/Murphy/Murphy-true.html',
+    '/api/status',
+    '/api/v1/auth/status',
+    '/law/status',
+    '/law/login',
+    '/statuses',
+    '/login-help',
+    '/remote',
+    '/remote/logins',
+    '/sdk',
+    '/sdk/docs',
+    '/mics',
+    '/browse?q=login',
+    '/browse?q=status',
+    '/search?q=remote/login',
+    '/search?q=sdk/vimServiceVersions.xml',
+    '/browse?rest_route=x',
+    '/?utm=rest_route',
+    '/?utm=a&x=rest_route',
+    '/mics/api',
+    '/mics/apix',
+    '/login;jsessionid=x',
   ])('lets %s through', (uri) => {
     expect(isScannerPath(uri)).toBe(false);
   });
@@ -491,6 +535,8 @@ describe('nginx scanner defense', () => {
     expect(isScannerAgent('libredtail-http')).toBe(true);
     expect(isScannerAgent('sqlmap/1.7')).toBe(true);
     expect(isScannerAgent('rawgrab')).toBe(true);
+    expect(isScannerAgent('wp2shell-rce/1.0')).toBe(true);
+    expect(isScannerAgent('WP2Shell-RCE/1.0')).toBe(true);
     expect(isScannerAgent('Mozilla/5.0 (compatible; Nmap Scripting Engine; https://nmap.org/book/nse.html)')).toBe(true);
     // Ordinary browsers, our own checks (node fetch in the deploy smoke test, curl in the health check) and good-faith bots pass
     expect(isScannerAgent('node')).toBe(false);
@@ -780,6 +826,14 @@ describe('nginx legacy /murphy/ pages', () => {
     }
   });
 
+  it('redirects the capital-M origin-story link to a page the site builds, ahead of any block or 410', () => {
+    expect(readFileSync(resolve(root, 'web', 'scripts', 'ssg.ts'), 'utf-8')).toContain("canonicalPath: '/origin-story'");
+    expect(isScannerPath('/Murphy/Murphy-true.html')).toBe(false);
+    // selectLocation reads the apex server block only, so the rule cannot hide in a redirect-only block
+    expect(selectLocation('/Murphy/Murphy-true.html')).toBe('= /Murphy/Murphy-true.html');
+    expect(selectLocation('/Murphy/Murphy-true.html?utm_source=x')).toBe('= /Murphy/Murphy-true.html');
+  });
+
   it('does not treat any legacy URL as a scanner, so none is dropped with 444 or counted by fail2ban', () => {
     const urls = [...pageRedirects.map(([file]) => `/murphy/${file}`), ...goneUrls, '/murphy', '/murphy/'];
     for (const url of urls) {
@@ -859,6 +913,8 @@ describe('nginx legacy URL redirects', () => {
     ['/old/index.htm', '/'],
     ['/index.htm', '/'],
     ['/murphy', '/'],
+    // The same old page linked with a capital M (locations are case-sensitive)
+    ['/Murphy/Murphy-true.html', '/origin-story'],
     ['/apple-touch-icon-precomposed.png', '/apple-touch-icon.png'],
     ['/sitemaps.xml', '/sitemap.xml'],
     ['/sitemap_index.xml', '/sitemap.xml'],
