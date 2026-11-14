@@ -246,6 +246,8 @@ describe('health-monitor.sh as cron runs it', () => {
     markerOnSleep?: boolean;
     /** The raw content of the "deploy finished" file already on disk. */
     finished?: string;
+    /** The check itself records a deploy finishing (the current time), as when a deploy ends while the check runs. */
+    finishedDuringCheck?: boolean;
     /** Make the marker a symlink to this file (created in the sandbox) instead of a regular file. */
     markerSymlinkTo?: string;
     env?: Record<string, string>;
@@ -258,7 +260,7 @@ describe('health-monitor.sh as cron runs it', () => {
    */
   function monitor(
     codes: number[],
-    { failures, failuresRaw, failuresUnwritable, noMarker, apiStatus, marker, markerOnSleep, finished, markerSymlinkTo, env = { EMAIL_TO: 'admin@example.com' }, box = sandbox() }: MonitorOptions = {},
+    { failures, failuresRaw, failuresUnwritable, noMarker, apiStatus, marker, markerOnSleep, finished, finishedDuringCheck, markerSymlinkTo, env = { EMAIL_TO: 'admin@example.com' }, box = sandbox() }: MonitorOptions = {},
   ): Run {
     const project = path.join(box.root, 'project');
     const tsx = path.join(project, 'backend/node_modules/.bin/tsx');
@@ -267,7 +269,7 @@ describe('health-monitor.sh as cron runs it', () => {
     writeFileSync(queue, codes.map(String).join('\n') + (codes.length ? '\n' : ''));
     writeFileSync(
       tsx,
-      '#!/bin/bash\necho "$*" >> "$TSX_ARGS"\ncode="$(head -n 1 "$TSX_QUEUE")"\ntail -n +2 "$TSX_QUEUE" > "$TSX_QUEUE.next" && mv "$TSX_QUEUE.next" "$TSX_QUEUE"\necho "fake health check output"\nif [ -n "$TSX_API_STATUS" ]; then echo "API check failed: API returned status $TSX_API_STATUS" >&2; fi\nif [ "${code:-0}" = "1" ] && [ -z "$TSX_NO_MARKER" ]; then echo "Health check FAILED." >&2; fi\nexit "${code:-0}"\n',
+      '#!/bin/bash\necho "$*" >> "$TSX_ARGS"\ncode="$(head -n 1 "$TSX_QUEUE")"\ntail -n +2 "$TSX_QUEUE" > "$TSX_QUEUE.next" && mv "$TSX_QUEUE.next" "$TSX_QUEUE"\necho "fake health check output"\nif [ -n "$FINISHED_ON_RUN" ]; then date +%s > "$FINISHED_ON_RUN"; fi\nif [ -n "$TSX_API_STATUS" ]; then echo "API check failed: API returned status $TSX_API_STATUS" >&2; fi\nif [ "${code:-0}" = "1" ] && [ -z "$TSX_NO_MARKER" ]; then echo "Health check FAILED." >&2; fi\nexit "${code:-0}"\n',
     );
     chmodSync(tsx, 0o755);
     const fake = (name: string, body: string) => {
@@ -314,6 +316,7 @@ describe('health-monitor.sh as cron runs it', () => {
       TSX_ARGS: path.join(box.root, 'tsx-args.log'),
       ...(noMarker ? { TSX_NO_MARKER: '1' } : {}),
       ...(apiStatus ? { TSX_API_STATUS: apiStatus } : {}),
+      ...(finishedDuringCheck ? { FINISHED_ON_RUN: path.join(box.root, 'murphys-deploy-finished') } : {}),
       ...(markerOnSleep ? { MARKER_ON_SLEEP: markerFile, PID_FOR_MARKER: String(process.pid) } : {}),
       PM2_LOG: path.join(box.root, 'pm2.log'),
       FAILURES_FILE: failuresFile,
@@ -613,15 +616,16 @@ describe('health-monitor.sh as cron runs it', () => {
     });
 
     it('does not count a failure from a run that a deploy overlapped, even when the marker is already gone', () => {
-      const run = monitor([1], { failures: 2, apiStatus: '500', finished: `${now() + 60}\n` });
+      const run = monitor([1], { failures: 2, apiStatus: '500', finishedDuringCheck: true });
       expect(run.status).toBe(0);
       expect(run.failures).toBe('2');
       expect(run.mail).toBe('');
       expect(run.log).toContain('A deploy started during the health check');
     });
 
-    it('counts a failure when the last deploy ended before the run began, or the finished file is unusable', () => {
+    it('counts a failure when the last deploy ended before the run began, is dated in the future (the clock went back), or the finished file is unusable', () => {
       expect(monitor([1], { apiStatus: '500', finished: `${now() - 3600}\n` }).failures).toBe('1');
+      expect(monitor([1], { apiStatus: '500', finished: `${now() + 3600}\n` }).failures).toBe('1');
       expect(monitor([1], { apiStatus: '500', finished: 'soon\n' }).failures).toBe('1');
     });
 
@@ -629,7 +633,7 @@ describe('health-monitor.sh as cron runs it', () => {
       const none = monitor([0]);
       expect(none.status).toBe(0);
       expect(none.log).not.toContain('deploy');
-      const overlapped = monitor([0], { failures: 2, finished: `${now() + 60}\n` });
+      const overlapped = monitor([0], { failures: 2, finishedDuringCheck: true });
       expect(overlapped.status).toBe(0);
       expect(overlapped.failures).toBe('0');
     });

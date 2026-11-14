@@ -855,13 +855,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   still have mailed. The deploy's server-side script now writes `<pid> <time>` to `/var/tmp/murphys-deploy-in-progress`
   first (a failed write only warns), and an exit trap removes it and records the end time in
   `/var/tmp/murphys-deploy-finished`. `health-monitor.sh` skips its run while the marker is live, checks it again before
-  each retry and after the last attempt, and does not count a failure from a run that a deploy overlapped. A marker that
+  each retry and after the last attempt, and does not count a failure from a run that a deploy overlapped (a finish time in the future, from a clock that went back, is not trusted). A marker that
   is a symlink, malformed, in the future, 15 minutes old or more, or whose process is gone is logged, removed and
   ignored, so a killed deploy cannot silence the monitor. `deploy.yml` also gets a `concurrency` group so two deploys
   never share the marker. `npm run deploy` and manual restarts write no marker. Tests: `monitoring-scripts.test.ts`
   (fresh marker, the 899 and 900 second boundary, seven unusable markers, a symlink, a marker appearing during retries
   for a 502 and for a check that could not run, a deploy that ended mid-run) and `scripts/deploy-workflow.test.ts` (the
-  paths agree, the block's behavior, the concurrency group). Backend bumped to `2.3.105`; root to `2.6.272`.
+  paths agree, the block's behavior, the concurrency group). `deploy.yml`'s concurrency group is on the job, where the permissions test expects the top of the file. Backend bumped to `2.3.106`; root to `2.6.273`.
 - The health monitor now looks again, twice and 45 seconds apart, when the API answers 502, 503 or 504, before it
   counts that as an outage and emails "Health Check Failed (1/3)". What was wrong: the 2026-11-13 20:55 UTC mail
   (`API returned status 502`) was a deploy restarting the API. The deploy of 20:52 UTC ran until about 20:55:25, the

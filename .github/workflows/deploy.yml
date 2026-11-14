@@ -9,16 +9,15 @@ on:
 permissions:
   contents: read
 
-# One production deploy at a time: two overlapping runs would share the deploy marker and the release directory.
-concurrency:
-  group: production-deploy
-  cancel-in-progress: false
-
 jobs:
   deploy:
     # A manual run can be started from any branch; only main may reach production.
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    # One production deploy at a time: two overlapping runs would share the deploy marker and the release directory.
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
 
     steps:
       - name: Checkout code
