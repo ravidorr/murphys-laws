@@ -291,6 +291,11 @@ jobs:
             set -e
             trap 'echo "==> Script failed at line $LINENO"' ERR
             TARGET_DIR="/root/murphys-laws"
+            # Tells the health monitor a release is replacing the dependencies and restarting the API, so it does not
+            # report that as an outage. The exit trap removes it however this script ends; the monitor also ignores
+            # a marker older than 15 minutes, so a killed deploy cannot silence it.
+            date +%s > /var/tmp/murphys-deploy-in-progress
+            trap 'rm -f /var/tmp/murphys-deploy-in-progress' EXIT
 
             echo "==> Loading nvm and checking Node"
             export NVM_DIR="/root/.nvm"

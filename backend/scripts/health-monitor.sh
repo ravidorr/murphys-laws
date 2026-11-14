@@ -15,6 +15,8 @@ COULD_NOT_RUN_COOLDOWN=21600  # at most one "could not run" mail per exit code e
 WARNING_COOLDOWN=86400        # at most one slow-site warning mail a day
 OUTAGE_REPORT_WINDOW=21600    # an outage mail covers the next 6 hours, in case no healthy run ever clears it
 LOCK_DIR="/var/tmp/health-monitor.lock"
+DEPLOY_MARKER="/var/tmp/murphys-deploy-in-progress"  # written by the deploy while it replaces dependencies and restarts the API
+DEPLOY_MARKER_MAX_AGE=900     # a marker older than this is ignored, so a deploy that was killed cannot silence the monitor
 LOCK_STALE_SECONDS=900        # a lock older than this is taken over even if its process still exists
 CHECK_TIMEOUT_SECONDS=120     # backstop for one run of the check, which bounds its own requests to 10 seconds
 # A deploy's `npm ci` empties backend/node_modules for about 20 to 60 seconds, so a check that starts then
@@ -233,6 +235,26 @@ classify_health_exit() {
     esac
 }
 
+# Whether a deploy is under way: the deploy writes the time to $DEPLOY_MARKER first and removes it when it ends. A
+# marker that is empty, not a number, in the future (the clock went back) or older than DEPLOY_MARKER_MAX_AGE is
+# ignored and says so in the log, so a crashed deploy can never keep the monitor quiet.
+deploy_in_progress() {
+    local started now
+    [ -e "$DEPLOY_MARKER" ] || return 1
+    started="$(cat "$DEPLOY_MARKER" 2>/dev/null)"
+    now="$(date +%s)"
+    if [[ ! "$started" =~ ^[0-9]+$ ]]; then
+        log "Ignoring the deploy marker $DEPLOY_MARKER: it does not hold a time"
+        return 1
+    fi
+    started=$((10#$started))
+    if [ "$started" -gt "$now" ] || [ $((now - started)) -ge "$DEPLOY_MARKER_MAX_AGE" ]; then
+        log "Ignoring the deploy marker $DEPLOY_MARKER: it is stale or dated in the future"
+        return 1
+    fi
+    return 0
+}
+
 # A few words for the "could not run" mail.
 describe_runner_exit() {
     case "$1" in
@@ -262,6 +284,13 @@ fi
 
 cd "$PROJECT_DIR" || exit 1
 
+# A deploy replaces the dependencies and restarts the API, which looks like an outage from outside. Skip the run
+# without counting a failure or sending a mail; the deploy's own health check fails the release if the API stays down.
+if deploy_in_progress; then
+    log "A deploy is in progress; skipping this health check"
+    exit "$(delivery_exit_code 0)"
+fi
+
 # Run the health check script
 health_check_exit_code=0
 run_health_check > "$OUTPUT_FILE" 2>&1 || health_check_exit_code=$?
@@ -286,6 +315,12 @@ while [ "$health_check_exit_code" -ne 2 ] && [ "$retry_attempt" -lt "$COULD_NOT_
     run_health_check > "$OUTPUT_FILE" 2>&1 || health_check_exit_code=$?
     health_check_class="$(classify_health_exit "$health_check_exit_code" "$OUTPUT_FILE")"
 done
+
+# A deploy can start part-way through a run, so look once more before a failure is counted.
+if [ "$health_check_class" != "healthy" ] && deploy_in_progress; then
+    log "A deploy started during the health check (${health_check_class}); not counting it"
+    exit "$(delivery_exit_code 0)"
+fi
 
 if [ "$health_check_class" = "healthy" ]; then
     log "Health check passed"
