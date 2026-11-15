@@ -1,6 +1,7 @@
-// DOM method polyfills for older browsers (for example the Kindle browser). The legacy build
-// transpiles syntax and polyfills JavaScript built-ins, but not DOM methods, so a missing one
-// would throw while the router has already cleared the static shell and leave a blank page.
+// Polyfills for older browsers (for example the Kindle browser). The legacy build transpiles syntax
+// and polyfills JavaScript built-ins, but not DOM methods, so a missing one would throw while the
+// router has already cleared the static shell and leave a blank page. `.at()` is polyfilled here too:
+// a WebView that runs the modern module bundle (Chrome 75) gets no built-in polyfills, and `marked` calls it.
 
 type NodeOrText = Node | string;
 
@@ -19,7 +20,17 @@ function defineIfMissing(target: object, name: string, value: unknown): void {
   Object.defineProperty(target, name, { value, writable: true, configurable: true });
 }
 
+function at(this: ArrayLike<unknown> | string, index: number): unknown {
+  const length = this.length;
+  const relative = Math.trunc(Number(index)) || 0;
+  const position = relative < 0 ? length + relative : relative;
+  return position < 0 || position >= length ? undefined : this[position];
+}
+
 export function installLegacyPolyfills(): void {
+  // Array.prototype.at / String.prototype.at (Chrome 92+); `marked` calls it while rendering markdown.
+  [Array.prototype, String.prototype].forEach((proto) => defineIfMissing(proto, 'at', at));
+
   function replaceChildren(this: Node, ...items: NodeOrText[]): void {
     while (this.firstChild) this.removeChild(this.firstChild);
     this.appendChild(toFragment(this.ownerDocument ?? (this as Document), items));

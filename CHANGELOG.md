@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Fixed a Sentry error from a TikTok in-app browser (Chrome 75 WebView): `n.at is not a function` thrown by `marked`
+  on `/examples`. `Array.prototype.at` needs Chrome 92, and a browser that can load ES modules gets the modern bundle,
+  which has no built-in polyfills (the legacy plugin only covers browsers without module support), so the page kept its static
+  shell. `installLegacyPolyfills` now also defines `Array.prototype.at` and `String.prototype.at` when missing, with tests.
+  Web bumped to `3.4.136`; root to `2.6.277`.
 - Removed a leftover `>>>>>>> Stashed changes` line from this file, between two entries in the 2.6.136 section; it came in
   with the PM2 log-name entry. Root bumped to `2.6.270`.
 - Stopped the deploy from printing "Errors detected in logs" after every healthy release (issue #349). What was wrong:
