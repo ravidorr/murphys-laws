@@ -78,6 +78,12 @@ status=0
 # A subshell, so the cd does not change where the wrapper itself resolves a relative log or state path
 run_command() (
   cd "$BACKEND_DIR" || exit 1
+  # Name a missing command ourselves: GNU timeout prints its name, but the uutils timeout of Ubuntu 26.04 does not,
+  # and the log is the only place a failed job is explained.
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "$JOB: command not found: $1"
+    exit 127
+  fi
   if command -v timeout >/dev/null 2>&1; then
     timeout "${CRON_JOB_TIMEOUT:-1800}" "$@"
   else
