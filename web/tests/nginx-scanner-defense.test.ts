@@ -285,6 +285,11 @@ describe('nginx scanner defense', () => {
     '/sdk/vimServiceVersions.xml?x=1',
     '/MICS/API/v2/sentry',
     '/?REST_ROUTE=/batch/v1',
+    // Daily 404 report of 15 November 2026: a script-library sweep asked for CKEditor.
+    '/js/lib/ckeditor/ckeditor.js',
+    '/ckeditor/',
+    '/CKEditor/ckeditor.js?v=1',
+    '/ckeditor.js',
   ])('flags %s as a scanner path', (uri) => {
     expect(isScannerPath(uri)).toBe(true);
   });
@@ -448,6 +453,10 @@ describe('nginx scanner defense', () => {
     '/core/modules',
     '/browse?q=language/en-GB/en-GB.xml',
     '/law/language',
+    '/law/ckeditor-tips',
+    '/browse?q=ckeditor',
+    '/ckeditors',
+    '/js/lib/ckeditorish.js',
     // Daily 404 report of 13 November 2026. Good-faith crawlers and our own deploy smoke test must still get a real
     // 404, not a 444: AgentDrivesAgent asks for these, and scripts/smoke-production.mjs expects a 404 for the first.
     '/definitely-not-a-real-page',

@@ -715,6 +715,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `/var/log/nginx/*.log` logrotate rule covers it.
 
 ### Fixed
+
+- Daily 404 report of 15 November 2026 (16 requests in the 404 list; the report showed 10, and the other 6 were found in
+  the access log, plus the later 404s of the same day): `/js/lib/ckeditor/ckeditor.js` (a script-library sweep from one
+  address, with `/_`, `/pendo.js` and `/plugin.js`) is now dropped (`444`, logged to `scanner.log`) by a `ckeditor` path
+  segment pattern, so `/law/ckeditor-tips` and `/browse?q=ckeditor` still pass. Left alone on purpose: MCPCensus
+  discovery probes (`/mcp`, `/.well-known/mcp*`, `/AGENTS.md`), Infrawatch (`/mcp`, `/sse`, `/api/mcp`), `agentwebmap-bot`
+  asking for `llms.txt` at other places (`/.well-known/`, `/developers/`, `/api/`; the file is `/llms.txt`),
+  `/app-ads.txt` (the iOS and Android apps carry no ad SDK, so there is no app-ads file to publish), `/api/documentation`
+  (the API spec is `/api/v1/openapi.json`; a bare-agent visitor, not blocked in case it is a person), hidden source maps
+  (`/assets/*.js.map`; the build deletes them after upload), `/api/v1/laws/249` (no such law; the API answers 404), a stale
+  `/assets/index.es-DVrHL939.js`, random-token probes from CensysInspect and `pathscan`, and guest-post page guesses
+  (`/blog`, `/write-for-us`), and `/_`, `/pendo.js` and `/plugin.js` from the same sweep (the site serves none of them, and
+  nothing in them is an exploit). Web bumped to `3.4.135`; root to `2.6.275`.
 - Daily 404 report of 14 November 2026 (15 requests in the 404 list; the report showed 12 and the other 3 were found in
   the access log: `/mcp`, `/api/mcp` and a FortiGate probe, `/remote/login`): more scanner probes are dropped and one
   old backlink is redirected. Dropped (`444`, logged to `scanner.log`): `/login` and `/status` at the root (guessed pages;
