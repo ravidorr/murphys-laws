@@ -117,4 +117,29 @@ describe('legacy polyfills', () => {
     expect(el.toggleAttribute('hidden', false)).toBe(false);
     expect(el.hasAttribute('hidden')).toBe(false);
   });
+  it('polyfills Array and String at with positive, negative and out-of-range indexes', () => {
+    const arrayDescriptor = Object.getOwnPropertyDescriptor(Array.prototype, 'at')!;
+    const stringDescriptor = Object.getOwnPropertyDescriptor(String.prototype, 'at')!;
+    delete (Array.prototype as unknown as Proto).at;
+    delete (String.prototype as unknown as Proto).at;
+    try {
+      installLegacyPolyfills();
+      expect(Array.prototype.at).not.toBe(arrayDescriptor.value);
+      expect([1, 2, 3].at(0)).toBe(1);
+      expect([1, 2, 3].at(-1)).toBe(3);
+      expect([1, 2, 3].at(3)).toBeUndefined();
+      expect([1, 2, 3].at(-4)).toBeUndefined();
+      expect([1, 2, 3].at(NaN)).toBe(1);
+      expect([1, 2, 3].at(1.9)).toBe(2);
+      expect('abc'.at(-1)).toBe('c');
+    } finally {
+      Object.defineProperty(Array.prototype, 'at', arrayDescriptor);
+      Object.defineProperty(String.prototype, 'at', stringDescriptor);
+    }
+  });
+  it('keeps a native at untouched', () => {
+    const native = Array.prototype.at;
+    installLegacyPolyfills();
+    expect(Array.prototype.at).toBe(native);
+  });
 });
