@@ -716,6 +716,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `backend/scripts/run-cron-job.sh` now writes `<job>: command not found: <command>` to the job log (exit 127) when the
+  command does not exist. What was wrong: with `timeout` from the uutils coreutils of the Ubuntu 26.04 runner image, a missing command
+  is reported without its name, so the log did not say what failed and `backend/tests/scripts/run-cron-job.test.ts`
+  ("logs and alerts when the command does not exist") failed in CI on this PR (it passed on `main` on the older image).
+  Backend bumped to `2.3.107`; root to `2.6.276`.
 - Daily 404 report of 15 November 2026 (16 requests in the 404 list; the report showed 10, and the other 6 were found in
   the access log, plus the later 404s of the same day): `/js/lib/ckeditor/ckeditor.js` (a script-library sweep from one
   address, with `/_`, `/pendo.js` and `/plugin.js`) is now dropped (`444`, logged to `scanner.log`) by a `ckeditor` path
