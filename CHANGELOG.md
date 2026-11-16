@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Dropped `/sftp-config.json`, `/terraform.tfstate`, `/terraform.tfstate.backup` and `/terraform.tfvars` probes from the 404
+  report: a secrets sweep (Sublime SFTP config and Terraform state files) that the site never publishes now goes to the scanner
+  map. Real URLs such as `/law/terraform.tfstate-tips` and query strings still pass. Web bumped to `3.4.137`; root to `2.6.278`.
 - Fixed a Sentry error from a TikTok in-app browser (Chrome 75 WebView): `n.at is not a function` thrown by `marked`
   on `/examples`. `Array.prototype.at` needs Chrome 92, and a browser that can load ES modules gets the modern bundle,
   which has no built-in polyfills (the legacy plugin only covers browsers without module support), so the page kept its static
