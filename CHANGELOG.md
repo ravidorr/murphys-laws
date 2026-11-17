@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Dropped the SonicWall SSL-VPN, static login-page and control-panel login probes from the 404 report: `/sonicui/7/sslvpn-portal`,
+  `/sslvpnLogin.html`, `/auth.html`, `/auth1.html` and `/cp/login` (one sweep from DigitalOcean addresses) now go to the scanner map.
+  `/law/auth.html`, `/law/cp/login` and query strings such as `?q=auth.html` still pass. Web bumped to `3.4.138`; root to `2.6.279`.
 - Dropped `/sftp-config.json`, `/terraform.tfstate`, `/terraform.tfstate.backup` and `/terraform.tfvars` probes from the 404
   report: a secrets sweep (Sublime SFTP config and Terraform state files) that the site never publishes now goes to the scanner
   map. Real URLs such as `/law/terraform.tfstate-tips` and query strings still pass. Web bumped to `3.4.137`; root to `2.6.278`.
