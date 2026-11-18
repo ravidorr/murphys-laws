@@ -1,9 +1,9 @@
 {
   "exceptions": [
     {
-      "id": "GHSA-vfj7-8cjw-p6xm",
-      "expiresOn": "2026-11-09",
-      "reason": "Used only by development-time lint tooling; no compatible patched dependency range is available."
+      "id": "GHSA-fc5q-39xc-vjpf",
+      "expiresOn": "2026-12-18",
+      "reason": "picomatch ReDoS reached only through development-time lint, test and build tooling; no patched picomatch release exists yet."
     }
   ]
 }

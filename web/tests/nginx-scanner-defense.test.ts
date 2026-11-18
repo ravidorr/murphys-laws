@@ -304,6 +304,15 @@ describe('nginx scanner defense', () => {
     '/ckeditor/',
     '/CKEditor/ckeditor.js?v=1',
     '/ckeditor.js',
+    // Daily 404 report of 18 November 2026: a Django manage.py guess and a Vertex/Firebase credentials-file sweep.
+    '/manage.py',
+    '/static../manage.py',
+    '/app/manage.py?x=1',
+    '/config.example.json',
+    '/config.sample.json',
+    '/config.dist.yml',
+    '/iam.json',
+    '/IAM.json',
   ])('flags %s as a scanner path', (uri) => {
     expect(isScannerPath(uri)).toBe(true);
   });
@@ -325,6 +334,11 @@ describe('nginx scanner defense', () => {
     '/search?q=.env',
     '/browse?q=a/.hidden',
     '/browse?page=2&sort=config.json',
+    '/browse?q=manage.py',
+    '/law/manage.py-tips',
+    '/browse?q=config.example.json',
+    '/law/iam.json',
+    '/api/v1/iam.json',
     '/search?q=wp-login',
     '/calculator/sods-law',
     '/origin-story',
