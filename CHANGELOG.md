@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Cleared the pre-push production audit (GHSA-fc5q-39xc-vjpf, a `picomatch` ReDoS, no patched release exists): `typescript-eslint` is
+  lint-only, so it moved from backend `dependencies` to `devDependencies`, and the full audit has a reviewed exception for the
+  advisory (expires 2026-12-18) in place of the expired `braces` one. Backend bumped to `2.3.108`; root to `2.6.280`.
+- Dropped Django `manage.py` (`/manage.py`, `/static../manage.py`) and credentials-sweep probes (`/config.example.json`, `/IAM.json`)
+  from the 404 report: they go to the scanner map. The config pattern now also takes `.example`, `.sample` and `.dist` copies, and
+  `iam.json` joins the root-anchored credential names. `/law/manage.py-tips`, `/law/iam.json` and query strings still pass.
+  Left alone on purpose: the Infrawatch MCP discovery probes (`/sse`, `/mcp`, `/api/mcp`), the Meta crawler's oEmbed request for the
+  nonexistent law 2368, stale `/assets/assets/_commonjsHelpers-*.js` requests and `/Pole.json`. Web bumped to `3.4.139`; root to `2.6.280`.
 - Dropped the SonicWall SSL-VPN, static login-page and control-panel login probes from the 404 report: `/sonicui/7/sslvpn-portal`,
   `/sslvpnLogin.html`, `/auth.html`, `/auth1.html` and `/cp/login` (one sweep from DigitalOcean addresses) now go to the scanner map.
   `/law/auth.html`, `/law/cp/login` and query strings such as `?q=auth.html` still pass. Web bumped to `3.4.138`; root to `2.6.279`.
