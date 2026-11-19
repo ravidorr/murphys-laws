@@ -313,6 +313,13 @@ describe('nginx scanner defense', () => {
     '/config.dist.yml',
     '/iam.json',
     '/IAM.json',
+    // Daily 404 report of 19 November 2026: a VICIdial call-centre dialer sweep.
+    '/vicidial',
+    '/vicidial/admin.php',
+    '/agc',
+    '/agc/vicidial.php?x=1',
+    '/RECORDINGS',
+    '/RECORDINGS/MP3',
   ])('flags %s as a scanner path', (uri) => {
     expect(isScannerPath(uri)).toBe(true);
   });
@@ -338,6 +345,10 @@ describe('nginx scanner defense', () => {
     '/law/manage.py-tips',
     '/browse?q=config.example.json',
     '/law/iam.json',
+    '/law/vicidial-tips',
+    '/browse?q=recordings',
+    '/recordings-tips',
+    '/agcx',
     '/api/v1/iam.json',
     '/search?q=wp-login',
     '/calculator/sods-law',
