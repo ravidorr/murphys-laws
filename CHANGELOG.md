@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Dropped the VICIdial call-centre dialer probes from the 404 report: `/vicidial`, `/agc`, `/RECORDINGS` and `/RECORDINGS/MP3` (one
+  sweep from a DigitalOcean address) now go to the scanner map, root-anchored. `/law/vicidial-tips`, `/recordings-tips`, `/agcx` and
+  query strings such as `?q=recordings` still pass. Left alone on purpose: the `/sse` and `POST /mcp` MCP probes (the server is
+  stdio-only), `/anthropic.json`, `/app-ads.txt` (the apps carry no ads), and the two `/murphy/` 410s (`/murphy/links.html` and a
+  GPTBot request for a literal `/murphy/m...echnology.html`), which the `/murphy/` 410 already covers. Tracked in `TODO.md`: ids such as law 929 and 1920 serve a page while the
+  API and oEmbed answer 404. Web bumped to `3.4.140`;
+  root to `2.6.281`.
 - Cleared the pre-push production audit (GHSA-fc5q-39xc-vjpf, a `picomatch` ReDoS, no patched release exists): `typescript-eslint` is
   lint-only, so it moved from backend `dependencies` to `devDependencies`, and the full audit has a reviewed exception for the
   advisory (expires 2026-12-18) in place of the expired `braces` one. Backend bumped to `2.3.108`; root to `2.6.280`.

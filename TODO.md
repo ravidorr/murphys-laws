@@ -29,6 +29,7 @@ This document outlines additional tasks and potential improvements for the Murph
 
 ## Site data
 
+- [ ] **Decide what `/law/<id>` serves for an id that has no law:** `/law/929`, `/law/1919` and `/law/1920` return 200 (a page shell) while `/api/v1/laws/<id>` and `/api/v1/oembed?url=.../law/<id>` return 404, and `/law/99999999` returns 404. Real mobile browsers hit the API 404 from `/law/1920`, and the Meta crawler asks for oEmbed of 37 distinct missing ids (218 oEmbed 404s in the retained logs). Options: return a real 404 or 410 for ids in the gaps, keep the shell and show a not-found state, or redirect to `/browse`.
 - [ ] **Let a visitor add a corollary to a law that is already published:** the submit form only creates a new law
   together with its corollaries, so the "submit a law" link in the corollaries section of a law page opens that form. Attaching one to an
   existing law needs a parent field on the submit API, the same moderation path as the other corollaries, and a rule
