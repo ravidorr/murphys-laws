@@ -1406,6 +1406,27 @@ test('a failure that the script does not handle itself still fails the deploy, w
 // The check of the PM2 logs after the restart: backend/scripts/check-pm2-health.sh (tested in
 // backend/tests/scripts/check-pm2-health.test.ts, over sample `pm2 logs` output)
 
+test('the deploy stops pm2-root.service before touching PM2, then after saving kills the outside daemon, starts the unit and falls back to resurrect', () => {
+  const save = at(deployScript, 'pm2 save\n');
+  const guard = deployScript.lastIndexOf('if systemctl cat pm2-root.service > /dev/null 2>&1; then');
+  const stop = at(deployScript, 'systemctl stop pm2-root.service || echo "WARNING: pm2-root.service did not stop (exit $?)" >&2');
+  const del = at(deployScript, 'pm2 delete all || true');
+  const kill = at(deployScript, 'pm2 kill || echo "WARNING: pm2 kill failed (exit $?)" >&2');
+  const start = at(deployScript, 'if ! systemctl start pm2-root.service; then');
+  const fallback = at(deployScript, 'pm2 resurrect || echo "WARNING: pm2 resurrect failed (exit $?)" >&2');
+  const active = at(deployScript, 'systemctl is-active --quiet pm2-root.service || echo "WARNING: pm2-root.service is not active" >&2');
+  const interpreter = at(deployScript, 'PM2_INTERPRETER=$(pm2 jlist');
+  // `systemctl restart` is not used: on the inactive unit it skips ExecStop and `pm2 resurrect` would attach to the
+  // outside daemon, so the unit would claim a daemon that is not in its cgroup
+  assert.doesNotMatch(deployScript, /systemctl restart pm2-root/, 'a restart of the inactive unit would not move the daemon');
+  assert.ok(stop < del && del < save && save < guard && guard < kill && kill < start && start < fallback && fallback < active && active < interpreter,
+    'stop (before pm2 delete, so the unit cannot kill the new daemon), save, guard, kill, start, resurrect fallback, active check, interpreter check, in this order');
+  assert.ok(existsSync(path.join(rootDirectory, 'shared/docs/DISASTER-RECOVERY.md')));
+  const recovery = readFileSync(path.join(rootDirectory, 'shared/docs/DISASTER-RECOVERY.md'), 'utf8');
+  assert.match(recovery, /pm2 startup systemd -u root --hp \/root/, 'the rebuilt server gets the unit the deploy hands the daemon to');
+  assert.doesNotMatch(recovery, /sudo -u ravidor bash/, 'node and pm2 are installed for root, whose nvm node the API runs with');
+});
+
 test('the deploy marks the moment PM2 starts, then checks the logs with the script, which can only warn', () => {
   const update = at(deployScript, 'pm2 update\n');
   // `|| echo ...`: under `set -e` a failed touch would end the deploy after pm2 delete, with no API process running;

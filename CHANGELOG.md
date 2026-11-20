@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Kept `pm2-root.service` attached to systemd across deploys: the deploy now stops the unit before it touches PM2 (an active unit would otherwise run `pm2 kill` while the deploy starts and saves the new process list), and after `pm2 save` kills the daemon that
+  `pm2 update` relaunched outside systemd (a plain `systemctl restart` would skip the stop on the inactive unit and attach to that
+  daemon) and starts the unit, whose `pm2 resurrect` launches a new daemon inside it from the saved list, only where the unit
+  exists, so `systemctl is-active pm2-root` reads `active` after a deploy. If the unit does not start the list is resurrected
+  without it, and the interpreter check that follows fails the deploy if the API is down. The disaster-recovery guide now installs nvm, Node (read from `.nvmrc`, so after
+  the clone) and PM2 for root, links `/usr/local/bin/pm2` and runs `pm2 startup systemd -u root --hp /root`, instead of installing
+  them for `ravidor`. A new `deploy-workflow.test.ts` case pins the order and the guide. `.claude/launch.json` now runs the dev
+  servers with Node `22.20.0`, as production does. Both TODO items are closed. Root bumped to `2.6.287`.
 - Made production run one Node and one PM2. `.nvmrc` moves from `22.16.0` to `22.20.0`, the version PM2 already ran the API with
   (`backend/ecosystem.config.cjs`), `/usr/bin/node` points at, root's nvm default resolves to and the `pm2-root.service` boot unit
   uses. Before, only the deploy shell and the cron jobs used `22.16.0`, which left two PM2 installs (7.0.4 and 6.0.13) and a

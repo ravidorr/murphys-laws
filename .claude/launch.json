@@ -4,13 +4,13 @@
     {
       "name": "Backend API",
       "runtimeExecutable": "/bin/bash",
-      "runtimeArgs": ["-c", "export PATH=/Users/ravidor/.nvm/versions/node/v22.16.0/bin:$PATH && npm run dev:backend"],
+      "runtimeArgs": ["-c", "export PATH=/Users/ravidor/.nvm/versions/node/v22.20.0/bin:$PATH && npm run dev:backend"],
       "port": 8787
     },
     {
       "name": "Web (Vite)",
       "runtimeExecutable": "/bin/bash",
-      "runtimeArgs": ["-c", "export PATH=/Users/ravidor/.nvm/versions/node/v22.16.0/bin:$PATH && npm run dev:web"],
+      "runtimeArgs": ["-c", "export PATH=/Users/ravidor/.nvm/versions/node/v22.20.0/bin:$PATH && npm run dev:web"],
       "port": 5175
     }
   ]
