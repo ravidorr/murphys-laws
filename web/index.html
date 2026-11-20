@@ -203,7 +203,7 @@
     })();
   </script>
   <!-- App bundle start. The SSG turns the module script of dist/index.html into the inert #app-entry placeholder. On a
-       cold HTTP/2 connection the small Law of the Day answer queued behind the app bundle (about 173 KB over the wire) and
+       cold HTTP/2 connection (production nginx has HTTP/2 off since 2026-11-20, which makes the hold harmless but less needed) the small Law of the Day answer queued behind the app bundle (about 173 KB over the wire) and
        painted the law, the largest element on the page, 300-400 ms later than it could, so the bundle is held back: the
        hold ends when the early request settles (with the law or without it) and at the latest HOLD_MS after this script
        ran, so a slow or hung API cannot keep the app from loading (the early request has its own 10 s window, which

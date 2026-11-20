@@ -4,6 +4,14 @@ This document outlines additional tasks and potential improvements for the Murph
 
 ## Security
 
+- [ ] **Re-enable HTTP/2 once nginx is patched:** it is off in `nginx.conf` since 2026-11-20 because of CVE-2026-123007 and CVE-2026-123633
+  (production runs Ubuntu's nginx 1.24.0, which has no fix yet; upstream fixed them in 1.30.7 and 1.31.9). Turn it back on only when
+  the installed package revision from `apt policy nginx` is at or past the one a Ubuntu USN for these CVEs names (Ubuntu keeps the
+  version string 1.24.0, so `nginx -v` cannot show it), or `nginx -v` reports 1.30.7 / 1.31.9 or newer (nginx.org build). Then put
+  `http2` back on both `listen 443 ssl` lines of `nginx.conf` and on the two of `backend/config/nginx-murphys-laws-enhanced.conf`,
+  drop the comment above the first one, and flip the test in `web/tests/nginx-performance.test.ts` and the paragraph in
+  `shared/docs/DEPLOYMENT.md` back. The comment in `web/index.html` on the held-back app bundle assumes HTTP/2; check the Law of the
+  Day paint time (LCP) again with HTTP/2 off.
 - [ ] **Make the disaster-recovery PM2 step work on a fresh droplet:** `backend/ecosystem.config.cjs` hardcodes `/root/.nvm/versions/node/v22.20.0/bin/node` (while `.nvmrc` says 22.16.0), but `DISASTER-RECOVERY.md` installs nvm and pm2 for the `ravidor` user and runs the PM2 step as root. Install Node and pm2 for root at the version the config names, or make the interpreter follow `.nvmrc`.
 - [ ] **Renew `/.well-known/security.txt` before 2027-11-06:** the `Expires` date in `nginx.conf` must be moved forward. A test in `nginx-scanner-defense.test.ts` fails 30 days before it passes.
 - [ ] **Renew the WebMCP origin-trial token before 2027-03-23:** the token in `web/index.html` expires on 2027-03-30, and the tools
