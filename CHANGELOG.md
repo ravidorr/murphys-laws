@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Cleaned up the 404 report of 20 November 2026 (35 paths, 37 requests). `/swagger.json` now redirects to `/openapi.json` (the
+  OpenAPI file the build writes and `llms.txt` links). The appliance, CMS and login-page sweeps (`/zabbix`, `/sitecore`, `/partymgr`,
+  `/identity`, `/global-protect`, `/jasperserver*`, `/webfig`, `/webclient`, `/console`, `/login.do`, `/showLogin.cc`,
+  `/internal_forms_authentication`, `/Web/Auth`, `/sugar_version.json`, `/ssi.cgi/...`, two stray script files and the ffuf
+  `hyper.Index/config` guesses) go to the scanner map, root-anchored; the `pathscan` and ffuf (`Fuzz Faster U Fool`) user agents join
+  the scanner agent pattern. `/identity-theft`, `/law/identity`, `?q=console` and `/index.htm` still pass. Left alone on purpose: the
+  Infrawatch and httpx MCP probes (`/mcp`, `/sse`, `/api/mcp`), bingbot's `/Dal`, one `/subscription/confirm?kzlan=` request (a real
+  route that answers 404 without a token), and random-name and jQuery guesses (`/z0birx_fvk_`, `/p6cS`, `/aab8`, `/aab9`, `/ZsJF`,
+  `/jquery-3.3.x.slim.min.js`) that no safe pattern can match. Web bumped to `3.4.141`; root to `2.6.282`.
 - Dropped the VICIdial call-centre dialer probes from the 404 report: `/vicidial`, `/agc`, `/RECORDINGS` and `/RECORDINGS/MP3` (one
   sweep from a DigitalOcean address) now go to the scanner map, root-anchored. `/law/vicidial-tips`, `/recordings-tips`, `/agcx` and
   query strings such as `?q=recordings` still pass. Left alone on purpose: the `/sse` and `POST /mcp` MCP probes (the server is

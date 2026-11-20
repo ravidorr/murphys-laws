@@ -320,6 +320,44 @@ describe('nginx scanner defense', () => {
     '/agc/vicidial.php?x=1',
     '/RECORDINGS',
     '/RECORDINGS/MP3',
+    // Daily 404 report of 20 November 2026: appliance, CMS and login-page sweeps.
+    '/zabbix/favicon.ico',
+    '/zabbix',
+    '/webfig',
+    '/webfig/',
+    '/webclient',
+    '/console',
+    '/console/',
+    '/sugar_version.json',
+    '/static/historypage.js',
+    '/js/NewWindow_2_all.js',
+    '/ssi.cgi/Login.htm',
+    '/showLogin.cc',
+    '/login.do',
+    '/sitecore/shell/sitecore.version.xml',
+    '/partymgr/control/main',
+    '/jasperserver/login.html',
+    '/jasperserver-pro/login.html',
+    '/jasperserverTest/login.html',
+    '/global-protect/login.esp',
+    '/internal_forms_authentication',
+    '/identity',
+    '/identity/jsLibs/IdmBrandingBar.js',
+    '/Web/Auth',
+    '/api/hyper.Index/config',
+    '/hall/api/hyper.Index/config',
+    '/api/hyper.Index/config/',
+    '/api/hyper.Index/config?x=1',
+    '/ssi.cgi',
+    '/ssi.cgi?x=1',
+    '/a/ssi.cgi/Login.htm',
+    '/zabbix?x=1',
+    '/identity?x=1',
+    '/console?x=1',
+    '/login.do?x=1',
+    '/Web/Auth/',
+    '/ZABBIX/',
+    '/Hyper.index/config',
   ])('flags %s as a scanner path', (uri) => {
     expect(isScannerPath(uri)).toBe(true);
   });
@@ -586,6 +624,37 @@ describe('nginx scanner defense', () => {
     '/mics/api',
     '/mics/apix',
     '/login;jsessionid=x',
+    // The 20 November 2026 patterns match whole names only: longer names, subpages and query strings are real traffic.
+    '/identity-theft',
+    '/law/identity',
+    '/category/console',
+    '/browse?q=console',
+    '/search?q=webfig',
+    '/search?q=ssi.cgi',
+    '/consoles',
+    '/webclients',
+    '/zabbixes',
+    '/law/zabbix',
+    '/api/v1/laws?q=hyper.Index/config',
+    '/console/foo',
+    '/webfig/x',
+    '/Web/Authors',
+    '/login.dos',
+    '/sugar_version.jsonx',
+    '/static/historypage.js.map',
+    '/sitecore-news',
+    '/global-protect-tips',
+    '/partymgrs',
+    '/myssi.cgi/x',
+    '/ssi.cgix',
+    '/hyper.Indexes/config',
+    '/api/hyper.Index/configs',
+    '/xhyper.Index/config',
+    '/api/hyperXIndex/config',
+    '/swagger.json',
+    '/openapi.json',
+    '/index.htm',
+    '/Murphy/Murphy-true.html',
   ])('lets %s through', (uri) => {
     expect(isScannerPath(uri)).toBe(false);
   });
@@ -597,7 +666,19 @@ describe('nginx scanner defense', () => {
     expect(isScannerAgent('wp2shell-rce/1.0')).toBe(true);
     expect(isScannerAgent('WP2Shell-RCE/1.0')).toBe(true);
     expect(isScannerAgent('Mozilla/5.0 (compatible; Nmap Scripting Engine; https://nmap.org/book/nse.html)')).toBe(true);
+    expect(isScannerAgent('Fuzz Faster U Fool v2.1.0')).toBe(true);
+    expect(isScannerAgent('Mozilla/5.0 (compatible; pathscan/1.0)')).toBe(true);
+    expect(isScannerAgent('Pathscan/1.0')).toBe(true);
+    expect(isScannerAgent('FUZZ FASTER U FOOL v2.1.0')).toBe(true);
+    // Each new name needs its whole text: a part of it, or the words run together, is not the tool
+    expect(isScannerAgent('Fuzz Faster')).toBe(false);
+    expect(isScannerAgent('fuzzfasterufool')).toBe(false);
+    expect(isScannerAgent('pathfinder/1.0')).toBe(false);
     // Ordinary browsers, our own checks (node fetch in the deploy smoke test, curl in the health check) and good-faith bots pass
+    expect(isScannerAgent('Mozilla/5.0 (compatible; Infrawatch/1.0; +https://infrawat.ch/)')).toBe(false);
+    expect(isScannerAgent('python-httpx/0.28.1')).toBe(false);
+    expect(isScannerAgent('Python-urllib/3.12')).toBe(false);
+    expect(isScannerAgent('Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm) Chrome/116.0.1938.76 Safari/537.36')).toBe(false);
     expect(isScannerAgent('node')).toBe(false);
     expect(isScannerAgent('curl/8.4.0')).toBe(false);
     expect(isScannerAgent('AgentDrivesAgent/1.0 (+https://agent.agentdrives.com/bot)')).toBe(false);
@@ -995,6 +1076,8 @@ describe('nginx legacy URL redirects', () => {
     ['/categories)', '/categories'],
     // /law is the parent of /law/N: the law breadcrumb is Home > Browse > Category > Law
     ['/law', '/browse'],
+    // API tools guess /swagger.json; the OpenAPI document is published as /openapi.json
+    ['/swagger.json', '/openapi.json'],
   ])('redirects %s to %s', (from, to) => {
     const start = conf.indexOf(`location = ${from} {`);
     expect(start).toBeGreaterThan(-1);
@@ -1025,6 +1108,17 @@ describe('nginx legacy URL redirects', () => {
     expect(conf).toMatch(/^\s*rewrite \^\/\(\.\+\)\/\$ \/\$1 permanent;$/m);
     expect('/murphy/'.replace(/^\/(.+)\/$/, '/$1')).toBe('/murphy');
     expect(conf).toContain('location = /murphy {');
+  });
+
+  it('redirects /swagger.json to the OpenAPI file that the build writes and llms.txt links', () => {
+    expect(readFileSync(resolve(root, 'backend', 'scripts', 'export-openapi.ts'), 'utf-8')).toContain(
+      "'web', 'public', 'openapi.json'",
+    );
+    expect(readFileSync(resolve(root, 'web', 'public', 'llms.txt'), 'utf-8')).toContain(
+      '(https://murphys-laws.com/openapi.json)',
+    );
+    // The file is generated, not checked in: the deploy has to run the export before it syncs web/dist
+    expect(readFileSync(resolve(root, '.github', 'workflows', 'deploy.yml'), 'utf-8')).toContain('npm run build:openapi');
   });
 
   it('redirects every image target to a file that exists in web/public', () => {
