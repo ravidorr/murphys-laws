@@ -140,8 +140,11 @@ ssh ravidor@167.99.53.90 "pm2 list"
 
 ## Compression and HTTP/2
 
-`nginx.conf` compresses text responses (`gzip_types`: CSS, JavaScript, JSON, XML, SVG and plain text) and offers HTTP/2
-(`listen 443 ssl http2;`, the syntax of nginx 1.24; `http2 on;` only exists from 1.25.1).
+`nginx.conf` compresses text responses (`gzip_types`: CSS, JavaScript, JSON, XML, SVG and plain text). HTTP/2 is switched off
+since 2026-11-20 (`listen 443 ssl;`, no `http2` parameter) because of the critical nginx flaws CVE-2026-123007 and
+CVE-2026-123633 (fixed upstream in nginx 1.30.7 and 1.31.9), and Ubuntu 24.04 has no patched nginx 1.24 yet. Turn it back on (`listen 443 ssl http2;`, the syntax of
+nginx 1.24; `http2 on;` only exists from 1.25.1) only after the server runs a fixed build; the matching test in
+`web/tests/nginx-performance.test.ts` then flips back too.
 
 `npm run build` ends with `web/scripts/precompress-assets.ts`, which writes a `.gz` (level 9) and a `.br` (quality 11)
 copy next to every `.js`, `.css` and `.svg` file in `web/dist/assets/` when the copy is smaller than the original. nginx
