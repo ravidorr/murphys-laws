@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Redirected the long policy slugs from the 404 report of 20 November 2026 (after 05:00 UTC): `/privacy-policy` and
+  `/privacy-policy.html` go to `/privacy`, `/terms-of-service` and `/terms-of-service.html` to `/terms`. One policy-page check from a
+  Google Cloud address asked for all four at once; the targets are in the footer and the sitemap. Left alone on purpose: the Meta
+  crawler's oEmbed request for the nonexistent law 2373, which the open `TODO.md` item on ids with no law already tracks. Web bumped
+  to `3.4.142`; root to `2.6.283`.
 - Cleaned up the 404 report of 20 November 2026 (35 paths, 37 requests). `/swagger.json` now redirects to `/openapi.json` (the
   OpenAPI file the build writes and `llms.txt` links). The appliance, CMS and login-page sweeps (`/zabbix`, `/sitecore`, `/partymgr`,
   `/identity`, `/global-protect`, `/jasperserver*`, `/webfig`, `/webclient`, `/console`, `/login.do`, `/showLogin.cc`,

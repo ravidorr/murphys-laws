@@ -405,6 +405,10 @@ describe('nginx scanner defense', () => {
     '/img/10001844.gif',
     '/contact-us',
     '/about-us',
+    '/privacy-policy',
+    '/privacy-policy.html',
+    '/terms-of-service',
+    '/terms-of-service.html',
     '/murphy',
     '/murphy/',
     '/murphy/murphy-golf.html',
@@ -1050,6 +1054,10 @@ describe('nginx legacy URL redirects', () => {
   it.each([
     ['/about-us', '/about'],
     ['/contact-us', '/contact'],
+    ['/privacy-policy', '/privacy'],
+    ['/privacy-policy.html', '/privacy'],
+    ['/terms-of-service', '/terms'],
+    ['/terms-of-service.html', '/terms'],
     ['/old/index.htm', '/'],
     ['/index.htm', '/'],
     ['/murphy', '/'],
@@ -1108,6 +1116,16 @@ describe('nginx legacy URL redirects', () => {
     expect(conf).toMatch(/^\s*rewrite \^\/\(\.\+\)\/\$ \/\$1 permanent;$/m);
     expect('/murphy/'.replace(/^\/(.+)\/$/, '/$1')).toBe('/murphy');
     expect(conf).toContain('location = /murphy {');
+  });
+
+  it('redirects the long policy slugs to the Privacy and Terms pages that the site serves and links in its footer', () => {
+    const footer = readFileSync(resolve(root, 'web', 'src', 'components', 'templates', 'footer.html'), 'utf-8');
+    const ssg = readFileSync(resolve(root, 'web', 'scripts', 'ssg.ts'), 'utf-8');
+    for (const [route, view] of [['/privacy', 'privacy'], ['/terms', 'terms']]) {
+      expect(footer).toContain(`href="${route}"`);
+      expect(ssg).toContain(`slug: '${view}'`);
+      expect(existsSync(resolve(root, 'web', 'src', 'views', `${view}.ts`))).toBe(true);
+    }
   });
 
   it('redirects /swagger.json to the OpenAPI file that the build writes and llms.txt links', () => {
