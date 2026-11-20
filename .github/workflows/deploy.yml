@@ -436,6 +436,12 @@ jobs:
 
             echo "==> Restarting PM2"
             cd "$TARGET_DIR/backend"
+            # When pm2-root.service is active, `pm2 update` below kills its daemon and systemd would then run the unit's
+            # ExecStop (`pm2 kill`) at the same moment as `pm2 start` and `pm2 save`, which can kill the new daemon and save an
+            # empty list. Stopping the unit first (a no-op when inactive) keeps the unit out of the way until it is started again below.
+            if systemctl cat pm2-root.service > /dev/null 2>&1; then
+              systemctl stop pm2-root.service || echo "WARNING: pm2-root.service did not stop (exit $?)" >&2
+            fi
             pm2 delete all || true
             # PM2 restores its saved process list during an update. Synchronize
             # only after deleting the API so it cannot restart against files that
@@ -444,6 +450,20 @@ jobs:
             touch logs/.pm2-restart || echo "WARNING: no PM2 restart marker" >&2
             pm2 start ecosystem.config.cjs
             pm2 save
+            # The daemon `pm2 update` launched runs outside pm2-root.service, whose unit is stopped (above) and so reads inactive.
+            # `systemctl restart` would only start it, and its `pm2 resurrect` would attach to that outside daemon, so kill the
+            # outside daemon explicitly, then start the unit: its `pm2 resurrect` launches a new daemon inside the unit's cgroup
+            # from the list saved above. If the start fails the list is resurrected the old way, so the API is not left down. A server without
+            # the unit (no `pm2 startup` yet) is left as it is.
+            if systemctl cat pm2-root.service > /dev/null 2>&1; then
+              echo "==> Handing the PM2 daemon back to pm2-root.service"
+              pm2 kill || echo "WARNING: pm2 kill failed (exit $?)" >&2
+              if ! systemctl start pm2-root.service; then
+                echo "WARNING: pm2-root.service did not start; resurrecting the saved process list without it" >&2
+                pm2 resurrect || echo "WARNING: pm2 resurrect failed (exit $?)" >&2
+              fi
+              systemctl is-active --quiet pm2-root.service || echo "WARNING: pm2-root.service is not active" >&2
+            fi
 
             # Verify PM2 is using Node.js 22.x without pinning to one patch version
             PM2_INTERPRETER=$(pm2 jlist | jq -r '.[] | select(.name=="murphys-api") | .pm2_env.exec_interpreter')

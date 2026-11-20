@@ -12,8 +12,6 @@ This document outlines additional tasks and potential improvements for the Murph
   drop the comment above the first one, and flip the test in `web/tests/nginx-performance.test.ts` and the paragraph in
   `shared/docs/DEPLOYMENT.md` back. The comment in `web/index.html` on the held-back app bundle assumes HTTP/2; check the Law of the
   Day paint time (LCP) again with HTTP/2 off.
-- [ ] **Make the disaster-recovery PM2 step work on a fresh droplet:** `DISASTER-RECOVERY.md` installs nvm and pm2 for the `ravidor` user, but `backend/ecosystem.config.cjs` runs the API with root's nvm node (`/root/.nvm/versions/node/v<.nvmrc>/bin/node`) and the PM2 step runs as root. Install Node (the `.nvmrc` version) and pm2 for root instead.
-- [ ] **Keep `pm2-root.service` attached to systemd across deploys:** the deploy's `pm2 update` relaunches the PM2 daemon outside the unit, so `systemctl is-active pm2-root` reads `inactive` after a deploy (the API is fine, and a reboot starts it again). Skip `pm2 update` when the CLI and the daemon run the same version, or restart the unit at the end of the deploy.
 - [ ] **Renew `/.well-known/security.txt` before 2027-11-06:** the `Expires` date in `nginx.conf` must be moved forward. A test in `nginx-scanner-defense.test.ts` fails 30 days before it passes.
 - [ ] **Renew the WebMCP origin-trial token before 2027-03-23:** the token in `web/index.html` expires on 2027-03-30, and the tools
   disappear for visitors then. `web/tests/origin-trial-token.test.ts` warns from 2027-02-13 and fails from 2027-03-23. Register again at

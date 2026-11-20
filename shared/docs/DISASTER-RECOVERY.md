@@ -177,22 +177,23 @@ EOF
  systemctl start fail2ban
  ```
 
-1. **Install Node.js (via nvm)**:
- ```bash
- sudo -u ravidor bash << 'EOF'
- curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
- source ~/.bashrc
- nvm install
- nvm use
- npm install -g pm2
- EOF
- ```
-
 1. **Clone repository**:
  ```bash
  cd /root
  git clone https://github.com/ravidorr/murphys-laws.git
  cd murphys-laws
+ ```
+
+1. **Install Node.js and PM2 (via nvm, as root)**: the API runs as root with root's nvm node (`backend/ecosystem.config.cjs` names `/root/.nvm/versions/node/v<.nvmrc>/bin/node`), so install both for root, from inside the clone so `nvm install` reads `.nvmrc`. Later steps in a new shell start with `. ~/.nvm/nvm.sh && nvm use`:
+ ```bash
+ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+ export NVM_DIR="$HOME/.nvm"
+ . "$NVM_DIR/nvm.sh"
+ nvm install
+ nvm use
+ npm install -g pm2
+ # so that `sudo pm2` finds it, as on the live server
+ ln -sf "$(command -v pm2)" /usr/local/bin/pm2
  ```
 
 1. **Restore database from backup**:
@@ -232,7 +233,8 @@ EOF
  ```bash
  pm2 start backend/ecosystem.config.cjs
  pm2 save
- pm2 startup
+ # installs pm2-root.service, which brings the API back after a reboot (the deploy keeps the daemon attached to it)
+ pm2 startup systemd -u root --hp /root
  ```
 
 1. **Update DNS** (before the certificate step: the certificate check needs both names to resolve to this droplet):
