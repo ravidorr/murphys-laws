@@ -8,14 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Security
-- Switched HTTP/2 off on both TLS listeners of `nginx.conf` (and of `backend/config/nginx-murphys-laws-enhanced.conf`, which also loses
-  `http2_push_preload`) after the critical nginx flaws CVE-2026-123007 (heap overflow in HTTP/2 flow control, public exploit) and
-  CVE-2026-123633 (use-after-free when proxying), disclosed on 2026-11-18. Production runs Ubuntu's nginx 1.24.0 on 24.04, inside both
-  affected ranges (1.9.5 and later for CVE-2026-123007, 1.19.7 and later for CVE-2026-123633, both with HTTP/2 enabled), and Ubuntu has
-  not shipped a fix; the upstream fixes are 1.30.7 and 1.31.9. The deploy tests the file with
-  `nginx -t` and reloads nginx, so merging it applies the change. The nginx test now asserts the opposite of before: no `http2` on any
-  listen. `TODO.md` tracks turning HTTP/2 back on once a patched build is installed. Web bumped to `3.4.143`; backend to `2.3.109`;
-  root to `2.6.284`.
+- Switched HTTP/2 off on both TLS listeners of `nginx.conf`, and of `backend/config/nginx-murphys-laws-enhanced.conf`, which also
+  loses `http2_push_preload`. Two critical nginx flaws were disclosed on 2026-11-18: CVE-2026-123007 (heap overflow in HTTP/2 flow
+  control, public exploit; nginx 1.9.5 and later) and CVE-2026-123633 (use-after-free when proxying; 1.19.7 and later). Both need
+  HTTP/2 enabled.
+- Production runs Ubuntu's nginx 1.24.0 on 24.04, inside both ranges, and Ubuntu has not shipped a fix. The upstream fixes are
+  1.30.7 and 1.31.9.
+- The deploy tests the file with `nginx -t` and reloads nginx, so merging applied the change. `TODO.md` tracks turning HTTP/2 back
+  on once a patched build is installed. The nginx test now asserts the opposite of before: no `http2` on any listen. Web bumped to
+  `3.4.143`; backend to `2.3.109`; root to `2.6.284`.
+- Tightened that test: it ignores trailing `# ...` comments, treats `[::]:443` listens as TLS blocks in `nginx.conf`, and also
+  checks the backend sample config. `DEPLOYMENT.md` notes that old workers can briefly outlive a reload (the server sets no
+  `worker_shutdown_timeout`). Web bumped to `3.4.144`; root to `2.6.285`.
 
 ### Changed
 - Redirected the long policy slugs from the 404 report of 20 November 2026 (after 05:00 UTC): `/privacy-policy` and

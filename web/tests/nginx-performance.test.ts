@@ -321,26 +321,28 @@ describe('nginx caching of the files that are not hashed', () => {
 });
 
 describe('nginx HTTP/2', () => {
-  const tlsBlocks = serverBlocks.filter((block) => /^\s*listen 443 /m.test(block));
+  // Directive text only: whole-line and trailing comments may still mention http2.
+  const withoutComments = (text: string) => text.split('\n').map((line) => line.replace(/#.*$/, '')).join('\n');
+  const tlsBlocks = serverBlocks.filter((block) => /^\s*listen (\[::\]:)?443 /m.test(block));
 
   it('keeps HTTP/2 off on both TLS server blocks until nginx ships a fix for CVE-2026-123007 and CVE-2026-123633', () => {
     expect(tlsBlocks).toHaveLength(2);
     for (const block of tlsBlocks) {
       expect(block).toMatch(/^\s*listen 443 ssl;/m);
     }
-    const directives = conf.split('\n').filter((line) => !line.trim().startsWith('#'));
-    expect(directives.join('\n')).not.toMatch(/http2/);
+    expect(withoutComments(conf)).not.toMatch(/http2/);
   });
 
   it('keeps HTTP/2 off in the backend sample configuration too', () => {
     const sample = readFileSync(resolve(root, 'backend/config/nginx-murphys-laws-enhanced.conf'), 'utf8');
-    const listens = sample.split('\n').filter((line) => /^\s*listen 443 /.test(line));
+    const listens = withoutComments(sample)
+      .split('\n')
+      .filter((line) => /^\s*listen 443 /.test(line));
     expect(listens).toHaveLength(2);
     for (const line of listens) {
       expect(line.trim()).toBe('listen 443 ssl;');
     }
-    const directives = sample.split('\n').filter((line) => !line.trim().startsWith('#'));
-    expect(directives.join('\n')).not.toMatch(/http2/);
+    expect(withoutComments(sample)).not.toMatch(/http2/);
   });
 
   it('leaves the plain HTTP server block alone', () => {
