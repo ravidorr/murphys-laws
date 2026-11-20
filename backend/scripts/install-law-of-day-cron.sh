@@ -26,8 +26,8 @@
 # LAW_OF_DAY_NODE_BIN is the absolute path of the node that the job runs (default /usr/bin/node). Both deploy paths
 # pass the node the deploy itself runs with (the nvm node), so the job uses the node that better-sqlite3 was built
 # for, and the next deploy fixes the path after a Node upgrade. The default is only for a caller that sets nothing: on
-# the production server /usr/bin/node is a symlink to nvm v22.20.0 (the node PM2 runs), a different patch version from the
-# deploy's node (v22.16.0, the version of .nvmrc) but the same major, so the checks below would accept either. When the variable is not /usr/bin/node, the installer writes it into the job's
+# the production server /usr/bin/node is a symlink to the nvm node of .nvmrc (the node PM2 runs and the deploy uses), so
+# both give the same node. When the variable is not /usr/bin/node, the installer writes it into the job's
 # command in place of /usr/bin/node. CRON_D_DIR (default /etc/cron.d) is only overridden by the tests.
 
 set -euo pipefail

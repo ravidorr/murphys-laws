@@ -5,6 +5,9 @@
  * compile native modules (better-sqlite3). Mismatches cause MODULE_VERSION
  * errors and 502 Bad Gateway responses.
  *
+ * The version is the one in `.nvmrc` (the deploy runs with it and builds better-sqlite3 for it);
+ * backend/tests/node-version-alignment.test.ts fails when the two differ.
+ *
  * IMPORTANT: The system Node.js (/usr/bin/node) must be a symlink to this
  * version, as PM2 may ignore the interpreter setting in some cases.
  *
