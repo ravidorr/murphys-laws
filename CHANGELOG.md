@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.6.136] - 2026-11-03
 
+### Changed
+- Made production run one Node and one PM2. `.nvmrc` moves from `22.16.0` to `22.20.0`, the version PM2 already ran the API with
+  (`backend/ecosystem.config.cjs`), `/usr/bin/node` points at, root's nvm default resolves to and the `pm2-root.service` boot unit
+  uses. Before, only the deploy shell and the cron jobs used `22.16.0`, which left two PM2 installs (7.0.4 and 6.0.13) and a
+  "pm2 update" warning on every call. A new test (`backend/tests/node-version-alignment.test.ts`) fails when `.nvmrc`, the
+  ecosystem `interpreter` and the PM2 path in `render-daily-report.ts` disagree. The comments and `DEPLOYMENT.md` no longer
+  describe a 22.16/22.20 split and now document the hand-made `/usr/local/bin/pm2` symlink (the "Verified server facts" intro
+  is dated for the 2026-11-20 update); `TODO.md` tracks the deploy's
+  `pm2 update` leaving `pm2-root.service` inactive and narrows the disaster-recovery item. Backend bumped to `2.3.110`; root to
+  `2.6.286`.
+
 ### Security
 - Switched HTTP/2 off on both TLS listeners of `nginx.conf`, and of `backend/config/nginx-murphys-laws-enhanced.conf`, which also
   loses `http2_push_preload`. Two critical nginx flaws were disclosed on 2026-11-18: CVE-2026-123007 (heap overflow in HTTP/2 flow
