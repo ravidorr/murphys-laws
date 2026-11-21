@@ -122,17 +122,22 @@ todays_requests() {
 
 # User-Agents the "Suspicious User Agents" section skips: well-known search, social, AI and uptime crawlers
 # (Apple, Google, Bing, OpenAI, Anthropic, Meta, Amazon, Huawei, Majestic, Sentry, UptimeRobot and the like).
-# They match the generic bot/crawler/spider filter below only because they are automated, not because they
-# are hostile. The match is on the User-Agent field alone, so a bot name in a URL or referrer hides nothing.
-# A User-Agent can be forged, so this hides a forger of these names too; the attack tools (nikto, sqlmap,
-# havij, acunetix) and the `scan` keyword are never on this list.
-KNOWN_BOT_REGEX='applebot|googlebot|google-extended|bingbot|duckduckbot|yandexbot|baiduspider|gptbot|oai-searchbot|chatgpt-user|claudebot|claude-web|anthropic-ai|perplexitybot|meta-externalagent|meta-externalfetcher|facebookexternalhit|amazonbot|petalbot|mj12bot|ahrefsbot|semrushbot|dotbot|sentryuptimebot|uptimerobot'
+# Their User-Agents or URLs carry `bot`, `crawler` or `spider`, so the generic filter below listed them although
+# they are not hostile. Every entry names a crawler whose real User-Agent contains one of those words.
+# A User-Agent can be forged, so this hides a forger of these names too, with one limit: a User-Agent that
+# also carries an attack-tool name or `scan` (see ATTACK_TOOL_REGEX) is always listed, so a scanner cannot hide
+# behind an appended `Googlebot`.
+KNOWN_BOT_REGEX='applebot|googlebot|bingbot|duckduckbot|yandexbot|baiduspider|gptbot|oai-searchbot|chatgpt-user|claudebot|perplexitybot|meta-externalagent|meta-externalfetcher|amazonbot|petalbot|mj12bot|ahrefsbot|semrushbot|dotbot|sentryuptimebot|uptimerobot'
+ATTACK_TOOL_REGEX='nikto|sqlmap|havij|acunetix|scan'
 
-# Today's User-Agents (one per request) that look automated or hostile and are not a known bot.
+# The User-Agent of every one of today's requests whose line matches the generic bot/crawler/spider/attack-tool
+# filter (anywhere in the line, as before), minus the known bots. awk lowercases the User-Agent so both
+# regexes, which are lowercase, match case-insensitively.
 suspicious_user_agents() {
-    todays_requests | awk -F'"' '{print $6}' |
-        grep -iE "(bot|crawler|spider|scan|nikto|sqlmap|havij|acunetix)" |
-        grep -ivE "$KNOWN_BOT_REGEX"
+    todays_requests | grep -iE "(bot|crawler|spider|$ATTACK_TOOL_REGEX)" |
+        awk -F'"' -v known="$KNOWN_BOT_REGEX" -v attack="$ATTACK_TOOL_REGEX" '
+            { lower = tolower($6) }
+            lower ~ attack || lower !~ known { print $6 }'
 }
 
 # Today's request lines whose request field matches any of the given patterns. The patterns are joined into

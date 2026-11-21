@@ -486,45 +486,96 @@ describe('log-analyzer.sh XSS and path traversal detection', () => {
 });
 
 describe('log-analyzer.sh suspicious User-Agents', () => {
-  const KNOWN_BOTS = [
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15 (Applebot/0.1; +http://www.apple.com/go/applebot)',
-    'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.4; +https://openai.com/gptbot)',
-    'SentryUptimeBot/1.0 (+http://docs.sentry.io/product/alerts/uptime-monitoring/)',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 (compatible; meta-externalagent/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler))',
-    'Mozilla/5.0 (Linux; Android 7.0;) AppleWebKit/537.36 (HTML, like Gecko) Mobile Safari/537.36 (compatible; PetalBot;+https://webmaster.petalsearch.com/site/petalbot)',
-    'Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)',
-    'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.8103.78 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-    'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Amazonbot/0.1; +https://developer.amazon.com/support/amazonbot) Chrome/119.0.6045.214 Safari/537.36',
-    'Mozilla/5.0 (compatible; MJ12bot/v2.0.7; http://mj12bot.com/)',
+  // One realistic User-Agent per KNOWN_BOT_REGEX entry. Each carries `bot`, `crawler` or `spider` (in its name
+  // or its info URL), as the real one does, so the generic filter would list it without the exclusion.
+  const KNOWN_BOTS: Record<string, string> = {
+    applebot: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/17.4 Safari/605.1.15 (Applebot/0.1; +http://www.apple.com/go/applebot)',
+    googlebot: 'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) Chrome/157.0.8103.78 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+    bingbot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm) Chrome/116.0.1938.76 Safari/537.36',
+    duckduckbot: 'DuckDuckBot/1.1; (+http://duckduckgo.com/duckduckbot.html)',
+    yandexbot: 'Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)',
+    baiduspider: 'Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)',
+    gptbot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.4; +https://openai.com/gptbot)',
+    'oai-searchbot': 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot',
+    'chatgpt-user': 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot',
+    claudebot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0; +claudebot@anthropic.com)',
+    perplexitybot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)',
+    'meta-externalagent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/145.0.0.0 Safari/537.36 (compatible; meta-externalagent/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler))',
+    'meta-externalfetcher': 'meta-externalfetcher/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler)',
+    amazonbot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Amazonbot/0.1; +https://developer.amazon.com/support/amazonbot) Chrome/119.0.6045.214 Safari/537.36',
+    petalbot: 'Mozilla/5.0 (Linux; Android 7.0;) AppleWebKit/537.36 (HTML, like Gecko) Mobile Safari/537.36 (compatible; PetalBot;+https://webmaster.petalsearch.com/site/petalbot)',
+    mj12bot: 'Mozilla/5.0 (compatible; MJ12bot/v2.0.7; http://mj12bot.com/)',
+    ahrefsbot: 'Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)',
+    semrushbot: 'Mozilla/5.0 (compatible; SemrushBot/7~bl; +http://www.semrush.com/bot.html)',
+    dotbot: 'Mozilla/5.0 (compatible; DotBot/1.2; +https://opensiteexplorer.org/dotbot; help@moz.com)',
+    sentryuptimebot: 'SentryUptimeBot/1.0 (+http://docs.sentry.io/product/alerts/uptime-monitoring/)',
+    uptimerobot: 'Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)',
+  };
+  // Hostile or unrecognised agents that must stay in the report, one request each.
+  const UNKNOWN = [
+    'EvilScraperBot/3.0',
+    'nikto/2.5.0',
+    'sqlmap/1.7',
+    'havij/1.17',
+    'Acunetix-Product',
+    'Mozilla/5.0 (compatible; PortScanner/1.0)',
+    'Mozilla/5.0 (compatible; SomeNewCrawler/1.0)',
   ];
-  const UNKNOWN = ['EvilScraperBot/3.0', 'nikto/2.5.0', 'sqlmap/1.7', 'Mozilla/5.0 (compatible; SomeNewCrawler/1.0)'];
 
-  /** The `  <count> - <agent>` rows under the heading, up to the next section's divider. */
   const agentRows = (run: Run) => {
     const start = run.stdout.indexOf('Suspicious User Agents:');
     expect(start).toBeGreaterThan(-1);
     const end = run.stdout.indexOf('━', start);
-    return (run.stdout.slice(start, end === -1 ? undefined : end).match(/^ {2}\d+ - .*$/gm) ?? []);
+    expect(end).toBeGreaterThan(start);
+    return run.stdout.slice(start, end).match(/^ {2}\d+ - .*$/gm) ?? [];
   };
+  const requests = (agents: string[]) => agents.map((userAgent) => nginxLine('/', { userAgent }));
 
-  it('skips known bots in the text report', () => {
-    const report = runAnalyzer(sandbox(), KNOWN_BOTS.map((userAgent) => nginxLine('/', { userAgent })));
+  it('lists every KNOWN_BOT_REGEX entry in this table, and no other', () => {
+    const script = readFileSync(path.join(scriptsDir, 'log-analyzer.sh'), 'utf8');
+    const regex = /^KNOWN_BOT_REGEX='([^']+)'$/m.exec(script)?.[1] ?? '';
+    expect(Object.keys(KNOWN_BOTS).sort()).toEqual(regex.split('|').sort());
+  });
+
+  it.each(Object.entries(KNOWN_BOTS))('skips %s', (_name, userAgent) => {
+    const report = runAnalyzer(sandbox(), requests([userAgent]));
     expect(agentRows(report)).toEqual([]);
   });
 
-  it('still reports unknown bots, crawlers and attack tools, most frequent first', () => {
-    const lines = [...KNOWN_BOTS, ...UNKNOWN, UNKNOWN[0]].map((userAgent) => nginxLine('/', { userAgent }));
-    const rows = agentRows(runAnalyzer(sandbox(), lines));
-    expect(rows[0]).toBe('  2 - EvilScraperBot/3.0');
-    // Agents seen once are listed in no guaranteed order.
-    expect(rows.slice(1).sort()).toEqual([
-      '  1 - Mozilla/5.0 (compatible; SomeNewCrawler/1.0)',
-      '  1 - nikto/2.5.0',
-      '  1 - sqlmap/1.7',
-    ]);
+  it.each([
+    ['lower case', (agent: string) => agent.toLowerCase()],
+    ['upper case', (agent: string) => agent.toUpperCase()],
+  ])('skips known bots written in %s', (_name, transform) => {
+    const agents = Object.values(KNOWN_BOTS).map(transform);
+    expect(agentRows(runAnalyzer(sandbox(), requests(agents)))).toEqual([]);
   });
 
-  it('matches a known bot in the User-Agent only, not in the URL or referrer', () => {
+  it('still reports unknown bots, crawlers and attack tools, most frequent first', () => {
+    const rows = agentRows(runAnalyzer(sandbox(), requests([...Object.values(KNOWN_BOTS), ...UNKNOWN, UNKNOWN[0]])));
+    expect(rows[0]).toBe('  2 - EvilScraperBot/3.0');
+    // Agents seen once are listed in no guaranteed order.
+    expect(rows.slice(1).sort()).toEqual(UNKNOWN.slice(1).map((agent) => `  1 - ${agent}`).sort());
+  });
+
+  it.each([
+    'sqlmap/1.7 (compatible; Googlebot/2.1)',
+    'Nikto/2.5 Mozilla/5.0 bingbot/2.0',
+    'acunetix-scan; GPTBot/1.4',
+    'Mozilla/5.0 (compatible; PortScanner/1.0; +http://www.google.com/bot.html) Googlebot/2.1',
+    'SQLMAP/1.7 GOOGLEBOT',
+  ])('reports an attack tool that also names a known bot: %s', (userAgent) => {
+    expect(agentRows(runAnalyzer(sandbox(), requests([userAgent])))).toEqual([`  1 - ${userAgent}`]);
+  });
+
+  it('lists the agent of a request whose URL or referrer carries a hostile keyword, as it did before', () => {
+    const lines = [
+      nginxLine('/x?probe=sqlmap', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64)' }),
+      nginxLine('/', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64)', referrer: 'https://example.test/crawler' }),
+    ];
+    expect(agentRows(runAnalyzer(sandbox(), lines))).toEqual(['  2 - Mozilla/5.0 (X11; Linux x86_64)']);
+  });
+
+  it('does not let a known bot name in the URL or referrer hide another agent', () => {
     const lines = [
       nginxLine('/x?via=googlebot', { userAgent: 'EvilScraperBot/3.0' }),
       nginxLine('/', { userAgent: 'EvilScraperBot/3.0', referrer: 'https://example.test/gptbot' }),
@@ -532,12 +583,18 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     expect(agentRows(runAnalyzer(sandbox(), lines))).toEqual(['  2 - EvilScraperBot/3.0']);
   });
 
-  it.runIf(hasJq)('skips known bots in the JSON report too', () => {
-    const lines = [...KNOWN_BOTS, ...UNKNOWN].map((userAgent) => nginxLine('/', { userAgent }));
-    const json = JSON.parse(runAnalyzer(sandbox(), lines, ['--format', 'json']).stdout);
-    expect(json.suspiciousUserAgents).toEqual(
-      expect.arrayContaining(UNKNOWN.map((agent) => ({ count: 1, agent }))),
+  it.runIf(hasJq)('reports the same agents in the JSON report', () => {
+    const json = JSON.parse(
+      runAnalyzer(sandbox(), requests([...Object.values(KNOWN_BOTS), ...UNKNOWN, UNKNOWN[0]]), ['--format', 'json']).stdout,
     );
-    expect(json.suspiciousUserAgents).toHaveLength(UNKNOWN.length);
+    expect(json.suspiciousUserAgents[0]).toEqual({ count: 2, agent: 'EvilScraperBot/3.0' });
+    expect(json.suspiciousUserAgents.slice(1).sort((a: { agent: string }, b: { agent: string }) => a.agent.localeCompare(b.agent))).toEqual(
+      UNKNOWN.slice(1).map((agent) => ({ count: 1, agent })).sort((a, b) => a.agent.localeCompare(b.agent)),
+    );
+  });
+
+  it.runIf(hasJq)('gives an empty list in the JSON report when only known bots visit', () => {
+    const json = JSON.parse(runAnalyzer(sandbox(), requests(Object.values(KNOWN_BOTS)), ['--format', 'json']).stdout);
+    expect(json.suspiciousUserAgents).toEqual([]);
   });
 });
