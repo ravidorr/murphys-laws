@@ -120,6 +120,21 @@ todays_requests() {
     grep -F "[$TODAY:" "$NGINX_ACCESS_LOG" 2>/dev/null
 }
 
+# User-Agents the "Suspicious User Agents" section skips: well-known search, social, AI and uptime crawlers
+# (Apple, Google, Bing, OpenAI, Anthropic, Meta, Amazon, Huawei, Majestic, Sentry, UptimeRobot and the like).
+# They match the generic bot/crawler/spider filter below only because they are automated, not because they
+# are hostile. The match is on the User-Agent field alone, so a bot name in a URL or referrer hides nothing.
+# A User-Agent can be forged, so this hides a forger of these names too; the attack tools (nikto, sqlmap,
+# havij, acunetix) and the `scan` keyword are never on this list.
+KNOWN_BOT_REGEX='applebot|googlebot|google-extended|bingbot|duckduckbot|yandexbot|baiduspider|gptbot|oai-searchbot|chatgpt-user|claudebot|claude-web|anthropic-ai|perplexitybot|meta-externalagent|meta-externalfetcher|facebookexternalhit|amazonbot|petalbot|mj12bot|ahrefsbot|semrushbot|dotbot|sentryuptimebot|uptimerobot'
+
+# Today's User-Agents (one per request) that look automated or hostile and are not a known bot.
+suspicious_user_agents() {
+    todays_requests | awk -F'"' '{print $6}' |
+        grep -iE "(bot|crawler|spider|scan|nikto|sqlmap|havij|acunetix)" |
+        grep -ivE "$KNOWN_BOT_REGEX"
+}
+
 # Today's request lines whose request field matches any of the given patterns. The patterns are joined into
 # one alternation and run in a single pass, so a line is returned once however many of them it matches. The
 # regex is anchored to the first quoted field of the line, the request, so nothing outside it can match.
@@ -205,7 +220,7 @@ if [ -f "$NGINX_ACCESS_LOG" ]; then
     REPORT+="Suspicious User Agents:\n"
     while read -r count agent; do
         REPORT+="  $count - $agent\n"
-    done < <(todays_requests | grep -iE "(bot|crawler|spider|scan|nikto|sqlmap|havij|acunetix)" | awk -F'"' '{print $6}' | sort | uniq -c | sort -rn | head -10)
+    done < <(suspicious_user_agents | sort | uniq -c | sort -rn | head -10)
     REPORT+="\n"
 else
     TOTAL_REQUESTS=0
@@ -443,8 +458,7 @@ emit_json_report() {
                 jq -R -s 'split("\n") | map(select(length>0)) | map(split("\t")) | map({count:(.[0]|tonumber), ip:.[1]})'
         )
         suspicious=$(
-            todays_requests | grep -iE "(bot|crawler|spider|scan|nikto|sqlmap|havij|acunetix)" |
-                awk -F'"' '{print $6}' | sort | uniq -c | sort -rn | head -10 |
+            suspicious_user_agents | sort | uniq -c | sort -rn | head -10 |
                 awk '{count=$1; $1=""; sub(/^ /,""); print count"\t"$0}' |
                 jq -R -s 'split("\n") | map(select(length>0)) | map(split("\t")) | map({count:(.[0]|tonumber), agent:.[1]})'
         )
