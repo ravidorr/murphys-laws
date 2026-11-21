@@ -956,6 +956,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Daily 404 report of 21 November 2026 (31 requests in the 404 list; the 10 rows shown covered 21 of them, and the other 10 were found in the
+  access log): `/@fs/proc/self/environ?raw??` and `/_nuxt/@fs/...` (a Vite/Nuxt dev-server file-read probe, with the `/@vite/client`
+  and `/@id/...` hits of the same family), `/userfiles/x?path=../../.env` (a file-manager traversal probe whose `.env` sits in the
+  query string), the root-level `/v1/users` guess and `HEAD /backup` (seven pairs from rotating cloud addresses with a forged
+  self-referrer) are now dropped (`444`, logged to `scanner.log`) by anchored patterns, so `/api/v1/users`, `/law/backup`,
+  `/browse?q=backup` and the real API still pass. Left alone on purpose: `/sellers.json` (an ad-tech crawler), `/collections/all.atom` and
+  `/feed?post_type=product` (a feed crawler), the doubled `/assets/assets/index.es-<hash>.js` (a bot resolving our chunk names
+  against the wrong folder; the hash changes with every build, so no exact redirect fits), Censys random strings, `/pendo.js`,
+  `/plugin.js` and `/_`, MCP discovery (`/mcp`, `/sse`), `/category/robots.txt` (CriteoBot) and the one 499. Web bumped to `3.4.145`; root to `2.6.288`.
 - The health monitor no longer counts or mails anything while the GitHub Actions deploy is under way. What was wrong:
   the earlier retry (2.6.269) pauses at most 90 seconds in total, and the mails of 2026-11-12 23:45 and 2026-11-13 11:15,
   20:55 and 21:55 UTC (`API returned status 502`) matched deploy runs, so a restart that outlasted the retries would
