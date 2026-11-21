@@ -9,11 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Made the daily report's "Suspicious User Agents" section skip well-known crawlers and monitors (Applebot, Googlebot, Bingbot,
-  GPTBot, ClaudeBot, meta-externalagent, Amazonbot, PetalBot, MJ12bot, SentryUptimeBot, UptimeRobot and similar), which matched the
-  generic `bot`/`crawler`/`spider` filter only because they are automated. Unknown bots and the `nikto`, `sqlmap`, `havij`,
-  `acunetix` and `scan` matches are still listed. The list matches the User-Agent field only, in both the text and JSON reports
-  (`KNOWN_BOT_REGEX` in `backend/scripts/log-analyzer.sh`); a forged known-bot User-Agent is hidden too. New `log-analyzer.test.ts`
-  cases cover the skipped bots, the still-reported ones and the User-Agent-only match. Backend bumped to `2.3.111`; root to `2.6.289`.
+  GPTBot, ClaudeBot, meta-externalagent, Amazonbot, PetalBot, MJ12bot, SentryUptimeBot, UptimeRobot and similar), whose User-Agents
+  or info URLs carry `bot`, `crawler` or `spider` and so matched the generic filter although they are not hostile. Which requests
+  are checked is unchanged (the whole log line is still matched against the generic filter); only the listed User-Agents change.
+  Unknown bots are still listed, and so is any User-Agent that names `nikto`, `sqlmap`, `havij`, `acunetix` or `scan`, even
+  when it also names a known bot (`KNOWN_BOT_REGEX` and `ATTACK_TOOL_REGEX` in `backend/scripts/log-analyzer.sh`). Both the text
+  and JSON reports use one `suspicious_user_agents()` helper. A forged known-bot User-Agent without an attack-tool name is hidden
+  too. New `log-analyzer.test.ts` cases cover every known-bot entry, upper and lower case, attack tools that also name a bot,
+  keywords in the URL or referrer, and the JSON report, including an empty list. Backend bumped to `2.3.112`; root to `2.6.290`.
 - Kept `pm2-root.service` attached to systemd across deploys: the deploy now stops the unit before it touches PM2 (an active unit would otherwise run `pm2 kill` while the deploy starts and saves the new process list), and after `pm2 save` kills the daemon that
   `pm2 update` relaunched outside systemd (a plain `systemctl restart` would skip the stop on the inactive unit and attach to that
   daemon) and starts the unit, whose `pm2 resurrect` launches a new daemon inside it from the saved list, only where the unit
