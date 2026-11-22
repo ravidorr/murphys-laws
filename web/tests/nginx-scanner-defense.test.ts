@@ -379,6 +379,24 @@ describe('nginx scanner defense', () => {
     '/backups',
     '/backup/',
     '/backups?x=1',
+    '/wallet.dat',
+    '/Wallet.dat',
+    '/wallet.dat?x=1',
+    '/old/wallet.dat',
+    '/Public/home/js/check.js',
+    '/static/admin/javascript/hetong.js',
+    '/Public/home/js',
+    '/session?aimGetProp=fwVersion',
+    '/session?a=1&aimGetProp=fwVersion',
+    '/api/v1/repos/search?limit=1',
+    '/api/v1/repos',
+    '/api/get-logo-setting',
+    '/api/get-logo-setting?x=1',
+    '/api/v1/repos/',
+    '/WALLET.DAT',
+    '/public/home/js/check.js',
+    '/static/admin/javascript',
+    '/static/admin/javascript?x=1',
   ])('flags %s as a scanner path', (uri) => {
     expect(isScannerPath(uri)).toBe(true);
   });
@@ -689,6 +707,23 @@ describe('nginx scanner defense', () => {
     '/law/backup',
     '/backup-tips',
     '/userfilesx',
+    '/browse?q=wallet.dat',
+    '/law/wallet-dat',
+    '/static',
+    '/law/static/admin/javascript/x.js',
+    '/search?q=Public/home/js',
+    '/session',
+    '/browse?q=aimGetProp',
+    '/api/v1/repository',
+    '/api/v1/laws?q=repos',
+    '/api/health',
+    '/mywallet.dat',
+    '/Public/home/jsx',
+    '/static/admin/javascripts',
+    '/session?xaimGetProp=1',
+    '/session?aimGetProp',
+    '/api/get-logo-settings',
+    '/api/v1/repos-x',
     '/law/userfiles',
     '/search?q=userfiles',
     '/api/v1/users',
@@ -1121,6 +1156,8 @@ describe('nginx legacy URL redirects', () => {
     // llms.txt lists these as markdown links, [Browse](https://murphys-laws.com/browse), and naive crawlers keep the ")"
     ['/browse)', '/browse'],
     ['/categories)', '/categories'],
+    // FeedBurner polls the old feed path; the feed is served by the API (checked against openapi.ts below)
+    ['/rss/murphys-laws.rss', '/api/v1/feed.rss'],
     // /law is the parent of /law/N: the law breadcrumb is Home > Browse > Category > Law
     ['/law', '/browse'],
     // API tools guess /swagger.json; the OpenAPI document is published as /openapi.json
@@ -1176,6 +1213,13 @@ describe('nginx legacy URL redirects', () => {
     );
     // The file is generated, not checked in: the deploy has to run the export before it syncs web/dist
     expect(readFileSync(resolve(root, '.github', 'workflows', 'deploy.yml'), 'utf-8')).toContain('npm run build:openapi');
+  });
+
+  it('redirects the old FeedBurner feed path to the RSS feed the API serves and the pages advertise', () => {
+    expect(readFileSync(resolve(root, 'backend', 'src', 'openapi.ts'), 'utf-8')).toContain("'/api/v1/feed.rss'");
+    expect(readFileSync(resolve(root, 'web', 'index.html'), 'utf-8')).toContain('https://murphys-laws.com/api/v1/feed.rss');
+    // A redirect, not a block: the scanner map must let the request through
+    expect(isScannerPath('/rss/murphys-laws.rss')).toBe(false);
   });
 
   it('redirects every image target to a file that exists in web/public', () => {
