@@ -391,6 +391,12 @@ describe('nginx scanner defense', () => {
     '/api/v1/repos/search?limit=1',
     '/api/v1/repos',
     '/api/get-logo-setting',
+    '/api/get-logo-setting?x=1',
+    '/api/v1/repos/',
+    '/WALLET.DAT',
+    '/public/home/js/check.js',
+    '/static/admin/javascript',
+    '/static/admin/javascript?x=1',
   ])('flags %s as a scanner path', (uri) => {
     expect(isScannerPath(uri)).toBe(true);
   });
@@ -711,6 +717,13 @@ describe('nginx scanner defense', () => {
     '/api/v1/repository',
     '/api/v1/laws?q=repos',
     '/api/health',
+    '/mywallet.dat',
+    '/Public/home/jsx',
+    '/static/admin/javascripts',
+    '/session?xaimGetProp=1',
+    '/session?aimGetProp',
+    '/api/get-logo-settings',
+    '/api/v1/repos-x',
     '/law/userfiles',
     '/search?q=userfiles',
     '/api/v1/users',
