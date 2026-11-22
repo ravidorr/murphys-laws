@@ -48,6 +48,22 @@ test('CodeQL workflow contract', () => {
   assert.match(workflow, /xcodebuild build/);
 });
 
+test('pull requests that only change shared/docs skip the Kotlin and Swift analyses', () => {
+  const workflow = readFileSync(workflowPath, 'utf8');
+  const filterStep = /uses: dorny\/paths-filter@(\S+)\n\s+with:\n([\s\S]*?)\n\n/.exec(workflow);
+
+  // A negated rule only excludes files with the 'some-with-excludes' quantifier, which paths-filter v3 lacks. With
+  // the default quantifier a '!' rule matches every file outside the excluded folder instead.
+  assert.equal(filterStep?.[1], 'v4');
+  assert.match(filterStep?.[2] ?? '', /predicate-quantifier: some-with-excludes/);
+  // The exclusion sits in the shared rules that both the android and ios filters include.
+  assert.match(workflow, /common: &common\n\s+- 'shared\/\*\*'\n\s+- '!shared\/docs\/\*\*'/);
+  assert.match(workflow, /android:\n\s+- 'android\/\*\*'\n\s+- \*common/);
+  assert.match(workflow, /ios:\n\s+- 'ios\/\*\*'\n\s+- \*common/);
+  // Nothing else in the filter step may bring shared/docs back.
+  assert.equal((workflow.match(/- 'shared\/\*\*'/g) ?? []).length, 1);
+});
+
 test('workflows use only the GITHUB_TOKEN permissions they need', () => {
   for (const workflowName of workflowsUsingPathsFilter) {
     const workflow = readFileSync(path.join(rootDirectory, '.github/workflows', workflowName), 'utf8');
