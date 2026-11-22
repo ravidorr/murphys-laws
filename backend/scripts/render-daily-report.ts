@@ -889,6 +889,8 @@ function subjectSuffixForDate(date: Date, forceAllOptional: boolean): string {
 export interface LogAnalyzerJson {
   summary: {
     totalAttackAttempts: number;
+    /** Attack attempts nginx answered with 2xx/3xx. Absent when the installed log-analyzer.sh predates it. */
+    servedAttackAttempts?: number;
     totalRequests: number;
     errors4xx: number;
     errors5xx: number;
@@ -904,7 +906,14 @@ export interface LogAnalyzerJson {
     total: number;
     samples: Array<{ count: number; ip: string; agent: string; request: string }>;
   }>;
-  securityFindings: Array<{ category: string; count: number; samples: string[] }>;
+  securityFindings: Array<{
+    category: string;
+    count: number;
+    samples: string[];
+    /** Attempts nginx answered with 2xx/3xx. Absent when the installed log-analyzer.sh predates it. */
+    served?: number;
+    servedSamples?: string[];
+  }>;
   applicationErrors: string[];
 }
 
@@ -953,6 +962,14 @@ export function mapLogSections(log: LogAnalyzerJson): ReportSection[] {
     summaryItems.push(labelValueItem(line));
   }
   summaryItems.push({ label: 'Total attack attempts', value: String(log.summary.totalAttackAttempts) });
+  const servedTotal = log.summary.servedAttackAttempts;
+  if (servedTotal !== undefined && log.summary.totalAttackAttempts > 0) {
+    summaryItems.push(
+      servedTotal > 0
+        ? { label: 'Answered with 2xx/3xx (not blocked, review these)', value: String(servedTotal) }
+        : { label: 'Blocked or rejected', value: 'none was answered with 2xx/3xx' },
+    );
+  }
   summaryItems.push({ label: 'Total requests today', value: String(log.summary.totalRequests) });
   summaryItems.push({ label: '4xx errors', value: String(log.summary.errors4xx) });
   summaryItems.push({ label: '5xx errors', value: String(log.summary.errors5xx) });
@@ -999,6 +1016,17 @@ export function mapLogSections(log: LogAnalyzerJson): ReportSection[] {
     ];
     for (const sample of finding.samples) {
       items.push({ value: sample, kind: 'text' });
+    }
+    const served = finding.served;
+    if (served !== undefined) {
+      items.push(
+        served > 0
+          ? { label: 'Answered with 2xx/3xx (not blocked, review these)', value: String(served) }
+          : { label: 'Blocked or rejected', value: 'none was answered with 2xx/3xx' },
+      );
+      for (const sample of finding.servedSamples ?? []) {
+        items.push({ value: sample, kind: 'text' });
+      }
     }
     sections.push(section(`${finding.category.toUpperCase()} ATTEMPTS`, items));
   }
@@ -1682,10 +1710,11 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
     );
     sections.push(...mapLogSections(log));
     if (log.summary.totalAttackAttempts > 0) {
+      const served = log.summary.servedAttackAttempts ?? 0;
       summary.push({
         label: 'Security',
-        value: `${log.summary.totalAttackAttempts} attack attempts today`,
-        tone: 'warning',
+        value: `${log.summary.totalAttackAttempts} attack attempts today${served > 0 ? `, ${served} answered with 2xx/3xx` : ''}`,
+        tone: served > 0 ? 'critical' : 'warning',
       });
     }
   } catch (error) {
