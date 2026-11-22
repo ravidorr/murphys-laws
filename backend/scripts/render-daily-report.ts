@@ -967,7 +967,7 @@ export function mapLogSections(log: LogAnalyzerJson): ReportSection[] {
     summaryItems.push(
       servedTotal > 0
         ? { label: 'Answered with 2xx/3xx (not blocked, review these)', value: String(servedTotal) }
-        : { label: 'Blocked or rejected', value: 'none was answered with 2xx/3xx' },
+        : { label: 'Answered with 2xx/3xx', value: 'none' },
     );
   }
   summaryItems.push({ label: 'Total requests today', value: String(log.summary.totalRequests) });
@@ -1022,7 +1022,7 @@ export function mapLogSections(log: LogAnalyzerJson): ReportSection[] {
       items.push(
         served > 0
           ? { label: 'Answered with 2xx/3xx (not blocked, review these)', value: String(served) }
-          : { label: 'Blocked or rejected', value: 'none was answered with 2xx/3xx' },
+          : { label: 'Answered with 2xx/3xx', value: 'none' },
       );
       for (const sample of finding.servedSamples ?? []) {
         items.push({ value: sample, kind: 'text' });

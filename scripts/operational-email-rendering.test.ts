@@ -430,7 +430,7 @@ test('mapLogSections says whether attack attempts were blocked or answered with 
     securityFindings: [{ category: 'Path Traversal', count: 7, samples: [], served: 0, servedSamples: [] }],
   });
   const blockedPlain = renderPlainTextReport(reportFromSections(mapLogSections(blocked)));
-  assert.equal((blockedPlain.match(/Blocked or rejected: none was answered with 2xx\/3xx/g) ?? []).length, 2);
+  assert.equal((blockedPlain.match(/Answered with 2xx\/3xx: none/g) ?? []).length, 2);
   assert.equal(blockedPlain.includes('review these'), false);
 
   const servedLine = '1.2.3.4 - - "GET /../.env HTTP/1.1" 200 166';
@@ -441,19 +441,44 @@ test('mapLogSections says whether attack attempts were blocked or answered with 
   const servedPlain = renderPlainTextReport(reportFromSections(mapLogSections(served)));
   assert.equal((servedPlain.match(/Answered with 2xx\/3xx \(not blocked, review these\): 2/g) ?? []).length, 2);
   assert.match(servedPlain, /GET \/\.\.\/\.env HTTP\/1\.1" 200 166/);
-  assert.equal(servedPlain.includes('Blocked or rejected'), false);
+  assert.equal(servedPlain.includes('Answered with 2xx/3xx: none'), false);
+});
+
+test('mapLogSections lists no served lines when the finding has a count but no samples, or samples but no count', () => {
+  const noSamples = logFixture({
+    securityFindings: [{ category: 'Path Traversal', count: 7, samples: [], served: 2 }],
+  });
+  const plain = renderPlainTextReport(reportFromSections(mapLogSections(noSamples)));
+  assert.match(plain, /Answered with 2xx\/3xx \(not blocked, review these\): 2/);
+
+  const noCount = logFixture({
+    securityFindings: [{ category: 'Path Traversal', count: 7, samples: [], servedSamples: ['1.2.3.4 - - "GET /x HTTP/1.1" 200 1'] }],
+  });
+  assert.equal(renderPlainTextReport(reportFromSections(mapLogSections(noCount))).includes('GET /x HTTP/1.1'), false);
+});
+
+test('mapLogSections puts the served verdict in the summary section and the finding section separately', () => {
+  const sections = mapLogSections(
+    logFixture({
+      summary: { ...logFixture().summary, servedAttackAttempts: 1 },
+      securityFindings: [{ category: 'Path Traversal', count: 7, samples: [], served: 0, servedSamples: [] }],
+    }),
+  );
+  const rows = (title: string) => sections.find((entry) => entry.title === title)?.items.map((item) => `${item.label}=${item.value}`) ?? [];
+  assert.ok(rows('LOG ANALYSIS & ATTACK DETECTION').includes('Answered with 2xx/3xx (not blocked, review these)=1'));
+  assert.ok(rows('PATH TRAVERSAL ATTEMPTS').includes('Answered with 2xx/3xx=none'));
 });
 
 test('mapLogSections shows no verdict when the analyzer predates served counts or nothing was attempted', () => {
   const old = renderPlainTextReport(reportFromSections(mapLogSections(logFixture())));
-  assert.equal(old.includes('Blocked or rejected'), false);
+  assert.equal(old.includes('Answered with 2xx/3xx'), false);
   assert.equal(old.includes('review these'), false);
 
   const quiet = logFixture({
     summary: { ...logFixture().summary, totalAttackAttempts: 0, servedAttackAttempts: 0 },
     securityFindings: [],
   });
-  assert.equal(renderPlainTextReport(reportFromSections(mapLogSections(quiet))).includes('Blocked or rejected'), false);
+  assert.equal(renderPlainTextReport(reportFromSections(mapLogSections(quiet))).includes('Answered with 2xx/3xx'), false);
 });
 
 test('mapLogSections omits the HTTP error group when the analyzer predates errorSamples', () => {

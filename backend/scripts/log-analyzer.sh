@@ -157,10 +157,11 @@ count_requests() {
     scan_requests "$@" | awk 'END {print NR}'
 }
 
-# The lines scan_requests returns that nginx answered with a 2xx or 3xx status. A 4xx or 5xx means the probe
-# was refused (nginx rejects a malformed `..%2F` request with 400, the app answers an unknown route with 404),
-# so only these lines can mean an attack got through. A 200 is not proof of a breach (the single-page app
-# answers unknown paths with its index page), but it is the one outcome worth a human look.
+# The lines scan_requests returns that nginx answered with a 2xx or 3xx status: the answers that are not a
+# refusal. A 4xx means nginx or the app turned the probe away (an unknown route gets 404). A 5xx is counted as
+# not served too, although it can mean the payload broke something, so it still shows in the 5xx section. A 2xx
+# or 3xx is not proof of a breach (the single-page app answers unknown paths with its index page, and a redirect
+# is usually http to https or a trailing slash), but it is the outcome worth a human look.
 served_requests() {
     scan_requests "$@" | awk -F'"' '{ split($3, rest, " "); if (rest[1] ~ /^[23][0-9][0-9]$/) print }'
 }
@@ -198,7 +199,7 @@ append_served_report() {
             REPORT+="    $line\n"
         done < <(sample_served "$@" | awk -F'"' '{ split($3, rest, " "); split($1, head, " "); print rest[1], head[1], substr($2, 1, 100) }')
     else
-        REPORT+="All blocked or rejected: none was answered with 2xx/3xx\n"
+        REPORT+="None answered with 2xx/3xx\n"
     fi
     REPORT+="\n"
 }
@@ -477,7 +478,7 @@ if [ "$TOTAL_ISSUES" -gt 0 ]; then
     if [ "$TOTAL_SERVED" -gt 0 ]; then
         SUMMARY+="Answered with 2xx/3xx (not blocked, review these): $TOTAL_SERVED\n"
     else
-        SUMMARY+="All blocked or rejected: none was answered with 2xx/3xx\n"
+        SUMMARY+="None answered with 2xx/3xx\n"
     fi
     SUMMARY+="\n"
 else
