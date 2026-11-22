@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Made the `nginx-scanner` fail2ban jail count the junk requests that nginx answers with a 400. nginx rejects them while it parses the
+  request, before the rules that return 444 run, so they only reached `access.log` and never counted as a strike. The filter now has
+  a second `failregex` for a 400 on a request line no real client sends: the HTTP/2 preface (`PRI *`), binary or TLS bytes (any `\xNN`
+  in the request line), `CONNECT`, `SSTP_DUPLEX_POST`, `MGLNDD_`, the WebLogic `t3 12.1.2` handshake and a bare method such as `GET`.
+  Other 400s are left alone: a 400 for a normal `GET` (Censys), a malformed encoding in a real URL and the `..%2F` traversal probe.
+  Checked against the 53 production 400 lines of 2026-11-22: 45 count, the 8 that do not are the Censys and traversal ones. The jail
+  now reads `access.log` as well as `scanner.log`, still with 5 strikes in 10 minutes, so only a source that keeps probing is banned.
+  **Existing installs:** copy `filter.d-nginx-scanner.conf` and `jail.d-nginx-scanner.local` from `config/fail2ban/` again (keep your
+  `ignoreip`), run `sudo fail2ban-regex /var/log/nginx/access.log /etc/fail2ban/filter.d/nginx-scanner.conf`, then
+  `sudo fail2ban-client reload`; `fail2ban-client status nginx-scanner` must list both logs. The tests in `nginx-scanner-defense.test.ts`
+  cover every probe kind and the lines that must not count. The monitoring and disaster-recovery guides check both logs. Root bumped to `2.6.291`.
 - Made the daily report's "Suspicious User Agents" section skip well-known crawlers and monitors (Applebot, Googlebot, Bingbot,
   GPTBot, ClaudeBot, meta-externalagent, Amazonbot, PetalBot, MJ12bot, SentryUptimeBot, UptimeRobot and similar), whose User-Agents
   or info URLs carry `bot`, `crawler` or `spider` and so matched the generic filter although they are not hostile. Which requests

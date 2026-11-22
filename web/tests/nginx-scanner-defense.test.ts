@@ -1282,10 +1282,26 @@ describe('nginx legacy URL redirects', () => {
 // timestamp removal. The real check is `fail2ban-regex` on the server (see the filter's header).
 describe('fail2ban scanner filter', () => {
   const filter = readFileSync(resolve(root, 'config', 'fail2ban', 'filter.d-nginx-scanner.conf'), 'utf8');
-  const failregex = (/^failregex = (.*)$/m.exec(filter)?.[1] ?? '').replace('<HOST>', '(?<host>\\S+)');
+  // failregex may span lines: fail2ban takes every indented line after the first as another pattern.
+  const failregexes = (/^failregex = ([\s\S]*?)^ignoreregex/m.exec(filter)?.[1] ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.replace('<HOST>', '(?<host>\\S+)'));
+  const failregex = failregexes[0] ?? '';
+  const strikeHost = (line: string): string | undefined => {
+    for (const pattern of failregexes) {
+      const host = new RegExp(pattern).exec(line)?.groups?.host;
+      if (host) return host;
+    }
+    return undefined;
+  };
 
   it('does not depend on the bracketed timestamp that fail2ban strips before matching', () => {
-    expect(failregex).not.toContain('\\[');
+    expect(failregexes).toHaveLength(2);
+    for (const pattern of failregexes) {
+      expect(pattern).not.toContain('\\[');
+    }
   });
 
   it('counts 444 lines, with or without the timestamp, and ignores other statuses', () => {
@@ -1300,6 +1316,43 @@ describe('fail2ban scanner filter', () => {
     ).toBe('159.89.227.118');
     expect(regex.test(`66.132.195.44 - - [30/Oct/2026:20:53:32 +0000] ${request} 400 264 "-" "Mozilla/5.0"`)).toBe(false);
     expect(regex.test(`66.132.195.44 - - [] ${request} 4441 ${agent}`)).toBe(false);
+  });
+
+  // Lines copied from the production access.log of 2026-11-22 (the HTTP 400 section of the daily report).
+  describe('400 lines for requests no real client sends', () => {
+    const line = (request: string, status = 400, agent = '"-"', stamp = '[22/Nov/2026:00:24:50 +0000]') =>
+      `65.49.1.122 - - ${stamp} "${request}" ${status} 166 "-" ${agent}`;
+
+    it.each([
+      ['the HTTP/2 preface', 'PRI * HTTP/2.0'],
+      ['a TLS handshake', '\\x16\\x03\\x01\\x05\\xC9\\x01\\x00\\x05\\xC5\\x03\\x03-\\x11\\x15\\xF1'],
+      ['a NUL-led binary probe', '\\x00\\x0E8\\x01\\x01\\x01\\x01'],
+      ['an 0xFF-led binary probe', '\\xFF\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x7F\\x03\\x01NULL'],
+      ['an open-proxy probe', 'CONNECT murphys-laws.com:443 HTTP/1.1'],
+      ['an SSTP VPN probe', 'SSTP_DUPLEX_POST /sra_{BA195980-CD49-458b-9E23-C84EE0ADCD75}/ HTTP/1.1'],
+      ['the MGLNDD banner', 'MGLNDD_45.55.124.212_443'],
+      ['binary bytes that start with a printable character', 'cq\\x8Fi;\\xD6\\x82p\\xBCU\\x22x\\xB7\\xF2'],
+      ['a binary probe that starts with a semicolon', ';\\x00\\x00\\x00\\x01\\x00\\x00\\x00\\x00\\xD4\\x07'],
+      ['the WebLogic T3 handshake', 't3 12.1.2'],
+      ['a bare method with no path', 'GET'],
+    ])('counts %s', (_name, request) => {
+      expect(strikeHost(line(request))).toBe('65.49.1.122');
+      // Also once fail2ban has removed the timestamp.
+      expect(strikeHost(line(request, 400, '"-"', '[]'))).toBe('65.49.1.122');
+    });
+
+    it.each([
+      ['a 400 for a normal GET from Censys', 'GET / HTTP/1.1', 400, '"Mozilla/5.0 (compatible; CensysInspect/1.1; +https://about.censys.io/)"'],
+      ['the ..%2F path-traversal probe', 'GET /..%2F..%2F..%2F..%2Fetc%2Fpasswd HTTP/1.1', 400, '"-"'],
+      ['a 400 for a malformed encoding in a real URL', 'GET /search?q=%ZZ HTTP/1.1', 400, '"Mozilla/5.0"'],
+      ['a 400 for a real POST', 'POST /api/laws HTTP/1.1', 400, '"Mozilla/5.0"'],
+      ['a 408 for a bare method', 'GET', 408, '"-"'],
+      ['a 200 for a normal request', 'GET /law/1 HTTP/1.1', 200, '"Mozilla/5.0"'],
+      ['a 400 whose user agent only looks like a probe', 'GET /x HTTP/1.1', 400, '"CONNECT"'],
+      ['a 4000 status', 'PRI * HTTP/2.0', 4000, '"-"'],
+    ])('ignores %s', (_name, request, status, agent) => {
+      expect(strikeHost(line(request, status, agent))).toBeUndefined();
+    });
   });
 });
 
@@ -1326,10 +1379,16 @@ describe('fail2ban scanner jail', () => {
     expect(['auto', 'polling', 'pyinotify']).toContain(setting('backend'));
   });
 
-  it('watches the scanner log that nginx writes', () => {
-    const logpath = setting('logpath') ?? '';
-    expect(logpath).toBe('/var/log/nginx/scanner.log');
-    expect(conf).toMatch(new RegExp(`^\\s*access_log\\s+${logpath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+combined\\b`, 'm'));
+  it('watches the scanner log and the access log that nginx writes', () => {
+    // logpath may continue on indented lines, one file each; setting() only returns the first line.
+    const logpaths = [
+      setting('logpath') ?? '',
+      ...[...(/^logpath[ \t]*=.*\n((?:[ \t]+\S.*\n?)*)/m.exec(section)?.[1] ?? '').matchAll(/^[ \t]+(\S.*)$/gm)].map((match) => (match[1] ?? '').trim()),
+    ];
+    expect(logpaths).toEqual(['/var/log/nginx/scanner.log', '/var/log/nginx/access.log']);
+    for (const logpath of logpaths) {
+      expect(conf).toMatch(new RegExp(`^\\s*access_log\\s+${logpath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+combined\\b`, 'm'));
+    }
   });
 
   it('uses the nginx-scanner filter on the web ports, and is enabled', () => {

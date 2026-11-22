@@ -13,12 +13,15 @@ enabled  = true
 # Debian and Ubuntu ship jail.d/defaults-debian.conf with backend = systemd as the default for
 # every jail. A systemd jail reads the journal and ignores logpath, so without this line this jail
 # would never see a strike. It reads a log file, so set the backend explicitly. After a reload,
-# `sudo fail2ban-client status nginx-scanner` should show "File list: /var/log/nginx/scanner.log";
+# `sudo fail2ban-client status nginx-scanner` should list /var/log/nginx/scanner.log and /var/log/nginx/access.log as its "File list";
 # "Journal matches" instead means the jail is still on the systemd backend.
 backend  = auto
 port     = http,https
 filter   = nginx-scanner
+# scanner.log holds the 444 strikes; access.log holds the malformed requests nginx answers with a 400
+# (see the filter). fail2ban reads every line of a multi-line logpath.
 logpath  = /var/log/nginx/scanner.log
+           /var/log/nginx/access.log
 maxretry = 5
 findtime = 600
 bantime  = 86400
