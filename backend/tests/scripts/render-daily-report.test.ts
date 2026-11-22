@@ -951,3 +951,53 @@ describe('the nightly cron jobs section', () => {
     expect(collectDailyReport({ repoRoot: healthy, now }).summary.find((item) => item.label === 'Cron jobs')).toBeUndefined();
   });
 });
+
+describe('daily report attack summary row', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function securityRow(summary: Record<string, unknown>) {
+    vi.mocked(execFileSync).mockImplementation((_command, args) => {
+      if (String(args?.[0]).endsWith('log-analyzer.sh')) {
+        return JSON.stringify({
+          summary: { totalRequests: 10, errors4xx: 0, errors5xx: 0, attackLines: [], ...summary },
+          statusCodes: [],
+          topUrls: [],
+          topIps: [],
+          suspiciousUserAgents: [],
+          securityFindings: [],
+          applicationErrors: [],
+        });
+      }
+      return '';
+    });
+    vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const report = collectDailyReport({ repoRoot: scratchDir('daily-report-attacks-'), now: new Date(Date.UTC(2026, 1, 4)) });
+    return report.summary.find((item) => item.label === 'Security');
+  }
+
+  it('keeps the warning tone when every attack attempt was blocked', () => {
+    expect(securityRow({ totalAttackAttempts: 4, servedAttackAttempts: 0 })).toEqual({
+      label: 'Security',
+      value: '4 attack attempts today',
+      tone: 'warning',
+    });
+  });
+
+  it('escalates to critical and names the count when an attempt was answered with 2xx/3xx', () => {
+    expect(securityRow({ totalAttackAttempts: 4, servedAttackAttempts: 1 })).toEqual({
+      label: 'Security',
+      value: '4 attack attempts today, 1 answered with 2xx/3xx',
+      tone: 'critical',
+    });
+  });
+
+  it('keeps the warning tone when the analyzer predates served counts', () => {
+    expect(securityRow({ totalAttackAttempts: 4 })).toMatchObject({ value: '4 attack attempts today', tone: 'warning' });
+  });
+
+  it('shows no security row without attack attempts', () => {
+    expect(securityRow({ totalAttackAttempts: 0, servedAttackAttempts: 0 })).toBeUndefined();
+  });
+});
