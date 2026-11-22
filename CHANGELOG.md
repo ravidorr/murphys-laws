@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Moved the "MURPHY'S LAW OF THE DAY" section to the top of the daily status report: it is now the first section, directly below the at-a-glance summary, in both the HTML and plain-text emails. A new `render-daily-report.test.ts` case pins its position. Backend bumped to `2.3.113`; root to `2.6.291`.
 - Made the daily report's "Suspicious User Agents" section skip well-known crawlers and monitors (Applebot, Googlebot, Bingbot,
   GPTBot, ClaudeBot, meta-externalagent, Amazonbot, PetalBot, MJ12bot, SentryUptimeBot, UptimeRobot and similar), whose User-Agents
   or info URLs carry `bot`, `crawler` or `spider` and so matched the generic filter although they are not hostile. Which requests

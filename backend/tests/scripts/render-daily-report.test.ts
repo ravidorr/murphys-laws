@@ -301,7 +301,7 @@ describe('daily report Law of the Day', () => {
    * Runs the report with the report's own `sqlite3` Law of the Day query executed against a real database built
    * from the migrations, so the test checks which row the SQL picks, not just that a query was sent.
    */
-  function lawOfDayFor(seed: (db: ReturnType<typeof createMigratedDb>) => void): string | undefined {
+  function reportFor(seed: (db: ReturnType<typeof createMigratedDb>) => void): ReturnType<typeof collectDailyReport> {
     const queryErrors: unknown[] = [];
     const db = createMigratedDb();
     try {
@@ -326,10 +326,14 @@ describe('daily report Law of the Day', () => {
       vi.spyOn(process.stderr, 'write').mockReturnValue(true);
       const report = collectDailyReport({ repoRoot, now: new Date(`${featuredDate}T12:00:00Z`) });
       expect(queryErrors).toEqual([]);
-      return report.sections.find((entry) => entry.title === "MURPHY'S LAW OF THE DAY")?.items[0]?.value;
+      return report;
     } finally {
       db.close();
     }
+  }
+
+  function lawOfDayFor(seed: (db: ReturnType<typeof createMigratedDb>) => void): string | undefined {
+    return reportFor(seed).sections.find((entry) => entry.title === "MURPHY'S LAW OF THE DAY")?.items[0]?.value;
   }
 
   function addLaw(db: ReturnType<typeof createMigratedDb>, text: string, status: string, title: string | null = null) {
@@ -339,6 +343,14 @@ describe('daily report Law of the Day', () => {
   function feature(db: ReturnType<typeof createMigratedDb>, lawId: number, date = featuredDate) {
     db.prepare('INSERT INTO law_of_the_day_history (law_id, featured_date) VALUES (?, ?)').run(lawId, date);
   }
+
+  it('is the first section of the report, ahead of system status', () => {
+    const report = reportFor((db) => {
+      feature(db, addLaw(db, 'If anything can go wrong, it will.', 'published'));
+    });
+    expect(report.sections[0]?.title).toBe("MURPHY'S LAW OF THE DAY");
+    expect(report.sections[1]?.title).toBe('SYSTEM STATUS');
+  });
 
   it('names the title and text of the law recorded for the day', () => {
     const value = lawOfDayFor((db) => {

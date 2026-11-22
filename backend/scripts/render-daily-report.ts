@@ -1509,7 +1509,8 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
       dbPath,
       `SELECT COALESCE(l.title || ': ', '') || l.text FROM law_of_the_day_history lod JOIN laws l ON l.id = lod.law_id WHERE lod.featured_date = '${date}' AND l.status = 'published' ORDER BY lod.rowid DESC LIMIT 1;`,
     ]);
-    sections.push(
+    // First section of the report, right below the at-a-glance summary.
+    sections.unshift(
       section('MURPHY\'S LAW OF THE DAY', [
         { value: lawOfDay || `No law of the day set for ${date}`, kind: 'text' },
       ]),
