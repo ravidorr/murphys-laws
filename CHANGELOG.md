@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Stopped pull requests that only change `shared/docs/**` from running the CodeQL `Analyze (java-kotlin)` and `Analyze (swift)` jobs
+  (the Swift one needs a macOS runner and up to 90 minutes). The `changes` job's shared rules matched all of `shared/**`, but neither mobile
+  build reads the guides in `shared/docs`. The rules now carry `!shared/docs/**`. A negated rule only excludes files with the `some-with-excludes`
+  quantifier, which `dorny/paths-filter` v3 does not have, so the CodeQL `changes` job moves to `dorny/paths-filter@v4` (Node 24) and sets
+  `predicate-quantifier: some-with-excludes`; the other workflows stay on v3 and list their shared paths explicitly. Pushes to `main` and the
+  weekly schedule still run every analysis. A new case in `scripts/codeql-workflow.test.ts` pins the version, the quantifier and the exclusion. Root bumped to `2.6.296`.
 - Made the `nginx-scanner` fail2ban jail count the junk requests that nginx answers with a 400. nginx rejects them while it parses the
   request, before the rules that return 444 run, so they only reached `access.log` and never counted as a strike. The filter now has
   a second `failregex` for a 400 on a request line almost no real client sends: the HTTP/2 preface (`PRI *`), binary or TLS bytes (a

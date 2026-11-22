@@ -17,6 +17,7 @@ concurrency:
 
 jobs:
   # Pull requests only run the Kotlin and Swift analyses when they touch code those builds read.
+  # shared/docs holds only guides that neither build reads, so it is excluded from the shared paths below.
   # Pushes to main and the weekly schedule always run everything, so the default-branch results stay complete.
   changes:
     if: github.event_name == 'pull_request'
@@ -30,11 +31,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
+          # A negated rule only takes effect with this quantifier; the default ('some') would match every file outside shared/docs.
+          # It needs paths-filter v4: v3 has no such value.
+          predicate-quantifier: some-with-excludes
           filters: |
             common: &common
               - 'shared/**'
+              - '!shared/docs/**'
               - 'web/DESIGN.md'
               - 'web/styles/partials/variables.css'
               - '.github/workflows/codeql.yml'
