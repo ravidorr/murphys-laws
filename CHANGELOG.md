@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Made the daily report say whether an attack attempt got through. Every attack section (SQL injection, XSS, path traversal,
+  command injection) and the report summary now state how many matching requests nginx answered with a 2xx or 3xx status, or
+  that none was ("None answered with 2xx/3xx"). Before, a refused probe and a served one counted the same, so a real hit would have
+  read like the four `/etc/passwd` probes of 22 November, which the production log shows nginx answered with 400. A 5xx counts as
+  not served too (it can mean the payload broke something, so it still shows in the 5xx section). A 2xx or 3xx is not proof of a
+  breach (the single-page app answers unknown paths with its index page, and a redirect is usually http to https) but it is the
+  outcome worth a look: the email's Security summary row turns critical and names the count, and each finding lists the served
+  lines. The text report lists up to five served requests as `status ip request` under the count, apart from its sample lines,
+  which are the first matches of any status cut to 120 characters. `log-analyzer.sh --format json` adds
+  `summary.servedAttackAttempts` and `served`/`servedSamples` per finding; `render-daily-report.ts` treats them as optional so an
+  older installed analyzer still renders. New cases in `log-analyzer.test.ts`, `render-daily-report.test.ts` and
+  `operational-email-rendering.test.ts` cover 2xx, 3xx, 4xx and 5xx answers, status boundaries, each category, a request in
+  several categories, more than five served requests, another day's served request, the JSON report and the email rows.
+  Backend bumped to `2.3.115`; root to `2.6.293`.
 - Added ten crawlers to `KNOWN_BOT_REGEX` so the daily report's "Suspicious User Agents" section stops listing them: Bytespider
   (ByteDance's AI crawler), Sogou web spider, GeneralRetrievalBot, KamataBot, KeenableBot, ExaSearchBot, MCPCensus,
   PublisherRadar, remotejobsiq-bot and Findisebot. All identify themselves, most with a contact address or info URL; none names an
