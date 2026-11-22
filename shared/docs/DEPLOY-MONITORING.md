@@ -273,7 +273,7 @@ sudo systemctl status nginx
 # Check fail2ban
 sudo systemctl status fail2ban
 
-# Check the scanner jail reads its log ("File list" should show /var/log/nginx/scanner.log)
+# Check the scanner jail reads its logs ("File list" should show /var/log/nginx/scanner.log and /var/log/nginx/access.log)
 sudo fail2ban-client status nginx-scanner
 
 # Test website

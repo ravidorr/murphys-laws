@@ -277,14 +277,15 @@ EOF
  for the Certbot files; when those steps change (another module, another site layout), change the script and the job's
  package list with them.
 
-1. **Install the scanner jail** (it bans the addresses that the nginx scanner defense drops, and needs the repository's root `nginx.conf`, which writes `/var/log/nginx/scanner.log`):
+1. **Install the scanner jail** (it bans the addresses that the nginx scanner defense drops and the ones that send junk requests nginx answers with a 400, and needs the repository's root `nginx.conf`, which writes `/var/log/nginx/scanner.log` and `access.log`):
  ```bash
  cp /root/murphys-laws/config/fail2ban/filter.d-nginx-scanner.conf /etc/fail2ban/filter.d/nginx-scanner.conf
  cp /root/murphys-laws/config/fail2ban/jail.d-nginx-scanner.local /etc/fail2ban/jail.d/nginx-scanner.local
  # Add your own address to ignoreip in the jail file BEFORE the reload
  fail2ban-regex /var/log/nginx/scanner.log /etc/fail2ban/filter.d/nginx-scanner.conf
+ fail2ban-regex /var/log/nginx/access.log /etc/fail2ban/filter.d/nginx-scanner.conf
  fail2ban-client reload
- fail2ban-client status nginx-scanner # "File list" must show /var/log/nginx/scanner.log
+ fail2ban-client status nginx-scanner # "File list" must show /var/log/nginx/scanner.log and /var/log/nginx/access.log
  ```
 
 1. **Install monitoring scripts**:
@@ -457,7 +458,7 @@ After any recovery, verify these services:
 - [ ] PM2 processes running
 - [ ] Nginx running and configured correctly
 - [ ] Fail2ban active
-- [ ] Scanner jail active (`fail2ban-client status nginx-scanner` shows `/var/log/nginx/scanner.log` under "File list")
+- [ ] Scanner jail active (`fail2ban-client status nginx-scanner` shows `/var/log/nginx/scanner.log` and `/var/log/nginx/access.log` under "File list")
 - [ ] UFW firewall active
 - [ ] Cron jobs configured
 - [ ] Email alerts working (send test)

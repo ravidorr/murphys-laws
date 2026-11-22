@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Made the `nginx-scanner` fail2ban jail count the junk requests that nginx answers with a 400. nginx rejects them while it parses the
+  request, before the rules that return 444 run, so they only reached `access.log` and never counted as a strike. The filter now has
+  a second `failregex` for a 400 on a request line almost no real client sends: the HTTP/2 preface (`PRI *`), binary or TLS bytes (a
+  `\xNN` in the request line, except `\x22` and `\x5C`, which a hand-typed URL can hold), a line starting with `CONNECT`, `SSTP_`,
+  `MGLNDD_` or `t3` and a digit (the WebLogic handshake), and an upper-case word with no path such as `GET`. Other 400s are left
+  alone: a 400 for a normal `GET` (Censys), a malformed encoding in a real URL and the `..%2F` traversal probe. The pattern is
+  anchored to the request line and tests for `\xNN` with a lookahead, so a long User-Agent cannot make fail2ban backtrack. Checked
+  against the 55 production 400 lines of 2026-11-22: 47 count, the 8 that do not are the Censys and traversal ones. The jail now
+  reads `access.log` as well as `scanner.log`, still with 5 strikes in 10 minutes, so only a source that keeps probing is banned.
+  **Existing installs:** copy `filter.d-nginx-scanner.conf` and `jail.d-nginx-scanner.local` from `config/fail2ban/` again (keep your
+  `ignoreip`), run `sudo fail2ban-regex /var/log/nginx/access.log /etc/fail2ban/filter.d/nginx-scanner.conf`, then
+  `sudo fail2ban-client reload`; `fail2ban-client status nginx-scanner` must list both logs. The tests in `nginx-scanner-defense.test.ts`
+  cover each probe kind, the lines that must not count, which pattern matches which line and a large-input timing guard. The monitoring
+  and disaster-recovery guides check both logs. Web bumped to `3.4.147`; root to `2.6.295`.
 - Made the daily report say whether an attack attempt got through. Every attack section (SQL injection, XSS, path traversal,
   command injection) and the report summary now state how many matching requests nginx answered with a 2xx or 3xx status, or
   that none was ("None answered with 2xx/3xx"). Before, a refused probe and a served one counted the same, so a real hit would have
