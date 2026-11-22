@@ -158,6 +158,20 @@ count_requests() {
     scan_requests "$@" | awk 'END {print NR}'
 }
 
+# The lines scan_requests returns that nginx answered with a 2xx or 3xx status: the answers that are not a
+# refusal. A 4xx means nginx or the app turned the probe away (an unknown route gets 404). A 5xx is counted as
+# not served too, although it can mean the payload broke something, so it still shows in the 5xx section. A 2xx
+# or 3xx is not proof of a breach (the single-page app answers unknown paths with its index page, and a redirect
+# is usually http to https or a trailing slash), but it is the outcome worth a human look.
+served_requests() {
+    scan_requests "$@" | awk -F'"' '{ split($3, rest, " "); if (rest[1] ~ /^[23][0-9][0-9]$/) print }'
+}
+
+# Number of lines served_requests returns for the given patterns.
+count_served() {
+    served_requests "$@" | awk 'END {print NR}'
+}
+
 # How many sample lines each security section prints.
 SAMPLE_LINES=5
 
@@ -165,6 +179,30 @@ SAMPLE_LINES=5
 # when it prints them.
 sample_requests() {
     scan_requests "$@" | head -"$SAMPLE_LINES"
+}
+
+# Up to SAMPLE_LINES of the lines served_requests returns, uncut.
+sample_served() {
+    served_requests "$@" | head -"$SAMPLE_LINES"
+}
+
+# Adds the blocked-versus-served verdict to the report section being built: the number of attempts answered
+# with 2xx/3xx and up to SAMPLE_LINES of them as `status ip request` (the request cut to 100 characters), or a
+# note that none was. They are listed apart from the sample lines above because those are the first matches
+# of any status, cut before the status field when the request is long. The first argument is the served count,
+# the rest are the category's patterns.
+append_served_report() {
+    local served="$1"
+    shift
+    if [ "$served" -gt 0 ]; then
+        REPORT+="Answered with 2xx/3xx (not blocked, review these): $served\n"
+        while IFS= read -r line; do
+            REPORT+="    $line\n"
+        done < <(sample_served "$@" | awk -F'"' '{ split($3, rest, " "); split($1, head, " "); print rest[1], head[1], substr($2, 1, 100) }')
+    else
+        REPORT+="None answered with 2xx/3xx\n"
+    fi
+    REPORT+="\n"
 }
 
 # Generate report
@@ -242,6 +280,7 @@ REPORT+="SQL INJECTION ATTEMPTS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 SQL_ATTEMPTS=$(count_requests "${SQL_INJECTION_PATTERNS[@]}")
+SQL_SERVED=$(count_served "${SQL_INJECTION_PATTERNS[@]}")
 
 if [ "$SQL_ATTEMPTS" -gt 0 ]; then
     REPORT+="Detected $SQL_ATTEMPTS potential SQL injection attempts\n\n"
@@ -259,6 +298,8 @@ if [ "$SQL_ATTEMPTS" -gt 0 ]; then
     done < <(scan_requests "${SQL_INJECTION_PATTERNS[@]}" | awk '{print $1}' | sort | uniq -c | sort -rn | head -10)
     REPORT+="\n"
 
+    append_served_report "$SQL_SERVED" "${SQL_INJECTION_PATTERNS[@]}"
+
     log "Found $SQL_ATTEMPTS SQL injection attempts"
 else
     REPORT+="No SQL injection attempts detected\n\n"
@@ -272,6 +313,7 @@ REPORT+="CROSS-SITE SCRIPTING (XSS) ATTEMPTS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 XSS_ATTEMPTS=$(count_requests "${XSS_PATTERNS[@]}")
+XSS_SERVED=$(count_served "${XSS_PATTERNS[@]}")
 
 if [ "$XSS_ATTEMPTS" -gt 0 ]; then
     REPORT+="Detected $XSS_ATTEMPTS potential XSS attempts\n\n"
@@ -281,6 +323,8 @@ if [ "$XSS_ATTEMPTS" -gt 0 ]; then
         REPORT+="  $(echo "$line" | cut -c1-120)...\n"
     done < <(sample_requests "${XSS_PATTERNS[@]}")
     REPORT+="\n"
+
+    append_served_report "$XSS_SERVED" "${XSS_PATTERNS[@]}"
 
     log "Found $XSS_ATTEMPTS XSS attempts"
 else
@@ -295,6 +339,7 @@ REPORT+="PATH TRAVERSAL ATTEMPTS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 TRAVERSAL_ATTEMPTS=$(count_requests "${PATH_TRAVERSAL_PATTERNS[@]}")
+TRAVERSAL_SERVED=$(count_served "${PATH_TRAVERSAL_PATTERNS[@]}")
 
 if [ "$TRAVERSAL_ATTEMPTS" -gt 0 ]; then
     REPORT+="Detected $TRAVERSAL_ATTEMPTS potential path traversal attempts\n\n"
@@ -304,6 +349,8 @@ if [ "$TRAVERSAL_ATTEMPTS" -gt 0 ]; then
         REPORT+="  $(echo "$line" | cut -c1-120)...\n"
     done < <(sample_requests "${PATH_TRAVERSAL_PATTERNS[@]}")
     REPORT+="\n"
+
+    append_served_report "$TRAVERSAL_SERVED" "${PATH_TRAVERSAL_PATTERNS[@]}"
 
     log "Found $TRAVERSAL_ATTEMPTS path traversal attempts"
 else
@@ -318,6 +365,7 @@ REPORT+="COMMAND INJECTION ATTEMPTS\n"
 REPORT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
 CMD_ATTEMPTS=$(count_requests "${COMMAND_INJECTION_PATTERNS[@]}")
+CMD_SERVED=$(count_served "${COMMAND_INJECTION_PATTERNS[@]}")
 
 if [ "$CMD_ATTEMPTS" -gt 0 ]; then
     REPORT+="Detected $CMD_ATTEMPTS potential command injection attempts\n\n"
@@ -327,6 +375,8 @@ if [ "$CMD_ATTEMPTS" -gt 0 ]; then
         REPORT+="  $(echo "$line" | cut -c1-120)...\n"
     done < <(sample_requests "${COMMAND_INJECTION_PATTERNS[@]}")
     REPORT+="\n"
+
+    append_served_report "$CMD_SERVED" "${COMMAND_INJECTION_PATTERNS[@]}"
 
     log "Found $CMD_ATTEMPTS command injection attempts"
 else
@@ -412,6 +462,8 @@ fi
 # still shows every request that matches it.
 CATEGORY_SUM=$((SQL_ATTEMPTS + XSS_ATTEMPTS + TRAVERSAL_ATTEMPTS + CMD_ATTEMPTS))
 TOTAL_ISSUES=$(count_requests "${SQL_INJECTION_PATTERNS[@]}" "${XSS_PATTERNS[@]}" "${PATH_TRAVERSAL_PATTERNS[@]}" "${COMMAND_INJECTION_PATTERNS[@]}")
+# Of those, the requests nginx answered with 2xx/3xx: the only ones that can mean an attack got through.
+TOTAL_SERVED=$(count_served "${SQL_INJECTION_PATTERNS[@]}" "${XSS_PATTERNS[@]}" "${PATH_TRAVERSAL_PATTERNS[@]}" "${COMMAND_INJECTION_PATTERNS[@]}")
 
 SUMMARY=""
 
@@ -423,6 +475,11 @@ if [ "$TOTAL_ISSUES" -gt 0 ]; then
     SUMMARY+="\nTotal attack attempts: $TOTAL_ISSUES\n"
     if [ "$CATEGORY_SUM" -gt "$TOTAL_ISSUES" ]; then
         SUMMARY+="(a request matching several categories is counted once in the total)\n"
+    fi
+    if [ "$TOTAL_SERVED" -gt 0 ]; then
+        SUMMARY+="Answered with 2xx/3xx (not blocked, review these): $TOTAL_SERVED\n"
+    else
+        SUMMARY+="None answered with 2xx/3xx\n"
     fi
     SUMMARY+="\n"
 else
@@ -446,6 +503,7 @@ emit_json_report() {
     local findings='[]'
     local attack_lines='[]'
     local samples='[]'
+    local served_samples='[]'
 
     if [ -f "$NGINX_ACCESS_LOG" ]; then
         status_codes=$(
@@ -493,23 +551,26 @@ emit_json_report() {
     append_finding() {
         local category="$1"
         local count="$2"
-        shift 2
+        local served="$3"
+        shift 3
         samples=$(sample_requests "$@" | jq -R -s 'split("\n") | map(select(length>0))')
+        served_samples=$(sample_served "$@" | jq -R -s 'split("\n") | map(select(length>0))')
         findings=$(jq -n --argjson findings "$findings" --arg category "$category" --argjson count "$count" --argjson samples "$samples" \
-            '$findings + [{category:$category,count:$count,samples:$samples}]')
+            --argjson served "$served" --argjson servedSamples "$served_samples" \
+            '$findings + [{category:$category,count:$count,samples:$samples,served:$served,servedSamples:$servedSamples}]')
     }
 
     if [ "$SQL_ATTEMPTS" -gt 0 ]; then
-        append_finding "SQL Injection" "$SQL_ATTEMPTS" "${SQL_INJECTION_PATTERNS[@]}"
+        append_finding "SQL Injection" "$SQL_ATTEMPTS" "$SQL_SERVED" "${SQL_INJECTION_PATTERNS[@]}"
     fi
     if [ "$XSS_ATTEMPTS" -gt 0 ]; then
-        append_finding "Cross-Site Scripting (XSS)" "$XSS_ATTEMPTS" "${XSS_PATTERNS[@]}"
+        append_finding "Cross-Site Scripting (XSS)" "$XSS_ATTEMPTS" "$XSS_SERVED" "${XSS_PATTERNS[@]}"
     fi
     if [ "$TRAVERSAL_ATTEMPTS" -gt 0 ]; then
-        append_finding "Path Traversal" "$TRAVERSAL_ATTEMPTS" "${PATH_TRAVERSAL_PATTERNS[@]}"
+        append_finding "Path Traversal" "$TRAVERSAL_ATTEMPTS" "$TRAVERSAL_SERVED" "${PATH_TRAVERSAL_PATTERNS[@]}"
     fi
     if [ "$CMD_ATTEMPTS" -gt 0 ]; then
-        append_finding "Command Injection" "$CMD_ATTEMPTS" "${COMMAND_INJECTION_PATTERNS[@]}"
+        append_finding "Command Injection" "$CMD_ATTEMPTS" "$CMD_SERVED" "${COMMAND_INJECTION_PATTERNS[@]}"
     fi
 
     if [ -f "/root/murphys-laws/logs/api-error.log" ]; then
@@ -538,11 +599,12 @@ emit_json_report() {
     jq -n \
         --argjson summary "$(jq -n \
             --argjson totalAttackAttempts "${TOTAL_ISSUES:-0}" \
+            --argjson servedAttackAttempts "${TOTAL_SERVED:-0}" \
             --argjson totalRequests "${TOTAL_REQUESTS:-0}" \
             --argjson errors4xx "${ERROR_4XX:-0}" \
             --argjson errors5xx "${ERROR_5XX:-0}" \
             --argjson attackLines "$attack_lines" \
-            '{totalAttackAttempts:$totalAttackAttempts,totalRequests:$totalRequests,errors4xx:$errors4xx,errors5xx:$errors5xx,attackLines:$attackLines}')" \
+            '{totalAttackAttempts:$totalAttackAttempts,servedAttackAttempts:$servedAttackAttempts,totalRequests:$totalRequests,errors4xx:$errors4xx,errors5xx:$errors5xx,attackLines:$attackLines}')" \
         --argjson statusCodes "$status_codes" \
         --argjson topUrls "$top_urls" \
         --argjson topIps "$top_ips" \
