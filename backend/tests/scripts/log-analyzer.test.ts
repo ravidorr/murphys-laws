@@ -91,10 +91,12 @@ interface LineOptions {
   ip?: string;
   /** The date in nginx form; defaults to today. */
   date?: string;
+  /** The HTTP status nginx answered with; defaults to 200. */
+  status?: number;
 }
 
-const nginxLine = (request: string, { userAgent = 'Mozilla/5.0', referrer = '-', ip = '203.0.113.7', date = TEST_DAY }: LineOptions = {}) =>
-  `${ip} - - [${date}:00:00:06 +0000] "GET ${request} HTTP/1.1" 200 4708 "${referrer}" "${userAgent}"`;
+const nginxLine = (request: string, { userAgent = 'Mozilla/5.0', referrer = '-', ip = '203.0.113.7', date = TEST_DAY, status = 200 }: LineOptions = {}) =>
+  `${ip} - - [${date}:00:00:06 +0000] "GET ${request} HTTP/1.1" ${status} 4708 "${referrer}" "${userAgent}"`;
 
 /** What the text report prints for a line: the first 120 characters. */
 const printed = (line: string) => line.slice(0, 120);
@@ -221,7 +223,7 @@ describe('log-analyzer.sh security scans cover only today', () => {
     expect(json.summary.totalAttackAttempts).toBe(1);
     expect(json.summary.totalRequests).toBe(ORDINARY_TRAFFIC.length + 1);
     expect(json.summary.attackLines).toEqual(['Command Injection: 1 attempts']);
-    expect(json.securityFindings).toEqual([{ category: 'Command Injection', count: 1, samples: [today] }]);
+    expect(json.securityFindings).toEqual([{ category: 'Command Injection', count: 1, samples: [today], served: 1, servedSamples: [today] }]);
   });
 
   it.runIf(hasJq)('reports a clean JSON summary when every attack is from another day', () => {
@@ -596,5 +598,80 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
   it.runIf(hasJq)('gives an empty list in the JSON report when only known bots visit', () => {
     const json = JSON.parse(runAnalyzer(sandbox(), requests(Object.values(KNOWN_BOTS)), ['--format', 'json']).stdout);
     expect(json.suspiciousUserAgents).toEqual([]);
+  });
+});
+
+describe('log-analyzer.sh blocked versus served attack attempts', () => {
+  const TRAVERSAL = '/..%2F..%2F..%2F..%2F..%2F..%2Fetc%2Fpasswd';
+  const SERVED_NOTE = 'Answered with 2xx/3xx (not blocked, review these)';
+  const BLOCKED_NOTE = 'All blocked or rejected: none was answered with 2xx/3xx';
+
+  it('says every attempt was blocked when nginx refused them all', () => {
+    const lines = [nginxLine(TRAVERSAL, { status: 400 }), nginxLine(TRAVERSAL, { status: 400 }), ...ORDINARY_TRAFFIC];
+    const report = runAnalyzer(sandbox(), lines);
+    expect(traversalSection(report)).toContain('Detected 2 potential path traversal attempts');
+    expect(traversalSection(report)).toContain(BLOCKED_NOTE);
+    expect(traversalSection(report)).not.toContain(SERVED_NOTE);
+    expect(report.summary).toContain(BLOCKED_NOTE);
+    expect(report.summary).not.toContain(SERVED_NOTE);
+  });
+
+  it('counts a 2xx and a 3xx answer as served, but not a 4xx or 5xx', () => {
+    const lines = [nginxLine(TRAVERSAL, { status: 200 }), nginxLine(`${TRAVERSAL}x`, { status: 301 }), nginxLine(TRAVERSAL, { status: 400 }), nginxLine(TRAVERSAL, { status: 404 }), nginxLine(TRAVERSAL, { status: 500 })];
+    const report = runAnalyzer(sandbox(), lines);
+    const section = traversalSection(report);
+    expect(section).toContain('Detected 5 potential path traversal attempts');
+    expect(section).toContain(`${SERVED_NOTE}: 2\n`);
+    expect(section).toContain(`    200 203.0.113.7 GET ${TRAVERSAL} HTTP/1.1\n`);
+    expect(section).toContain(`    301 203.0.113.7 GET ${TRAVERSAL}x HTTP/1.1\n`);
+    expect(section).not.toContain(BLOCKED_NOTE);
+    expect(report.summary).toContain(`${SERVED_NOTE}: 2\n`);
+    expect(report.summary).toContain(totalAttacks(5));
+  });
+
+  it('lists a served request in the text report even when it is not among the sample lines', () => {
+    const blocked = Array.from({ length: 5 }, (_, i) => nginxLine(`${TRAVERSAL}${i}`, { status: 400, ip: '198.51.100.1' }));
+    const served = nginxLine(`${TRAVERSAL}${'a'.repeat(200)}`, { status: 200, ip: '198.51.100.2' });
+    const section = traversalSection(runAnalyzer(sandbox(), [...blocked, served]));
+    expect(sampleLines(section, '198.51.100.2')).toEqual([]);
+    expect(section).toContain(`    200 198.51.100.2 GET ${TRAVERSAL}${'a'.repeat(100 - TRAVERSAL.length - 4)}\n`);
+  });
+
+  it('judges each category on its own', () => {
+    const lines = [nginxLine(TRAVERSAL, { status: 400 }), nginxLine('/x?q=<script>alert(1)</script>', { status: 200 })];
+    const report = runAnalyzer(sandbox(), lines);
+    expect(traversalSection(report)).toContain(BLOCKED_NOTE);
+    expect(xssSection(report)).toContain(`${SERVED_NOTE}: 1\n`);
+    expect(report.summary).toContain(`${SERVED_NOTE}: 1\n`);
+  });
+
+  it('covers the SQL and command injection sections too', () => {
+    const sql = nginxLine('/x?id=1%20union%20select%201', { status: 200 });
+    const command = nginxLine('/x?f=a|cat+/etc/hosts', { status: 403 });
+    const report = runAnalyzer(sandbox(), [sql, command]);
+    expect(sqlSection(report)).toContain(`${SERVED_NOTE}: 1\n`);
+    expect(commandSection(report)).toContain(BLOCKED_NOTE);
+  });
+
+  it('prints no verdict when there are no attempts', () => {
+    const report = runAnalyzer(sandbox(), ORDINARY_TRAFFIC);
+    expect(report.stdout).not.toContain(SERVED_NOTE);
+    expect(report.stdout).not.toContain(BLOCKED_NOTE);
+  });
+
+  it.runIf(hasJq)('adds served counts and samples to the JSON report', () => {
+    const served = nginxLine(TRAVERSAL, { status: 200 });
+    const lines = [served, nginxLine(TRAVERSAL, { status: 400 }), nginxLine('/x?q=<script>', { status: 400 })];
+    const json = JSON.parse(runAnalyzer(sandbox(), lines, ['--format', 'json']).stdout);
+    expect(json.summary.totalAttackAttempts).toBe(3);
+    expect(json.summary.servedAttackAttempts).toBe(1);
+    const byCategory = Object.fromEntries(json.securityFindings.map((f: { category: string }) => [f.category, f]));
+    expect(byCategory['Path Traversal']).toMatchObject({ count: 2, served: 1, servedSamples: [served] });
+    expect(byCategory['Cross-Site Scripting (XSS)']).toMatchObject({ count: 1, served: 0, servedSamples: [] });
+  });
+
+  it.runIf(hasJq)('reports zero served attempts in a clean JSON report', () => {
+    const json = JSON.parse(runAnalyzer(sandbox(), ORDINARY_TRAFFIC, ['--format', 'json']).stdout);
+    expect(json.summary.servedAttackAttempts).toBe(0);
   });
 });
