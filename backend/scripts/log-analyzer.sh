@@ -121,13 +121,14 @@ todays_requests() {
 }
 
 # User-Agents the "Suspicious User Agents" section skips: well-known search, social, AI and uptime crawlers
-# (Apple, Google, Bing, OpenAI, Anthropic, Meta, Amazon, Huawei, Majestic, Sentry, UptimeRobot and the like).
+# (Apple, Google, Bing, OpenAI, Anthropic, Meta, Amazon, Huawei, Majestic, Sentry, UptimeRobot, ByteDance, Sogou and
+# the smaller AI-search and research crawlers that name themselves, most with a contact URL, and the like).
 # Their User-Agents or URLs carry `bot`, `crawler` or `spider`, so the generic filter below listed them although
 # they are not hostile. Every entry names a crawler whose real User-Agent contains one of those words.
 # A User-Agent can be forged, so this hides a forger of these names too, with one limit: a User-Agent that
 # also carries an attack-tool name or `scan` (see ATTACK_TOOL_REGEX) is always listed, so a scanner cannot hide
 # behind an appended `Googlebot`.
-KNOWN_BOT_REGEX='applebot|googlebot|bingbot|duckduckbot|yandexbot|baiduspider|gptbot|oai-searchbot|chatgpt-user|claudebot|perplexitybot|meta-externalagent|meta-externalfetcher|amazonbot|petalbot|mj12bot|ahrefsbot|semrushbot|dotbot|sentryuptimebot|uptimerobot'
+KNOWN_BOT_REGEX='applebot|googlebot|bingbot|duckduckbot|yandexbot|baiduspider|gptbot|oai-searchbot|chatgpt-user|claudebot|perplexitybot|meta-externalagent|meta-externalfetcher|amazonbot|petalbot|mj12bot|ahrefsbot|semrushbot|dotbot|sentryuptimebot|uptimerobot|bytespider|sogou web spider|generalretrievalbot|kamatabot|keenablebot|exasearchbot|mcpcensus|publisherradar|remotejobsiq-bot|findisebot'
 ATTACK_TOOL_REGEX='nikto|sqlmap|havij|acunetix|scan'
 
 # The User-Agent of every one of today's requests whose line matches the generic bot/crawler/spider/attack-tool

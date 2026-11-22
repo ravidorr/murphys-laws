@@ -486,8 +486,8 @@ describe('log-analyzer.sh XSS and path traversal detection', () => {
 });
 
 describe('log-analyzer.sh suspicious User-Agents', () => {
-  // One realistic User-Agent per KNOWN_BOT_REGEX entry. Each carries `bot`, `crawler` or `spider` (in its name
-  // or its info URL), as the real one does, so the generic filter would list it without the exclusion.
+  // One realistic User-Agent per KNOWN_BOT_REGEX entry. Each carries `bot`, `crawler` or `spider` (in its name,
+  // its info URL or, for PublisherRadar, `robots.txt`), as the real one does, so the generic filter would list it without the exclusion.
   const KNOWN_BOTS: Record<string, string> = {
     applebot: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/17.4 Safari/605.1.15 (Applebot/0.1; +http://www.apple.com/go/applebot)',
     googlebot: 'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) Chrome/157.0.8103.78 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
@@ -510,6 +510,16 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     dotbot: 'Mozilla/5.0 (compatible; DotBot/1.2; +https://opensiteexplorer.org/dotbot; help@moz.com)',
     sentryuptimebot: 'SentryUptimeBot/1.0 (+http://docs.sentry.io/product/alerts/uptime-monitoring/)',
     uptimerobot: 'Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)',
+    bytespider: 'Mozilla/5.0 (Linux; Android 5.0) AppleWebKit/537.36 (KHTML, like Gecko) Mobile Safari/537.36 (compatible; Bytespider; spider-feedback@bytedance.com)',
+    'sogou web spider': 'Sogou web spider/4.0(+http://www.sogou.com/docs/help/webmasters.htm#07)',
+    generalretrievalbot: 'GeneralRetrievalBot/1.0 (+https://generalretrieval.com/bot; crawler@generalretrieval.com; AxionOrbital Space Inc.; search index for AI-agent search)',
+    kamatabot: 'Mozilla/5.0 (compatible; KamataBot/1.0; +https://api.kamata.ai/bot)',
+    keenablebot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; KeenableBot/1.0; +https://keenable.ai/bot)',
+    exasearchbot: 'Mozilla/5.0 (compatible; ExaSearchBot/1.0; +https://crawler.exa.ai/)',
+    mcpcensus: 'MCPCensus/0.1.0 (+https://www.radixia.ai/census/crawler; census research; opt-out: census@radixia.ai)',
+    publisherradar: 'PublisherRadar/1.0 (+public-web research; respects robots.txt)',
+    'remotejobsiq-bot': 'remotejobsiq-bot/0.1 (+https://remotejobsiq.com)',
+    findisebot: 'Findisebot/1.0 (+https://findise.net)',
   };
   // Hostile or unrecognised agents that must stay in the report, one request each.
   const UNKNOWN = [

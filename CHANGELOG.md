@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Added ten crawlers to `KNOWN_BOT_REGEX` so the daily report's "Suspicious User Agents" section stops listing them: Bytespider
+  (ByteDance's AI crawler), Sogou web spider, GeneralRetrievalBot, KamataBot, KeenableBot, ExaSearchBot, MCPCensus,
+  PublisherRadar, remotejobsiq-bot and Findisebot. All identify themselves, most with a contact address or info URL; none names an
+  attack tool, and one that also did would still be listed. Hiding Bytespider only hides it from this report: it is not blocked
+  and `robots.txt` has no rule for it. `log-analyzer.test.ts` covers each new entry. Backend bumped to `2.3.113`; root to `2.6.291`.
 - Made the daily report's "Suspicious User Agents" section skip well-known crawlers and monitors (Applebot, Googlebot, Bingbot,
   GPTBot, ClaudeBot, meta-externalagent, Amazonbot, PetalBot, MJ12bot, SentryUptimeBot, UptimeRobot and similar), whose User-Agents
   or info URLs carry `bot`, `crawler` or `spider` and so matched the generic filter although they are not hostile. Which requests
