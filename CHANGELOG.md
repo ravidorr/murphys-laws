@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Changed
+- Triaged the 404s of the 22 November 2026 daily report beyond its top 10. Probes for `/wallet.dat`, the Chinese CMS script pair
+  `/Public/home/js/check.js` and `/static/admin/javascript/hetong.js`, `/session?aimGetProp=...`, the Gitea
+  `/api/v1/repos/...` and the Casdoor `/api/get-logo-setting` are now dropped as scanner paths. FeedBurner's poll of
+  `/rss/murphys-laws.rss` redirects to `/api/v1/feed.rss`, the feed the pages advertise. Left alone on purpose: MCP and
+  `/.well-known` discovery crawls, app-link files, `/pendo.js`-style script guesses, Censys random paths, `/feed` and
+  `/collections/all.atom` CMS guesses, bots asking for `/assets/assets/...` copies of real chunks, and `/)` and `/Dal`, whose
+  source is unknown. Web bumped to `3.4.146`; root to `2.6.291`.
 - Made the daily report's "Suspicious User Agents" section skip well-known crawlers and monitors (Applebot, Googlebot, Bingbot,
   GPTBot, ClaudeBot, meta-externalagent, Amazonbot, PetalBot, MJ12bot, SentryUptimeBot, UptimeRobot and similar), whose User-Agents
   or info URLs carry `bot`, `crawler` or `spider` and so matched the generic filter although they are not hostile. Which requests
