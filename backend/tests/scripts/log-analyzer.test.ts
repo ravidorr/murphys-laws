@@ -522,6 +522,15 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     publisherradar: 'PublisherRadar/1.0 (+public-web research; respects robots.txt)',
     'remotejobsiq-bot': 'remotejobsiq-bot/0.1 (+https://remotejobsiq.com)',
     findisebot: 'Findisebot/1.0 (+https://findise.net)',
+    crolbot: 'Mozilla/5.0 (compatible; CrolBot/0.1; +https://cloro.dev)',
+    riverbot: 'RiverBot/1.0 (+https://river.ai/bot)',
+    hnresearchcrawler: 'HNResearchCrawler/1.0 (public-web text research; robots respected)',
+    aiwebindex: 'AIWebIndex/2.0 (+https://lyrenth.com/bot; AI-readable web index)',
+    startmebot: 'StartmeBot/1.0 (+https://start.me/bot)',
+    shapbot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ShapBot/0.1.0',
+    proximic: 'Mozilla/5.0 (compatible; proximic; +https://www.comscore.com/Web-Crawler)',
+    yacybot: 'yacybot (freeworld/global; amd64 Linux 7.3.3-1-default; java 24.0.2; Etc/en) https://yacy.net/bot.html',
+    'meta-webindexer': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 (compatible; meta-webindexer/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler))',
   };
   // Hostile or unrecognised agents that must stay in the report, one request each.
   const UNKNOWN = [
