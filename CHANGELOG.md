@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dropped the Microsoft Exchange probes `/autodiscover/autodiscover.xml` and `/ews/exchange.asmx` (and `/autodiscover/autodiscover.json`, `/ews/services.asmx`, with or without a trailing `/...` or query) from the 404 report: the `$scanner_path` map in `nginx.conf` now answers them with a 444. Redirected the old-site URL `/old/murphy/murphy-toddler.htm` (Petal Search) to `/category/murphys-toddlers-laws`, as `/murphy/murphy-toddler.htm` already is. The `nginx-scanner` fail2ban filter also counts a 400 for a request line whose first word has no space and contains `;wget%20`, `;curl%20`, `;chmod%20` or `;sh%20` (the Mozi botnet's `27;wget%20http://...;chmod%20777%20...`). Checked against the other reported rows: `/app-ads.txt`, two stale hashed bundles under `/assets/` and the Censys random paths are correct 404s and stay as they are. The percent sign in that filter pattern is written `%%`, as fail2ban's config reader requires (a single `%` stops the jail from loading); a test pins it. Web bumped to `3.4.150`; root to `2.6.299`.
 
 ### Changed
+- Added nine more crawlers to `KNOWN_BOT_REGEX` so the daily report's "Suspicious User Agents" section stops listing them: CrolBot (cloro.dev),
+  RiverBot, HNResearchCrawler, AIWebIndex, StartmeBot, ShapBot, proximic (comScore), yacybot (YaCy) and meta-webindexer (Meta). Each
+  identifies itself, most with an info URL; none names an attack tool, and one that also did would still be listed. This only hides them from the
+  report: none is blocked. The "(Gort)" Safari 8 User-Agent is left alone: it gives no contact or URL, so it is not a known bot. `log-analyzer.test.ts`
+  has one new case per new entry. Backend bumped to `2.3.116`; root to `2.6.300`.
 - Stopped pull requests that only change `shared/docs/**` from running the CodeQL `Analyze (java-kotlin)` and `Analyze (swift)` jobs
   (the Swift one needs a macOS runner and up to 90 minutes). The `changes` job's shared rules matched all of `shared/**`, but neither mobile
   build reads the guides in `shared/docs`. The rules now carry `!shared/docs/**`. A negated rule only excludes files with the `some-with-excludes`
