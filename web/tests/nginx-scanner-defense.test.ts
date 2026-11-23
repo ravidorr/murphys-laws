@@ -1338,8 +1338,14 @@ describe('fail2ban scanner filter', () => {
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
-    .map((line) => line.replace('<HOST>', '(?<host>\\S+)'));
+    // fail2ban's config reader turns %% into % before it compiles the pattern; a lone % makes it refuse the file.
+    .map((line) => line.replace('<HOST>', '(?<host>\\S+)').replace(/%%/g, '%'));
   const failregex = failregexes[0] ?? '';
+  it('writes every literal percent sign as %% so fail2ban can load the filter', () => {
+    const settings = filter.split('\n').filter((line) => !line.trimStart().startsWith('#'));
+    expect(settings.join('\n').replace(/%%/g, '')).not.toContain('%');
+  });
+
   // Which of the patterns match a line, as indexes: 0 is the 444 pattern, 1 the junk-400 pattern.
   const matching = (line: string): number[] =>
     failregexes.flatMap((pattern, index) => (new RegExp(pattern).test(line) ? [index] : []));
