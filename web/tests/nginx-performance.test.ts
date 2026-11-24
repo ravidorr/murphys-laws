@@ -243,6 +243,22 @@ describe('nginx caching of the files that are not hashed', () => {
     expect(cacheFor(uri)).toEqual({ cacheClass: 'revalidate', headers: ['no-cache'], expires: null });
   });
 
+  it('serves the web app manifest as application/manifest+json, not the octet-stream fallback', () => {
+    // nginx 1.24's mime.types has no .webmanifest entry, so without default_type the manifest is sent as
+    // application/octet-stream and browsers download it instead of showing it.
+    const body = locationBody('location ~* "^/(manifest\\.webmanifest|');
+    expect(body).toMatch(/^\s*default_type\s+application\/manifest\+json;/m);
+    // `types {}` here would replace the whole map for the location and break robots.txt and the sitemaps.
+    expect(body.replace(/^\s*#.*$/gm, '')).not.toMatch(/^\s*types\s*\{/m);
+  });
+
+  it('sends a UTF-8 charset for text responses from one server-level directive', () => {
+    // llms.txt, llms-full.txt and robots.txt hold non-ASCII characters; without a charset a browser may guess wrong.
+    expect(serverLevelDirectives(apex)).toMatch(/^\s*charset utf-8;$/m);
+    // A charset_types list that left out text/plain would make the directive do nothing for the .txt files.
+    expect(apex).not.toMatch(/^\s*charset_types\b/m);
+  });
+
   it.each([
     '/favicon.ico',
     '/favicon-16x16.png',
