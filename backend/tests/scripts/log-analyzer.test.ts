@@ -490,6 +490,8 @@ describe('log-analyzer.sh XSS and path traversal detection', () => {
 describe('log-analyzer.sh suspicious User-Agents', () => {
   // One realistic User-Agent per KNOWN_BOT_REGEX entry. Each carries `bot`, `crawler` or `spider` (in its name,
   // its info URL or, for PublisherRadar, `robots.txt`), as the real one does, so the generic filter would list it without the exclusion.
+  // The exception is facebookexternalhit: its User-Agent has none of those words, so it only reaches the exclusion when the
+  // request line carries one (a /robots.txt fetch); the 'facebookexternalhit' test below covers that.
   const KNOWN_BOTS: Record<string, string> = {
     applebot: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/17.4 Safari/605.1.15 (Applebot/0.1; +http://www.apple.com/go/applebot)',
     googlebot: 'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) Chrome/157.0.8103.78 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
@@ -531,6 +533,13 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     proximic: 'Mozilla/5.0 (compatible; proximic; +https://www.comscore.com/Web-Crawler)',
     yacybot: 'yacybot (freeworld/global; amd64 Linux 7.3.3-1-default; java 24.0.2; Etc/en) https://yacy.net/bot.html',
     'meta-webindexer': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 (compatible; meta-webindexer/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler))',
+    elevenlabscrawler: 'Mozilla/5.0 (compatible; ElevenlabsCrawler/1.0; +https://elevenlabs.io/docs/bots)',
+    facebookexternalhit: 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+    serankingbacklinksbot: 'Mozilla/5.0 (compatible; SERankingBacklinksBot/1.0; +https://seranking.com/backlinks-crawler)',
+    siteauditbot: 'Mozilla/5.0 (iPhone; CPU iPhone OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5376e Safari/8536.25 (compatible; SiteAuditBot/0.97; +http://www.semrush.com/bot.html)',
+    seznambot: 'Mozilla/5.0 (compatible; SeznamBot/4.0; +https://o-seznam.cz/napoveda/vyhledavani/en/seznambot-crawler/)',
+    genomecrawler: 'Mozilla/5.0 (compatible; GenomeCrawlerd/1.0; +https://www.nokia.com/genomecrawler)',
+    sirdatabot: 'SirdataBot (+https://semantic-api.docs.sirdata.net/contextual-api/contextual-api/introduction)',
   };
   // Hostile or unrecognised agents that must stay in the report, one request each.
   const UNKNOWN = [
@@ -541,6 +550,8 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     'Acunetix-Product',
     'Mozilla/5.0 (compatible; PortScanner/1.0)',
     'Mozilla/5.0 (compatible; SomeNewCrawler/1.0)',
+    'Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity',
+    'Mozilla/5.0 (compatible; WP-Safe-Scanner/1.0)',
   ];
 
   const agentRows = (run: Run) => {
@@ -561,6 +572,11 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
   it.each(Object.entries(KNOWN_BOTS))('skips %s', (_name, userAgent) => {
     const report = runAnalyzer(sandbox(), requests([userAgent]));
     expect(agentRows(report)).toEqual([]);
+  });
+
+  it('skips facebookexternalhit when the request line, not its User-Agent, trips the generic filter', () => {
+    const line = nginxLine('/robots.txt', { userAgent: KNOWN_BOTS.facebookexternalhit });
+    expect(agentRows(runAnalyzer(sandbox(), [line]))).toEqual([]);
   });
 
   it.each([
@@ -584,6 +600,8 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     'acunetix-scan; GPTBot/1.4',
     'Mozilla/5.0 (compatible; PortScanner/1.0; +http://www.google.com/bot.html) Googlebot/2.1',
     'SQLMAP/1.7 GOOGLEBOT',
+    'Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity Googlebot/2.1',
+    'Mozilla/5.0 (compatible; WP-Safe-Scanner/1.0; SemrushBot/7)',
   ])('reports an attack tool that also names a known bot: %s', (userAgent) => {
     expect(agentRows(runAnalyzer(sandbox(), requests([userAgent])))).toEqual([`  1 - ${userAgent}`]);
   });
