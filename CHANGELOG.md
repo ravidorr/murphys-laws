@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dropped the Python source-file guess `/constants.py` (and `/LLM_backup/constants.py`) from the 404 report: `constants.py` joins `settings.py` and `manage.py` in the build-file pattern of the `$scanner_path` map in `nginx.conf`, so it is answered with a 444. The same report's other 404s stay as they are: `/__pools` (one address, three hits, no known probe family), `/app-ads.txt`, `/meta.json` and `/.well-known/ucp` (Meta, ad-supply-chain and Chrome prefetch crawlers) and the four Censys random paths are correct 404s, and the two 410s are the intended answer for retired `/murphy/` pages. Web bumped to `3.4.151`; root to `2.6.301`.
 
 ### Changed
+- Added seven more crawlers to `KNOWN_BOT_REGEX` so the daily report's "Suspicious User Agents" section stops listing them: ElevenlabsCrawler
+  (ElevenLabs), facebookexternalhit (Meta's link-preview fetcher), SERankingBacklinksBot, SiteAuditBot (Semrush's site auditor), SeznamBot,
+  GenomeCrawlerd (Nokia) and SirdataBot. Each identifies itself, most with an info URL; none names an attack tool. This only hides them from the
+  report: none is blocked. Left in the report on purpose: the Palo Alto Networks Cortex Xpanse scanner and `WP-Safe-Scanner/1.0` (both say
+  `scan`, so they always show) and `TestUserAgent` (it matched the filter only because its request was for `/robots.txt`, and it is not a
+  known crawler; facebookexternalhit reaches the report the same way but is Meta's documented fetcher, so it is hidden). `log-analyzer.test.ts` has one new case per new entry (facebookexternalhit's uses a `/robots.txt` request, the only way its User-Agent reaches the exclusion) and pins the two scanners as listed, also with a known bot appended. Backend bumped to `2.3.117`; root to `2.6.302`.
 - Added nine more crawlers to `KNOWN_BOT_REGEX` so the daily report's "Suspicious User Agents" section stops listing them: CrolBot (cloro.dev),
   RiverBot, HNResearchCrawler, AIWebIndex, StartmeBot, ShapBot, proximic (comScore), yacybot (YaCy) and meta-webindexer (Meta). Each
   identifies itself, most with an info URL; none names an attack tool, and one that also did would still be listed. This only hides them from the
