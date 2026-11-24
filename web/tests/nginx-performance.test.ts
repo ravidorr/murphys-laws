@@ -243,6 +243,29 @@ describe('nginx caching of the files that are not hashed', () => {
     expect(cacheFor(uri)).toEqual({ cacheClass: 'revalidate', headers: ['no-cache'], expires: null });
   });
 
+  it('serves the web app manifest as application/manifest+json, not the octet-stream fallback', () => {
+    // nginx 1.24's mime.types has no .webmanifest entry, so without default_type the manifest is sent as
+    // application/octet-stream and browsers download it instead of showing it.
+    const body = locationBody('location ~* "^/(manifest\\.webmanifest|');
+    expect(body).toMatch(/^\s*default_type\s+application\/manifest\+json;/m);
+    // A `types { ... }` map here would replace the whole inherited map for the location and drop the mappings of
+    // robots.txt and the sitemaps.
+    expect(body.replace(/^\s*#.*$/gm, '')).not.toMatch(/^\s*types\s*\{/m);
+  });
+
+  it('sends a UTF-8 charset for text responses from one server-level directive', () => {
+    // llms.txt, llms-full.txt and robots.txt hold non-ASCII characters; without a charset a browser may guess wrong.
+    expect(serverLevelDirectives(apex)).toMatch(/^\s*charset utf-8;$/m);
+    // A charset_types list that left out text/plain would make the directive do nothing for the .txt files.
+    expect(apex).not.toMatch(/^\s*charset_types\b/m);
+    // A later `charset off;` or another charset in a location would override the inherited value there.
+    const charsets = [...apex.replace(/^\s*#.*$/gm, '').matchAll(/^\s*charset\s+([^;]+);/gm)].map((match) => match[1]);
+    expect(charsets.length).toBeGreaterThan(0);
+    expect(charsets.every((value) => value === 'utf-8')).toBe(true);
+    // A server-level `types { ... }` would replace the mime map of every location.
+    expect(serverLevelDirectives(apex).replace(/^\s*#.*$/gm, '')).not.toMatch(/^\s*types\s*\{/m);
+  });
+
   it.each([
     '/favicon.ico',
     '/favicon-16x16.png',

@@ -60,8 +60,8 @@ For every path:
 **Repo** (work from the worktree; use `git grep`, which skips `node_modules`)
 - Is it a real route? Check the routes in `web/src/router.ts`, the files in `web/public/`,
   `shared/content`, the sitemap builder in `web/scripts/ssg.ts`, `web/public/robots.txt` and
-  `web/public/llms.txt`. The API spec comes from `backend/src/openapi.ts`. `web/public/_redirects` is
-  not read by nginx, so a path listed there is not handled on the droplet.
+  `web/public/llms.txt`. The API spec comes from `backend/src/openapi.ts`. Redirects live in `nginx.conf`, not in a
+  `_redirects` file.
 - Is it in the sitemap? The sitemap is generated at build time and not checked in, so read the live
   one: `curl -s https://murphys-laws.com/sitemap.xml | grep -F -- '<path>'`.
 - Does anything link to it? `git grep -nF -- '<path>' -- web shared backend mcp sdk`. An internal link
