@@ -8,10 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.136] - 2026-11-03
 
 ### Added
-- A `triage-user-agents` skill (`.claude/skills/triage-user-agents/SKILL.md`) for the daily report's "Suspicious user agents" list, run end to
+- A `triage-user-agents` skill (`.claude/skills/triage-user-agents/SKILL.md`) for the daily report's "Suspicious User Agents" list, run end to
   end: one verdict per user agent (hide a self-identifying crawler, keep a scanner or an unknown listed), the `KNOWN_BOT_REGEX` and test change as
   one commit, `/pr-review-toolkit:review-pr` before the pull request, one Codex review request, every finding fixed, every thread answered and
-  resolved, and a rebase merge once the 10 required checks are green (`--admin` only when the user says so). Documentation only: no version bump.
+  resolved, and a rebase merge once the 10 required checks are green (`--admin` only when the user says so; otherwise the PR stops green and waiting). Documentation only: no version bump.
 
 ### Fixed
 - Removed `web/public/_redirects`. It is a Netlify/Cloudflare Pages file (a www-to-apex redirect) that nginx never reads, since `nginx.conf` already does that redirect, yet the build copied it to `dist/` and the site served it at `/_redirects` as `application/octet-stream`. Updated the `triage-404s` skill, which mentioned it. `prune-stale-assets.mjs` still lists `_redirects` among the root files it scans for asset names; that matches nothing now and is harmless. Web bumped to `3.4.154`; root to `2.6.304`.
