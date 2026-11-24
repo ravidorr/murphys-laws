@@ -122,10 +122,11 @@ todays_requests() {
 
 # User-Agents the "Suspicious User Agents" section skips: well-known search, social, AI and uptime crawlers
 # (Apple, Google, Bing, OpenAI, Anthropic, Meta, Amazon, Huawei, Majestic, Sentry, UptimeRobot, ByteDance, Sogou,
-# comScore, YaCy, ElevenLabs, Seznam, SE Ranking, Semrush's site auditor, Nokia and the smaller AI-search and research crawlers that name themselves, most with a contact URL,
-# and the like).
+# comScore, YaCy, ElevenLabs, Seznam, SE Ranking, Semrush's site auditor, Nokia and the smaller AI-search and
+# research crawlers that name themselves, most with a contact URL, and the like).
 # Their User-Agents or URLs carry `bot`, `crawler` or `spider`, so the generic filter below listed them although
-# they are not hostile. Every entry names a crawler whose real User-Agent contains one of those words.
+# they are not hostile. Every entry names a crawler whose real User-Agent contains one of those words, except
+# facebookexternalhit, which is listed only when its request line does (a /robots.txt fetch).
 # A User-Agent can be forged, so this hides a forger of these names too, with one limit: a User-Agent that
 # also carries an attack-tool name or `scan` (see ATTACK_TOOL_REGEX) is always listed, so a scanner cannot hide
 # behind an appended `Googlebot`.

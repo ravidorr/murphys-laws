@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   GenomeCrawlerd (Nokia) and SirdataBot. Each identifies itself, most with an info URL; none names an attack tool. This only hides them from the
   report: none is blocked. Left in the report on purpose: the Palo Alto Networks Cortex Xpanse scanner and `WP-Safe-Scanner/1.0` (both say
   `scan`, so they always show) and `TestUserAgent` (it matched the filter only because its request was for `/robots.txt`, and it is not a
-  known crawler). `log-analyzer.test.ts` has one new case per new entry and pins the two scanners as listed. Backend bumped to `2.3.117`; root to `2.6.301`.
+  known crawler; facebookexternalhit reaches the report the same way but is Meta's documented fetcher, so it is hidden). `log-analyzer.test.ts` has one new case per new entry (facebookexternalhit's uses a `/robots.txt` request, the only way its User-Agent reaches the exclusion) and pins the two scanners as listed, also with a known bot appended. Backend bumped to `2.3.118`; root to `2.6.302`.
 - Added nine more crawlers to `KNOWN_BOT_REGEX` so the daily report's "Suspicious User Agents" section stops listing them: CrolBot (cloro.dev),
   RiverBot, HNResearchCrawler, AIWebIndex, StartmeBot, ShapBot, proximic (comScore), yacybot (YaCy) and meta-webindexer (Meta). Each
   identifies itself, most with an info URL; none names an attack tool, and one that also did would still be listed. This only hides them from the

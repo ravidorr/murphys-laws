@@ -490,6 +490,8 @@ describe('log-analyzer.sh XSS and path traversal detection', () => {
 describe('log-analyzer.sh suspicious User-Agents', () => {
   // One realistic User-Agent per KNOWN_BOT_REGEX entry. Each carries `bot`, `crawler` or `spider` (in its name,
   // its info URL or, for PublisherRadar, `robots.txt`), as the real one does, so the generic filter would list it without the exclusion.
+  // The exception is facebookexternalhit: its User-Agent has none of those words, so it only reaches the exclusion when the
+  // request line carries one (a /robots.txt fetch); the 'facebookexternalhit' test below covers that.
   const KNOWN_BOTS: Record<string, string> = {
     applebot: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/17.4 Safari/605.1.15 (Applebot/0.1; +http://www.apple.com/go/applebot)',
     googlebot: 'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) Chrome/157.0.8103.78 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
@@ -572,6 +574,11 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     expect(agentRows(report)).toEqual([]);
   });
 
+  it('skips facebookexternalhit when the request line, not its User-Agent, trips the generic filter', () => {
+    const line = nginxLine('/robots.txt', { userAgent: KNOWN_BOTS.facebookexternalhit });
+    expect(agentRows(runAnalyzer(sandbox(), [line]))).toEqual([]);
+  });
+
   it.each([
     ['lower case', (agent: string) => agent.toLowerCase()],
     ['upper case', (agent: string) => agent.toUpperCase()],
@@ -593,6 +600,8 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     'acunetix-scan; GPTBot/1.4',
     'Mozilla/5.0 (compatible; PortScanner/1.0; +http://www.google.com/bot.html) Googlebot/2.1',
     'SQLMAP/1.7 GOOGLEBOT',
+    'Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity Googlebot/2.1',
+    'Mozilla/5.0 (compatible; WP-Safe-Scanner/1.0; SemrushBot/7)',
   ])('reports an attack tool that also names a known bot: %s', (userAgent) => {
     expect(agentRows(runAnalyzer(sandbox(), requests([userAgent])))).toEqual([`  1 - ${userAgent}`]);
   });
