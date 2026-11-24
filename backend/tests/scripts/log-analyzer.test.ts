@@ -531,6 +531,13 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     proximic: 'Mozilla/5.0 (compatible; proximic; +https://www.comscore.com/Web-Crawler)',
     yacybot: 'yacybot (freeworld/global; amd64 Linux 7.3.3-1-default; java 24.0.2; Etc/en) https://yacy.net/bot.html',
     'meta-webindexer': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 (compatible; meta-webindexer/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler))',
+    elevenlabscrawler: 'Mozilla/5.0 (compatible; ElevenlabsCrawler/1.0; +https://elevenlabs.io/docs/bots)',
+    facebookexternalhit: 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+    serankingbacklinksbot: 'Mozilla/5.0 (compatible; SERankingBacklinksBot/1.0; +https://seranking.com/backlinks-crawler)',
+    siteauditbot: 'Mozilla/5.0 (iPhone; CPU iPhone OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5376e Safari/8536.25 (compatible; SiteAuditBot/0.97; +http://www.semrush.com/bot.html)',
+    seznambot: 'Mozilla/5.0 (compatible; SeznamBot/4.0; +https://o-seznam.cz/napoveda/vyhledavani/en/seznambot-crawler/)',
+    genomecrawler: 'Mozilla/5.0 (compatible; GenomeCrawlerd/1.0; +https://www.nokia.com/genomecrawler)',
+    sirdatabot: 'SirdataBot (+https://semantic-api.docs.sirdata.net/contextual-api/contextual-api/introduction)',
   };
   // Hostile or unrecognised agents that must stay in the report, one request each.
   const UNKNOWN = [
@@ -541,6 +548,8 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     'Acunetix-Product',
     'Mozilla/5.0 (compatible; PortScanner/1.0)',
     'Mozilla/5.0 (compatible; SomeNewCrawler/1.0)',
+    'Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity',
+    'Mozilla/5.0 (compatible; WP-Safe-Scanner/1.0)',
   ];
 
   const agentRows = (run: Run) => {

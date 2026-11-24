@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dropped the Microsoft Exchange probes `/autodiscover/autodiscover.xml` and `/ews/exchange.asmx` (and `/autodiscover/autodiscover.json`, `/ews/services.asmx`, with or without a trailing `/...` or query) from the 404 report: the `$scanner_path` map in `nginx.conf` now answers them with a 444. Redirected the old-site URL `/old/murphy/murphy-toddler.htm` (Petal Search) to `/category/murphys-toddlers-laws`, as `/murphy/murphy-toddler.htm` already is. The `nginx-scanner` fail2ban filter also counts a 400 for a request line whose first word has no space and contains `;wget%20`, `;curl%20`, `;chmod%20` or `;sh%20` (the Mozi botnet's `27;wget%20http://...;chmod%20777%20...`). Checked against the other reported rows: `/app-ads.txt`, two stale hashed bundles under `/assets/` and the Censys random paths are correct 404s and stay as they are. The percent sign in that filter pattern is written `%%`, as fail2ban's config reader requires (a single `%` stops the jail from loading); a test pins it. Web bumped to `3.4.150`; root to `2.6.299`.
 
 ### Changed
+- Added seven more crawlers to `KNOWN_BOT_REGEX` so the daily report's "Suspicious User Agents" section stops listing them: ElevenlabsCrawler
+  (ElevenLabs), facebookexternalhit (Meta's link-preview fetcher), SERankingBacklinksBot, SiteAuditBot (Semrush's site auditor), SeznamBot,
+  GenomeCrawlerd (Nokia) and SirdataBot. Each identifies itself, most with an info URL; none names an attack tool. This only hides them from the
+  report: none is blocked. Left in the report on purpose: the Palo Alto Networks Cortex Xpanse scanner and `WP-Safe-Scanner/1.0` (both say
+  `scan`, so they always show) and `TestUserAgent` (it matched the filter only because its request was for `/robots.txt`, and it is not a
+  known crawler). `log-analyzer.test.ts` has one new case per new entry and pins the two scanners as listed. Backend bumped to `2.3.117`; root to `2.6.301`.
 - Added nine more crawlers to `KNOWN_BOT_REGEX` so the daily report's "Suspicious User Agents" section stops listing them: CrolBot (cloro.dev),
   RiverBot, HNResearchCrawler, AIWebIndex, StartmeBot, ShapBot, proximic (comScore), yacybot (YaCy) and meta-webindexer (Meta). Each
   identifies itself, most with an info URL; none names an attack tool, and one that also did would still be listed. This only hides them from the
