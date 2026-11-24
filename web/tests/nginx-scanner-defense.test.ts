@@ -320,6 +320,10 @@ describe('nginx scanner defense', () => {
     '/config.dist.yml',
     '/iam.json',
     '/IAM.json',
+    // Daily 404 report of 24 November 2026: a Python source-file guess (also asked for as /LLM_backup/constants.py).
+    '/constants.py',
+    '/LLM_backup/constants.py',
+    '/constants.py?x=1',
     // Daily 404 report of 19 November 2026: a VICIdial call-centre dialer sweep.
     '/vicidial',
     '/vicidial/admin.php',
@@ -427,6 +431,9 @@ describe('nginx scanner defense', () => {
     '/browse?page=2&sort=config.json',
     '/browse?q=manage.py',
     '/law/manage.py-tips',
+    '/browse?q=constants.py',
+    '/law/constants.py-tips',
+    '/constants',
     '/browse?q=config.example.json',
     '/law/iam.json',
     '/law/vicidial-tips',
