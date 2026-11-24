@@ -313,6 +313,10 @@ describe('nginx scanner defense', () => {
     '/ckeditor.js',
     // Daily 404 report of 18 November 2026: a Django manage.py guess and a Vertex/Firebase credentials-file sweep.
     '/manage.py',
+    // Daily 404 report of 24 November 2026: a Python source-file guess (also asked for as /LLM_backup/constants.py).
+    '/constants.py',
+    '/LLM_backup/constants.py',
+    '/constants.py?x=1',
     '/static../manage.py',
     '/app/manage.py?x=1',
     '/config.example.json',
@@ -427,6 +431,9 @@ describe('nginx scanner defense', () => {
     '/browse?page=2&sort=config.json',
     '/browse?q=manage.py',
     '/law/manage.py-tips',
+    '/browse?q=constants.py',
+    '/law/constants.py-tips',
+    '/constants',
     '/browse?q=config.example.json',
     '/law/iam.json',
     '/law/vicidial-tips',
