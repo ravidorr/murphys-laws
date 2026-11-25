@@ -540,6 +540,10 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     seznambot: 'Mozilla/5.0 (compatible; SeznamBot/4.0; +https://o-seznam.cz/napoveda/vyhledavani/en/seznambot-crawler/)',
     genomecrawler: 'Mozilla/5.0 (compatible; GenomeCrawlerd/1.0; +https://www.nokia.com/genomecrawler)',
     sirdatabot: 'SirdataBot (+https://semantic-api.docs.sirdata.net/contextual-api/contextual-api/introduction)',
+    nikybot: 'NikyBot/0.1 (prototipo NikySearch; +https://nikysearch.it/nikybot.html)',
+    'agentwebmap-bot': 'agentwebmap-bot/0.2 (+https://agentwebmap.com)',
+    unfragilebot: 'UnfragileBot/1.0 (+https://unfragile.ai/bot; AI infrastructure search index)',
+    reflectionbot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Reflectionbot/1.0; +https://reflection.ai/bot) Chrome/151.0.0.0 Safari/537.36',
   };
   // Hostile or unrecognised agents that must stay in the report, one request each.
   const UNKNOWN = [
@@ -552,6 +556,13 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     'Mozilla/5.0 (compatible; SomeNewCrawler/1.0)',
     'Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity',
     'Mozilla/5.0 (compatible; WP-Safe-Scanner/1.0)',
+  ];
+
+  // Agents with no `bot`, `crawler` or `spider` in them whose name says `scan`: only the `scan` rule lists them.
+  // Kept out of UNKNOWN because the report shows only the top 10 rows.
+  const SCAN_AGENTS = [
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 ModatScanner/1.2 (+https://modat.io/)',
+    'SkillScan/1.0',
   ];
 
   const agentRows = (run: Run) => {
@@ -594,6 +605,10 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     expect(rows.slice(1).sort()).toEqual(UNKNOWN.slice(1).map((agent) => `  1 - ${agent}`).sort());
   });
 
+  it.each(SCAN_AGENTS)('lists a crawler-like agent that says scan: %s', (userAgent) => {
+    expect(agentRows(runAnalyzer(sandbox(), requests([userAgent])))).toEqual([`  1 - ${userAgent}`]);
+  });
+
   it.each([
     'sqlmap/1.7 (compatible; Googlebot/2.1)',
     'Nikto/2.5 Mozilla/5.0 bingbot/2.0',
@@ -602,6 +617,8 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     'SQLMAP/1.7 GOOGLEBOT',
     'Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity Googlebot/2.1',
     'Mozilla/5.0 (compatible; WP-Safe-Scanner/1.0; SemrushBot/7)',
+    'SkillScan/1.0 (compatible; Googlebot/2.1)',
+    'Mozilla/5.0 (compatible; FlowIQLabsBot/1.0; +https://flowiq-labs.com/scanning-info) Reflectionbot/1.0',
   ])('reports an attack tool that also names a known bot: %s', (userAgent) => {
     expect(agentRows(runAnalyzer(sandbox(), requests([userAgent])))).toEqual([`  1 - ${userAgent}`]);
   });
