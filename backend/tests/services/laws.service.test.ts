@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import Database from 'better-sqlite3';
 import { LawService, buildFtsMatchQuery } from '../../src/services/laws.service.ts';
+import { VoteService } from '../../src/services/votes.service.ts';
 
 function enableFts(db: InstanceType<typeof Database>): void {
   db.exec(`
@@ -471,8 +472,27 @@ describe('LawService', () => {
   it('returns null when the selected law can no longer be read', async () => {
     db.prepare("INSERT INTO laws (text, status) VALUES ('Transient law', 'published')").run();
     vi.spyOn(lawService, 'getLaw').mockResolvedValue(undefined);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     await expect(lawService.getLawOfTheDay()).resolves.toBeNull();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('picked law 1 could not be read'));
+  });
+
+  it('keeps an unreadable pick as an empty answer for 5 seconds only', async () => {
+    vi.useFakeTimers({ now: new Date('2026-11-25T10:00:00Z') });
+    db.prepare("INSERT INTO laws (text, status) VALUES ('Transient law', 'published')").run();
+    const getLaw = vi.spyOn(lawService, 'getLaw').mockResolvedValue(undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await lawService.getLawOfTheDay();
+    vi.setSystemTime(new Date('2026-11-25T10:00:04Z'));
+    await lawService.getLawOfTheDay();
+    expect(getLaw).toHaveBeenCalledTimes(1);
+
+    vi.setSystemTime(new Date('2026-11-25T10:00:06Z'));
+    await lawService.getLawOfTheDay();
+    expect(getLaw).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
   });
 
   describe('getLawOfTheDay cache', () => {
@@ -496,33 +516,88 @@ describe('LawService', () => {
       expect(getLaw).toHaveBeenCalledTimes(1);
     });
 
-    it('reloads after the time limit so vote counts catch up', async () => {
+    it('reloads after the time limit for changes the revalidation cannot see', async () => {
       vi.useFakeTimers({ now: new Date('2026-11-25T10:00:00Z') });
-      const lawId = Number(db.prepare("INSERT INTO laws (text, status) VALUES ('Voted Law', 'published')").run().lastInsertRowid);
-      expect((await lawService.getLawOfTheDay())!.law.upvotes).toBe(0);
+      const lawId = Number(db.prepare("INSERT INTO laws (text, status) VALUES ('Old text', 'published')").run().lastInsertRowid);
+      expect((await lawService.getLawOfTheDay())!.law.text).toBe('Old text');
 
-      db.prepare("INSERT INTO votes (law_id, vote_type, voter_identifier) VALUES (?, 'up', 'a')").run(lawId);
+      // updated_at is left alone, as when a category or editorial note changes
+      db.prepare("UPDATE laws SET text = 'New text' WHERE id = ?").run(lawId);
       vi.setSystemTime(new Date('2026-11-25T10:00:59Z'));
-      expect((await lawService.getLawOfTheDay())!.law.upvotes).toBe(0);
+      expect((await lawService.getLawOfTheDay())!.law.text).toBe('Old text');
 
       vi.setSystemTime(new Date('2026-11-25T10:01:01Z'));
-      expect((await lawService.getLawOfTheDay())!.law.upvotes).toBe(1);
+      expect((await lawService.getLawOfTheDay())!.law.text).toBe('New text');
     });
 
-    it('drops the entry at once when the featured law is rejected or edited', async () => {
+    it('shows a vote, a changed vote and a removed vote from VoteService on the featured law at once', async () => {
+      vi.useFakeTimers({ now: new Date('2026-11-25T10:00:00Z') });
+      const votes = new VoteService(db, () => lawService.invalidateLawOfTheDay());
+      const lawId = Number(db.prepare("INSERT INTO laws (text, status) VALUES ('Voted Law', 'published')").run().lastInsertRowid);
+      expect((await lawService.getLawOfTheDay())!.law).toMatchObject({ upvotes: 0, downvotes: 0 });
+
+      await votes.vote(lawId, 'up', 'v1');
+      vi.setSystemTime(new Date('2026-11-25T10:00:01Z'));
+      expect((await lawService.getLawOfTheDay())!.law).toMatchObject({ upvotes: 1, downvotes: 0 });
+
+      await votes.vote(lawId, 'down', 'v1');
+      vi.setSystemTime(new Date('2026-11-25T10:00:02Z'));
+      expect((await lawService.getLawOfTheDay())!.law).toMatchObject({ upvotes: 0, downvotes: 1 });
+
+      await votes.removeVote(lawId, 'v1');
+      vi.setSystemTime(new Date('2026-11-25T10:00:03Z'));
+      expect((await lawService.getLawOfTheDay())!.law).toMatchObject({ upvotes: 0, downvotes: 0 });
+    });
+
+    it('reloads after a vote on any other law too (a corollary vote changes the payload)', async () => {
+      vi.useFakeTimers({ now: new Date('2026-11-25T10:00:00Z') });
+      const votes = new VoteService(db, () => lawService.invalidateLawOfTheDay());
+      db.prepare("INSERT INTO laws (text, status) VALUES ('Featured', 'published')").run();
+      const otherId = Number(db.prepare("INSERT INTO laws (text, status) VALUES ('Other', 'published')").run().lastInsertRowid);
+      const getLaw = vi.spyOn(lawService, 'getLaw');
+      const first = await lawService.getLawOfTheDay();
+      expect(await lawService.getLawOfTheDay()).toBe(first);
+      expect(getLaw).toHaveBeenCalledTimes(1);
+
+      await votes.vote(otherId, 'up', 'v1');
+      vi.setSystemTime(new Date('2026-11-25T10:00:05Z'));
+      expect(await lawService.getLawOfTheDay()).toEqual(first);
+      expect(getLaw).toHaveBeenCalledTimes(2);
+    });
+
+    it('computes the UTC date whatever the process time zone is', async () => {
+      const zone = process.env.TZ;
+      process.env.TZ = 'Asia/Tokyo';
+      try {
+        // 23:30 UTC is already the next day (08:30) in Tokyo
+        vi.useFakeTimers({ now: new Date('2026-11-25T23:30:00Z') });
+        db.prepare("INSERT INTO laws (text, status) VALUES ('Zone Law', 'published')").run();
+        expect((await lawService.getLawOfTheDay())!.featured_date).toBe('2026-11-25');
+      } finally {
+        if (zone === undefined) delete process.env.TZ;
+        else process.env.TZ = zone;
+      }
+    });
+
+    it('drops the entry at once when the featured law is edited', async () => {
       vi.useFakeTimers({ now: new Date('2026-11-25T10:00:00Z') });
       const lawId = Number(db.prepare("INSERT INTO laws (text, status) VALUES ('First Law', 'published')").run().lastInsertRowid);
-      db.prepare("INSERT INTO laws (text, status) VALUES ('Second Law', 'published')").run();
       expect((await lawService.getLawOfTheDay())!.law.id).toBe(lawId);
 
       db.prepare("UPDATE laws SET text = 'First Law, edited', updated_at = '2030-01-01T00:00:00.000Z' WHERE id = ?").run(lawId);
       vi.setSystemTime(new Date('2026-11-25T10:00:10Z'));
       expect((await lawService.getLawOfTheDay())!.law.text).toBe('First Law, edited');
+    });
+
+    it('drops the entry at once when the featured law is rejected', async () => {
+      vi.useFakeTimers({ now: new Date('2026-11-25T10:00:00Z') });
+      const lawId = Number(db.prepare("INSERT INTO laws (text, status) VALUES ('First Law', 'published')").run().lastInsertRowid);
+      db.prepare("INSERT INTO laws (text, status) VALUES ('Second Law', 'published')").run();
+      expect((await lawService.getLawOfTheDay())!.law.id).toBe(lawId);
 
       db.prepare("UPDATE laws SET status = 'rejected' WHERE id = ?").run(lawId);
       vi.setSystemTime(new Date('2026-11-25T10:00:20Z'));
-      const replaced = await lawService.getLawOfTheDay();
-      expect(replaced!.law.text).toBe('Second Law');
+      expect((await lawService.getLawOfTheDay())!.law.text).toBe('Second Law');
     });
 
     it('never serves yesterday\'s law after midnight UTC, even inside the time limit', async () => {
@@ -532,11 +607,13 @@ describe('LawService', () => {
       const before = await lawService.getLawOfTheDay();
       expect(before).toMatchObject({ featured_date: '2026-11-25' });
       expect(before!.law.id).toBe(monday);
+      const select = vi.spyOn(lawService, 'selectLawOfTheDay');
 
+      // Only the date is asserted after midnight: the pick itself depends on SQLite's real clock (the 365-day window)
       vi.setSystemTime(new Date('2026-11-26T00:00:05Z'));
       const after = await lawService.getLawOfTheDay();
       expect(after!.featured_date).toBe('2026-11-26');
-      expect(after!.law.id).not.toBe(monday);
+      expect(select).toHaveBeenCalledWith('2026-11-26');
     });
 
     it('keeps an empty answer only briefly, so the first published law shows up quickly', async () => {

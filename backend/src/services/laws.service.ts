@@ -576,10 +576,13 @@ export class LawService {
    * The Law of the Day with its full law payload. Every request used to run the pick lookup plus the ten or so
    * queries of getLaw (votes, attributions, categories, corollaries, annotations), though the pick is the same all
    * day, so the answer is kept in process per UTC day. The entry is dropped when the UTC date changes (checked on
-   * every call, so a new day's law is never served from yesterday's entry) and after LAW_OF_DAY_CACHE_TTL_MS, which
-   * bounds how stale the vote counts and other changes that leave the law's `updated_at` alone can be: the same
-   * minute the response's Cache-Control already allows. A rejection or an edit of the law is caught on the next
-   * call (see cachedPickIsCurrent). An empty answer (no published law yet, or the pick unreadable) is kept
+   * every call, so a new day's law is never served from yesterday's entry), after LAW_OF_DAY_CACHE_TTL_MS, and
+   * when `invalidateLawOfTheDay` is called (VoteService after any vote, AdminLawService after any moderator write,
+   * which also covers corollaries, attributions, categories and annotations). A change made by another process can
+   * lag up to the time limit, unless it bumps the law's own `updated_at` (see cachedPickIsCurrent). The 60 seconds
+   * stack with the response's Cache-Control minute (max-age is counted from the response, with no Age header), so
+   * another viewer can see data up to about two minutes old. The returned object is shared between callers: treat it
+   * as read-only. An empty answer (no published law yet, or the pick unreadable) is kept
    * only LAW_OF_DAY_EMPTY_CACHE_TTL_MS, so the first law published is picked up quickly.
    */
   async getLawOfTheDay(): Promise<{ law: LawRow; featured_date: string } | null> {
@@ -598,9 +601,9 @@ export class LawService {
   }
 
   /**
-   * One primary-key lookup that tells whether the cached law is still published and unedited. A moderator rejecting
-   * or editing the featured law goes through another service (AdminLawService) that cannot clear this cache, so the
-   * entry checks the row's status and `updated_at` instead of waiting out the time limit. An empty entry has no law to check.
+   * One primary-key lookup that tells whether the cached law is still published and unedited: a safety net for a
+   * change made behind this service's back (another process, a script) that bumps the law's `updated_at`. In the API
+   * process, VoteService and AdminLawService call `invalidateLawOfTheDay` themselves. An empty entry has no law to check.
    */
   private cachedPickIsCurrent(value: { law: LawRow; featured_date: string } | null): boolean {
     if (!value) return true;
@@ -610,12 +613,25 @@ export class LawService {
     return row !== undefined && row.updated_at === value.law.updated_at;
   }
 
+  /**
+   * Forgets the cached Law of the Day so the next call reads it again. Called after a vote is cast, changed or removed
+   * (any law: a vote on a corollary changes the payload too) and after a moderator changes a law, so a visitor who
+   * has just voted sees the new counts at once.
+   */
+  invalidateLawOfTheDay(): void {
+    this.lawOfDayCache = null;
+  }
+
   private async loadLawOfTheDay(featuredDate: string): Promise<{ law: LawRow; featured_date: string } | null> {
     const pick = this.selectLawOfTheDay(featuredDate);
     if (!pick) return null;
 
     const law = await this.getLaw(pick.lawId);
-    if (!law) return null;
+    if (!law) {
+      // A pick that cannot be read (unpublished between the two lookups) would otherwise look like "no laws at all".
+      console.warn(`Law of the Day ${featuredDate}: picked law ${pick.lawId} could not be read`);
+      return null;
+    }
     return { law, featured_date: pick.featuredDate };
   }
 
