@@ -19,7 +19,7 @@ function request(body: string, ip = '203.0.113.1'): IncomingMessage {
 }
 
 describe('SubscriptionController', () => {
-  const subscriptions = { subscribe: vi.fn(), releaseCooldown: vi.fn(), confirm: vi.fn(), unsubscribe: vi.fn() };
+  const subscriptions = { subscribe: vi.fn(), recordConfirmationSend: vi.fn(), releaseCooldown: vi.fn(), confirm: vi.fn(), unsubscribe: vi.fn() };
   const formTokens = { issue: vi.fn(), verify: vi.fn() };
   const emailService = { isConfigured: vi.fn(), sendSubscriptionConfirmationEmail: vi.fn() };
   let controller: SubscriptionController;
@@ -52,6 +52,7 @@ describe('SubscriptionController', () => {
     it('sends a confirmation and answers 202', async () => {
       await controller.subscribe(request(JSON.stringify({ email: ' Ann@Example.com ' }), nextIp()), res);
       expect(emailService.sendSubscriptionConfirmationEmail).toHaveBeenCalledWith('ann@example.com', confirmUrl(TOKEN));
+      expect(subscriptions.recordConfirmationSend).toHaveBeenCalledWith(true);
       expect(status()).toBe(202);
       expect(json()).toEqual({ status: 'check_your_email' });
     });
@@ -72,6 +73,7 @@ describe('SubscriptionController', () => {
         expect(json()).toEqual({ status: 'check_your_email' });
       }
       expect(emailService.sendSubscriptionConfirmationEmail).not.toHaveBeenCalled();
+      expect(subscriptions.recordConfirmationSend).not.toHaveBeenCalled();
       expect(console.warn).toHaveBeenCalledWith('[subscribe] no email sent: cooldown');
       expect(console.warn).toHaveBeenCalledWith('[subscribe] no email sent: suppressed');
       expect(vi.mocked(console.warn).mock.calls.flat().join(' ')).not.toContain('ann@example.com');
@@ -141,6 +143,7 @@ describe('SubscriptionController', () => {
       emailService.sendSubscriptionConfirmationEmail.mockResolvedValue(false);
       await controller.subscribe(request(JSON.stringify({ email: 'a@example.com' }), nextIp()), res);
       expect(subscriptions.releaseCooldown).toHaveBeenCalledWith(TOKEN);
+      expect(subscriptions.recordConfirmationSend).toHaveBeenCalledWith(false);
       expect(status()).toBe(502);
     });
 
@@ -190,6 +193,7 @@ describe('SubscriptionController', () => {
       vi.setSystemTime(T0 + 3000);
       expect((await post({ email: 'ann@example.com', token })).code).toBe(202);
       expect(emailService.sendSubscriptionConfirmationEmail).toHaveBeenCalledTimes(1);
+      expect(db.prepare('SELECT sent_at, ok FROM confirmation_sends').all()).toEqual([{ sent_at: '2026-11-25 10:00:03', ok: 1 }]);
 
       vi.setSystemTime(T0 + 4000);
       expect((await post({ email: 'bob@example.com', token })).code).toBe(400);

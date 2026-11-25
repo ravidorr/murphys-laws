@@ -1458,7 +1458,7 @@ export function buildPendingApprovalsSection(
 
 /** One UTC day's counts for the daily-email signup, from the database. */
 export interface SignupDbStats {
-  /** Addresses sent a confirmation email that day (an address mailed twice counts once). */
+  /** Confirmation emails the signup sent that day, from the confirmation_sends record (failed attempts excluded). */
   emailsSent: number;
   confirmedThatDay: number;
   /** Unconfirmed addresses waiting now, all time. */
@@ -1567,7 +1567,7 @@ export function collectSignupDbStats(dbPath: string, day: Date): SignupDbStats |
       'sqlite3',
       [
         dbPath,
-        `SELECT (SELECT COUNT(*) FROM email_subscriptions WHERE confirmation_sent_at >= '${dayStart}' AND confirmation_sent_at < '${dayEnd}'), ` +
+        `SELECT (SELECT COUNT(*) FROM confirmation_sends WHERE ok = 1 AND sent_at >= '${dayStart}' AND sent_at < '${dayEnd}'), ` +
           `(SELECT COUNT(*) FROM email_subscriptions WHERE confirmed_at >= '${dayStart}' AND confirmed_at < '${dayEnd}'), ` +
           "(SELECT COUNT(*) FROM email_subscriptions WHERE status = 'pending'), " +
           '(SELECT COUNT(*) FROM email_suppressions);',
@@ -1591,10 +1591,7 @@ export function collectSignupDbStats(dbPath: string, day: Date): SignupDbStats |
  * are getting past the token check, which is when a CAPTCHA such as Turnstile is worth adding.
  */
 export function buildSignupProtectionSection(db: SignupDbStats | null, requests: SignupRequestStats | null, dayLabel: string): ReportSection {
-  // A send that failed (a 502) still stamps the address (SubscriptionService.releaseCooldown moves the send time back
-  // by the cooldown, it does not clear it), so the failed requests are taken off the database count. Otherwise an
-  // email outage, where nobody can confirm, would look like a bot getting past the token check.
-  const emailsSent = db === null ? 0 : Math.max(0, db.emailsSent - (requests?.failed ?? 0));
+  const emailsSent = db === null ? 0 : db.emailsSent;
   const items: ReportItem[] = [];
   if (requests === null) {
     items.push({ label: 'Signup Attempts', value: 'Unavailable - see the daily-report log', tone: 'warning' });

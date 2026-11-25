@@ -168,6 +168,7 @@ export class SubscriptionController {
 
     if (result.status === 'confirmation_needed') {
       const sent = await this.emailService.sendSubscriptionConfirmationEmail(result.email, confirmUrl(result.token));
+      this.subscriptions.recordConfirmationSend(sent);
       if (!sent) {
         this.subscriptions.releaseCooldown(result.token);
         return sendJson(res, 502, { error: 'Could not send the confirmation email. Please try again later.' }, req, rateLimit);

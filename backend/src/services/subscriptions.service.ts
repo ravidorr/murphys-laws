@@ -17,6 +17,9 @@ export const CONFIRMATION_LIMIT_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 /** An address that never confirmed is dropped this long after its last confirmation email. */
 export const STALE_PENDING_MS = 14 * 24 * 60 * 60 * 1000;
 
+/** Rows of the confirmation send record older than this are deleted; the daily report only needs yesterday. */
+export const CONFIRMATION_SEND_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+
 const MAX_EMAIL_LENGTH = 254;
 // No whitespace, quotes, brackets, commas or semicolons: those are address-list and display-name syntax.
 const EMAIL_PATTERN = /^[^\s@,;<>()[\]\\":]+@[^\s@,;<>()[\]\\":]+\.[^\s@,;<>()[\]\\":]+$/;
@@ -185,8 +188,17 @@ export class SubscriptionService {
     return true;
   }
 
+  /**
+   * Records one confirmation email attempt, with no address: the daily report counts these to see how many
+   * emails the signup really sent (a resend or a failed send cannot be told from the subscription rows).
+   */
+  recordConfirmationSend(ok: boolean, now: number = Date.now()): void {
+    this.db.prepare('INSERT INTO confirmation_sends (sent_at, ok) VALUES (?, ?)').run(sqliteTimestamp(now), ok ? 1 : 0);
+  }
+
   /** Deletes addresses that never confirmed and were last mailed more than STALE_PENDING_MS ago. Returns how many. */
   purgeStalePending(now: number = Date.now()): number {
+    this.db.prepare('DELETE FROM confirmation_sends WHERE sent_at < ?').run(sqliteTimestamp(now - CONFIRMATION_SEND_RETENTION_MS));
     const cutoff = sqliteTimestamp(now - STALE_PENDING_MS);
     return this.db.prepare(
       'DELETE FROM email_subscriptions WHERE status = \'pending\' AND COALESCE(confirmation_sent_at, created_at) < ?'
