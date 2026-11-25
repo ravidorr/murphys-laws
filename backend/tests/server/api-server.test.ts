@@ -338,6 +338,7 @@ describe('api-server', () => {
       const embedResponse = await emitRequest('GET', '/embed/law/1');
       const dayEmbedResponse = await emitRequest('GET', '/embed/law-of-day');
       const oembedResponse = await emitRequest('GET', '/api/v1/oembed?url=https%3A%2F%2Fmurphys-laws.com%2Flaw%2F1');
+      const tokenResponse = await emitRequest('GET', '/api/v1/subscriptions/token');
       const subscribeResponse = await emitRequest('POST', '/api/v1/subscriptions', { email: 'a@example.com' });
       const confirmResponse = await emitRequest('GET', '/subscription/confirm?token=bad');
       const confirmPostResponse = await emitRequest('POST', '/subscription/confirm?token=bad', {});
@@ -356,6 +357,7 @@ describe('api-server', () => {
       expect(embedResponse.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({ 'Content-Type': 'text/html; charset=utf-8' }));
       expect(dayEmbedResponse.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({ 'Content-Type': 'text/html; charset=utf-8' }));
       expect(oembedResponse.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({ 'Content-Type': 'application/json; charset=utf-8' }));
+      expect(tokenResponse.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({ 'Cache-Control': 'no-store' }));
       expect(subscribeResponse.writeHead).toHaveBeenCalledWith(503, expect.any(Object));
       expect(confirmResponse.writeHead).toHaveBeenCalledWith(404, expect.objectContaining({ 'Content-Type': 'text/html; charset=utf-8' }));
       expect(confirmPostResponse.writeHead).toHaveBeenCalledWith(404, expect.any(Object));

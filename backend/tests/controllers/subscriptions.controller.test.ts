@@ -1,10 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { SubscriptionController } from '../../src/controllers/subscriptions.controller.ts';
 import { confirmUrl, unsubscribeUrl } from '../../src/utils/subscription-links.ts';
+import { FORM_EXPIRED_MESSAGE } from '../../src/controllers/subscriptions.controller.ts';
+import { FormTokenService } from '../../src/utils/subscription-form-token.ts';
+import { SubscriptionService } from '../../src/services/subscriptions.service.ts';
+import { createMigratedDb } from '../helpers/migrated-db.ts';
 
 const TOKEN = 'c'.repeat(48);
 
@@ -16,6 +20,7 @@ function request(body: string, ip = '203.0.113.1'): IncomingMessage {
 
 describe('SubscriptionController', () => {
   const subscriptions = { subscribe: vi.fn(), releaseCooldown: vi.fn(), confirm: vi.fn(), unsubscribe: vi.fn() };
+  const formTokens = { issue: vi.fn(), verify: vi.fn() };
   const emailService = { isConfigured: vi.fn(), sendSubscriptionConfirmationEmail: vi.fn() };
   let controller: SubscriptionController;
   let res: ServerResponse;
@@ -28,10 +33,13 @@ describe('SubscriptionController', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
     emailService.isConfigured.mockReturnValue(true);
     emailService.sendSubscriptionConfirmationEmail.mockResolvedValue(true);
     subscriptions.subscribe.mockReturnValue({ status: 'confirmation_needed', token: TOKEN, email: 'ann@example.com' });
-    controller = new SubscriptionController(subscriptions as never, emailService as never);
+    formTokens.issue.mockReturnValue('1.a.b');
+    formTokens.verify.mockReturnValue('ok');
+    controller = new SubscriptionController(subscriptions as never, emailService as never, formTokens as never);
     res = { writeHead: vi.fn(), end: vi.fn() } as unknown as ServerResponse;
   });
 
@@ -53,6 +61,56 @@ describe('SubscriptionController', () => {
       await controller.subscribe(request(JSON.stringify({ email: 'ann@example.com' }), nextIp()), res);
       expect(status()).toBe(202);
       expect(emailService.sendSubscriptionConfirmationEmail).not.toHaveBeenCalled();
+    });
+
+    it('answers the same 202 for a limited or suppressed address without sending anything', async () => {
+      for (const outcome of ['cooldown', 'suppressed']) {
+        res = { writeHead: vi.fn(), end: vi.fn() } as unknown as ServerResponse;
+        subscriptions.subscribe.mockReturnValue({ status: outcome });
+        await controller.subscribe(request(JSON.stringify({ email: 'ann@example.com' }), nextIp()), res);
+        expect(status()).toBe(202);
+        expect(json()).toEqual({ status: 'check_your_email' });
+      }
+      expect(emailService.sendSubscriptionConfirmationEmail).not.toHaveBeenCalled();
+      expect(console.warn).toHaveBeenCalledWith('[subscribe] no email sent: cooldown');
+      expect(console.warn).toHaveBeenCalledWith('[subscribe] no email sent: suppressed');
+      expect(vi.mocked(console.warn).mock.calls.flat().join(' ')).not.toContain('ann@example.com');
+    });
+
+    it('checks the form token and rejects a missing, spent or too fresh one before touching the database', async () => {
+      formTokens.verify.mockReturnValue('too_fast');
+      await controller.subscribe(request(JSON.stringify({ email: 'ann@example.com', token: 'x' }), nextIp()), res);
+      expect(formTokens.verify).toHaveBeenCalledWith('x');
+      expect(status()).toBe(400);
+      expect(json().error).toBe(FORM_EXPIRED_MESSAGE);
+      expect(subscriptions.subscribe).not.toHaveBeenCalled();
+      expect(emailService.sendSubscriptionConfirmationEmail).not.toHaveBeenCalled();
+    });
+
+    it('answers 503 before it looks at the token when email is not configured', async () => {
+      emailService.isConfigured.mockReturnValue(false);
+      await controller.subscribe(request(JSON.stringify({ email: 'a@example.com', token: 'bad' }), nextIp()), res);
+      expect(status()).toBe(503);
+      expect(formTokens.verify).not.toHaveBeenCalled();
+    });
+
+    it('answers a filled trap field with the usual 202 and does nothing', async () => {
+      await controller.subscribe(request(JSON.stringify({ email: 'ann@example.com', token: 't', website: 'http://spam.example' }), nextIp()), res);
+      expect(status()).toBe(202);
+      expect(json()).toEqual({ status: 'check_your_email' });
+      expect(formTokens.verify).not.toHaveBeenCalled();
+      expect(subscriptions.subscribe).not.toHaveBeenCalled();
+      expect(emailService.sendSubscriptionConfirmationEmail).not.toHaveBeenCalled();
+      expect(console.warn).toHaveBeenCalledWith('[subscribe] ignored: the hidden trap field was filled');
+    });
+
+    it('treats an empty or non-string trap field as not filled', async () => {
+      await controller.subscribe(request(JSON.stringify({ email: 'ann@example.com', website: '' }), nextIp()), res);
+      expect(status()).toBe(202);
+      expect(subscriptions.subscribe).toHaveBeenCalledTimes(1);
+      res = { writeHead: vi.fn(), end: vi.fn() } as unknown as ServerResponse;
+      await controller.subscribe(request(JSON.stringify({ email: 'ann@example.com', website: 5 }), nextIp()), res);
+      expect(subscriptions.subscribe).toHaveBeenCalledTimes(2);
     });
 
     it('answers 400 for an invalid address', async () => {
@@ -96,6 +154,90 @@ describe('SubscriptionController', () => {
       res = { writeHead: vi.fn(), end: vi.fn() } as unknown as ServerResponse;
       await controller.subscribe(request(JSON.stringify({ email: 'a@example.com' }), ip), res);
       expect(status()).toBe(429);
+    });
+  });
+
+  describe('with the real token and subscription services', () => {
+    const T0 = Date.parse('2026-11-25T10:00:00Z');
+    let real: SubscriptionController;
+    let db: ReturnType<typeof createMigratedDb>;
+
+    const post = async (body: Record<string, unknown>): Promise<{ code: number; body: Record<string, unknown> }> => {
+      res = { writeHead: vi.fn(), end: vi.fn() } as unknown as ServerResponse;
+      await real.subscribe(request(JSON.stringify(body), nextIp()), res);
+      return { code: status(), body: json() };
+    };
+    const issue = (): string => {
+      res = { writeHead: vi.fn(), end: vi.fn() } as unknown as ServerResponse;
+      real.issueToken(request('', nextIp()), res);
+      return json().token as string;
+    };
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(T0);
+      db = createMigratedDb();
+      real = new SubscriptionController(new SubscriptionService(db), emailService as never, new FormTokenService('test-secret'));
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it('refuses a fresh token without spending it or writing anything, then accepts it once, then refuses it again', async () => {
+      const token = issue();
+      const tooSoon = await post({ email: 'ann@example.com', token });
+      expect(tooSoon).toEqual({ code: 400, body: { error: FORM_EXPIRED_MESSAGE } });
+      expect(db.prepare('SELECT COUNT(*) AS n FROM email_subscriptions').get()).toEqual({ n: 0 });
+
+      vi.setSystemTime(T0 + 3000);
+      expect((await post({ email: 'ann@example.com', token })).code).toBe(202);
+      expect(emailService.sendSubscriptionConfirmationEmail).toHaveBeenCalledTimes(1);
+
+      vi.setSystemTime(T0 + 4000);
+      expect((await post({ email: 'bob@example.com', token })).code).toBe(400);
+      expect(emailService.sendSubscriptionConfirmationEmail).toHaveBeenCalledTimes(1);
+    });
+
+    it('refuses a missing, forged and expired token', async () => {
+      const token = issue();
+      vi.setSystemTime(T0 + 3 * 60 * 60 * 1000);
+      for (const sent of [undefined, 'abc', token]) {
+        expect((await post({ email: 'ann@example.com', token: sent })).code, String(sent)).toBe(400);
+      }
+      expect(emailService.sendSubscriptionConfirmationEmail).not.toHaveBeenCalled();
+    });
+
+    it('does not send to a suppressed address and does not reveal it', async () => {
+      new SubscriptionService(db).suppress('ann@example.com', 'spam report');
+      const token = issue();
+      vi.setSystemTime(T0 + 3000);
+      expect(await post({ email: 'ann@example.com', token })).toEqual({ code: 202, body: { status: 'check_your_email' } });
+      expect(emailService.sendSubscriptionConfirmationEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('issueToken', () => {
+    it('hands out an uncached token', () => {
+      controller.issueToken(request('', nextIp()), res);
+      expect(status()).toBe(200);
+      expect(json()).toEqual({ token: '1.a.b' });
+      expect(writeHead().mock.calls[0][1]).toMatchObject({ 'Cache-Control': 'no-store' });
+    });
+
+    it('rate limits one client', () => {
+      const ip = nextIp();
+      for (let i = 0; i < 20; i += 1) {
+        res = { writeHead: vi.fn(), end: vi.fn() } as unknown as ServerResponse;
+        controller.issueToken(request('', ip), res);
+        expect(status()).toBe(200);
+      }
+      res = { writeHead: vi.fn(), end: vi.fn() } as unknown as ServerResponse;
+      controller.issueToken(request('', ip), res);
+      expect(status()).toBe(429);
+    });
+
+    it('builds its own token service when none is given', () => {
+      const plain = new SubscriptionController(subscriptions as never, emailService as never);
+      plain.issueToken(request('', nextIp()), res);
+      expect(json().token).toMatch(/^\d+\.[a-f0-9]{16}\.[a-f0-9]{64}$/);
     });
   });
 

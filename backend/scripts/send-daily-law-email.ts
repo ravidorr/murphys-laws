@@ -27,7 +27,17 @@ const emailService = new EmailService({
   to: process.env.EMAIL_TO || 'admin@murphys-laws.com',
 });
 
-const digest = new DailyDigestService(new SubscriptionService(db), new LawService(db), emailService);
+const subscriptions = new SubscriptionService(db);
+// Drop addresses that never confirmed, so a bot's signups do not pile up
+// Housekeeping must never stop the daily email, so a failure here is reported and the send goes on
+try {
+  const purged = subscriptions.purgeStalePending();
+  if (purged > 0) console.log(`Removed ${purged} unconfirmed subscriptions older than 14 days`);
+} catch (error) {
+  console.error('Could not remove stale unconfirmed subscriptions:', error);
+}
+
+const digest = new DailyDigestService(subscriptions, new LawService(db), emailService);
 const result = await digest.sendToSubscribers();
 console.log(`Daily law email: ${result.sent} sent, ${result.failed} failed${result.skipped ? ` (skipped: ${result.skipped})` : ''}`);
 process.exit(result.failed > 0 ? 1 : 0);

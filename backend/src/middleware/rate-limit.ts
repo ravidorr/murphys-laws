@@ -1,5 +1,5 @@
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-type RateLimitType = 'vote' | 'submit' | 'email' | 'subscribe' | 'admin-fail';
+type RateLimitType = 'vote' | 'submit' | 'email' | 'subscribe' | 'subscribe-token' | 'admin-fail';
 
 interface RateLimitConfig {
   max: number;
@@ -23,6 +23,7 @@ const RATE_LIMITS: Record<RateLimitType, RateLimitConfig> = {
   submit: { max: 3, window: RATE_LIMIT_WINDOW_MS }, // 3 submissions per minute
   email: { max: 5, window: RATE_LIMIT_WINDOW_MS }, // 5 emails per minute
   subscribe: { max: 5, window: RATE_LIMIT_WINDOW_MS }, // 5 subscribe attempts per minute
+  'subscribe-token': { max: 20, window: RATE_LIMIT_WINDOW_MS }, // 20 signup-form tokens per minute
   'admin-fail': { max: 10, window: RATE_LIMIT_WINDOW_MS }, // 10 failed admin logins per minute
 };
 
