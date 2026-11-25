@@ -36,6 +36,7 @@ The `daily-report.sh` script (runs at 5 AM UTC) consolidates multiple monitoring
 - System status (uptime, memory, disk, services, PM2 processes)
 - Database metrics (size, growth, activity)
 - Website activity (submissions, votes)
+- Signup protection (daily-email signup attempts, bot refusals, confirmation emails sent)
 - Performance metrics (from hourly collection)
 - Murphy's Law of the Day
 - Traffic & bandwidth analysis

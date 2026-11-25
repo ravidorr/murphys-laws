@@ -1,4 +1,4 @@
-import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
@@ -8,6 +8,13 @@ import {
   ADMIN_UI_PATH,
   buildAdminUrl,
   buildPendingApprovalsSection,
+  buildSignupProtectionSection,
+  collectSignupDbStats,
+  collectSignupRequestStats,
+  nginxDayPrefix,
+  previousUtcDay,
+  parseSignupRequestStats,
+  SIGNUP_EMAIL_WARN_THRESHOLD,
   buildCronJobsSection,
   collectDailyReport,
   CRON_JOBS,
@@ -999,5 +1006,291 @@ describe('daily report attack summary row', () => {
 
   it('shows no security row without attack attempts', () => {
     expect(securityRow({ totalAttackAttempts: 0, servedAttackAttempts: 0 })).toBeUndefined();
+  });
+});
+
+describe('signup protection section', () => {
+  // The report runs at 5 AM UTC on the 5th and covers the whole of the 4th
+  const NOW = new Date(Date.UTC(2026, 10, 5, 5));
+  const DAY = previousUtcDay(NOW);
+  const realExec = async () => (await vi.importActual<typeof import('node:child_process')>('node:child_process')).execFileSync;
+
+  it('reports the last complete UTC day, also across a month and a year boundary', () => {
+    expect(DAY.toISOString()).toBe('2026-11-04T00:00:00.000Z');
+    expect(previousUtcDay(new Date(Date.UTC(2026, 11, 1, 5))).toISOString()).toBe('2026-11-30T00:00:00.000Z');
+    expect(previousUtcDay(new Date(Date.UTC(2027, 0, 1, 5))).toISOString()).toBe('2026-12-31T00:00:00.000Z');
+  });
+
+  it('names the nginx timestamp prefix for the UTC day, zero padded', () => {
+    expect(nginxDayPrefix(DAY)).toBe('[04/Nov/2026:');
+    expect(nginxDayPrefix(new Date(Date.UTC(2027, 0, 31)))).toBe('[31/Jan/2027:');
+  });
+
+  describe('parseSignupRequestStats', () => {
+    it('sorts the statuses and ignores anything that is not a status line', () => {
+      expect(parseSignupRequestStats('202 20\n400 31\n429 2\n502 1\n503 4\nnoise\n\n')).toEqual({
+        attempts: 58, accepted: 20, refused: 31, rateLimited: 2, failed: 5,
+      });
+      expect(parseSignupRequestStats('')).toEqual({ attempts: 0, accepted: 0, refused: 0, rateLimited: 0, failed: 0 });
+    });
+
+    it('returns null when the log could not be read', () => {
+      expect(parseSignupRequestStats('UNREADABLE\n')).toBeNull();
+    });
+  });
+
+  describe('collectSignupRequestStats', () => {
+    it('counts only the day\'s POSTs to the signup endpoint, by status, with the real pipeline', async () => {
+      vi.mocked(execFileSync).mockImplementation(await realExec());
+      const dir = scratchDir('signup-log-');
+      const log = path.join(dir, 'access.log');
+      writeFileSync(log, [
+        '1.1.1.1 - - [04/Nov/2026:00:03:07 +0000] "POST /api/v1/subscriptions HTTP/1.1" 202 40 "https://murphys-laws.com/" "Mozilla/4.0"',
+        '1.1.1.2 - - [04/Nov/2026:01:03:07 +0000] "POST /api/v1/subscriptions HTTP/2.0" 400 40 "-" "x"',
+        '1.1.1.2 - - [04/Nov/2026:01:04:07 +0000] "POST /api/v1/subscriptions HTTP/2.0" 400 40 "-" "x"',
+        '1.1.1.3 - - [04/Nov/2026:02:03:07 +0000] "POST /api/v1/subscriptions HTTP/1.1" 429 40 "-" "x"',
+        '1.1.1.4 - - [04/Nov/2026:03:03:07 +0000] "POST /api/v1/subscriptions HTTP/1.1" 502 40 "-" "x"',
+        '1.1.1.5 - - [04/Nov/2026:04:03:07 +0000] "GET /api/v1/subscriptions/token HTTP/1.1" 200 40 "-" "x"',
+        '1.1.1.5 - - [04/Nov/2026:04:04:07 +0000] "POST /api/v1/subscriptions/other HTTP/1.1" 202 40 "-" "x"',
+        '1.1.1.6 - - [04/Nov/2026:05:03:07 +0000] "GET / HTTP/1.1" 200 40 "-" "POST /api/v1/subscriptions in a user agent"',
+        '1.1.1.7 - - [05/Nov/2026:00:00:01 +0000] "POST /api/v1/subscriptions HTTP/1.1" 202 40 "-" "x"',
+        '1.1.1.8 - - [03/Nov/2026:23:59:59 +0000] "POST /api/v1/subscriptions HTTP/1.1" 202 40 "-" "x"',
+        '',
+      ].join('\n'));
+      expect(collectSignupRequestStats(log, DAY)).toEqual({ attempts: 5, accepted: 1, refused: 2, rateLimited: 1, failed: 1 });
+    });
+
+    it('counts the URL with a trailing slash or a query string, and ignores a day mentioned outside the timestamp', async () => {
+      vi.mocked(execFileSync).mockImplementation(await realExec());
+      const log = path.join(scratchDir('signup-log-'), 'access.log');
+      writeFileSync(log, [
+        '1.1.1.1 - - [04/Nov/2026:00:03:07 +0000] "POST /api/v1/subscriptions/ HTTP/1.1" 202 40 "-" "x"',
+        '1.1.1.1 - - [04/Nov/2026:00:03:08 +0000] "POST /api/v1/subscriptions?cb=1 HTTP/1.1" 400 40 "-" "x"',
+        '1.1.1.1 - - [04/Nov/2026:00:03:09 +0000] "POST /api/v1/subscriptions/?cb=1 HTTP/1.1" 400 40 "-" "x"',
+        '1.1.1.2 - - [05/Nov/2026:00:03:07 +0000] "POST /api/v1/subscriptions HTTP/1.1" 202 40 "https://x.example/[04/Nov/2026:" "[04/Nov/2026: agent"',
+        '',
+      ].join('\n'));
+      expect(collectSignupRequestStats(log, DAY)).toEqual({ attempts: 3, accepted: 1, refused: 2, rateLimited: 0, failed: 0 });
+    });
+
+    it('reads the rotated log too: nginx rotates at midnight UTC, so the report finds the whole day in access.log.1', async () => {
+      vi.mocked(execFileSync).mockImplementation(await realExec());
+      const dir = scratchDir('signup-log-');
+      const line = (day: string, status: number) => `1.1.1.1 - - [${day}:10:00:00 +0000] "POST /api/v1/subscriptions HTTP/1.1" ${status} 40 "-" "x"`;
+      const fourth = Array.from({ length: 12 }, () => line('04/Nov/2026', 400));
+      writeFileSync(path.join(dir, 'access.log'), [line('05/Nov/2026', 202), ''].join('\n'));
+      writeFileSync(path.join(dir, 'access.log.1'), [line('03/Nov/2026', 202), ...fourth, line('04/Nov/2026', 202), ''].join('\n'));
+      // Twelve identical lines make uniq -c pad its counts, which the parser has to read
+      expect(collectSignupRequestStats(path.join(dir, 'access.log'), DAY)).toEqual({ attempts: 13, accepted: 1, refused: 12, rateLimited: 0, failed: 0 });
+      // Part of the day in each file adds up
+      writeFileSync(path.join(dir, 'access.log'), [line('04/Nov/2026', 429), ''].join('\n'));
+      expect(collectSignupRequestStats(path.join(dir, 'access.log'), DAY)).toEqual({ attempts: 14, accepted: 1, refused: 12, rateLimited: 1, failed: 0 });
+    });
+
+    it('works when only the rotated log exists, or only the current one', async () => {
+      vi.mocked(execFileSync).mockImplementation(await realExec());
+      const dir = scratchDir('signup-log-');
+      const line = '1.1.1.1 - - [04/Nov/2026:10:00:00 +0000] "POST /api/v1/subscriptions HTTP/1.1" 202 40 "-" "x"\n';
+      writeFileSync(path.join(dir, 'access.log.1'), line);
+      expect(collectSignupRequestStats(path.join(dir, 'access.log'), DAY)?.accepted).toBe(1);
+      writeFileSync(path.join(dir, 'access.log'), line);
+      rmSync(path.join(dir, 'access.log.1'));
+      expect(collectSignupRequestStats(path.join(dir, 'access.log'), DAY)?.accepted).toBe(1);
+    });
+
+    it('counts zero when nothing was posted that day', async () => {
+      vi.mocked(execFileSync).mockImplementation(await realExec());
+      const log = path.join(scratchDir('signup-log-'), 'access.log');
+      writeFileSync(log, '1.1.1.1 - - [03/Nov/2026:00:03:07 +0000] "GET / HTTP/1.1" 200 40 "-" "x"\n');
+      expect(collectSignupRequestStats(log, DAY)).toEqual({ attempts: 0, accepted: 0, refused: 0, rateLimited: 0, failed: 0 });
+    });
+
+    it('logs and returns null when the access log is missing', async () => {
+      vi.mocked(execFileSync).mockImplementation(await realExec());
+      const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+      expect(collectSignupRequestStats('/nonexistent/access.log', DAY)).toBeNull();
+      expect(write).toHaveBeenCalledWith('[daily-report] signup request counts failed: cannot read /nonexistent/access.log or /nonexistent/access.log.1\n');
+    });
+
+    it('logs and returns null when the command fails', () => {
+      vi.mocked(execFileSync).mockImplementation(() => {
+        throw new Error('bash: not found');
+      });
+      const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+      expect(collectSignupRequestStats('/log', DAY)).toBeNull();
+      expect(write).toHaveBeenCalledWith('[daily-report] signup request counts failed: bash: not found\n');
+    });
+  });
+
+  describe('collectSignupDbStats', () => {
+    it('reads the four counts for the UTC day', () => {
+      vi.mocked(execFileSync).mockReturnValue('12|3|400|5\n');
+      expect(collectSignupDbStats('/db', DAY)).toEqual({ emailsSent: 12, confirmedThatDay: 3, pending: 400, suppressed: 5 });
+      const sql = String(vi.mocked(execFileSync).mock.calls.at(-1)?.[1]?.[1]);
+      expect(sql).toContain("confirmation_sent_at >= '2026-11-04 00:00:00' AND confirmation_sent_at < '2026-11-05 00:00:00'");
+      expect(sql).toContain("confirmed_at >= '2026-11-04 00:00:00' AND confirmed_at < '2026-11-05 00:00:00'");
+    });
+
+    it('logs and returns null for unexpected output or a failure', () => {
+      const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+      vi.mocked(execFileSync).mockReturnValue('oops');
+      expect(collectSignupDbStats('/db', DAY)).toBeNull();
+      expect(write).toHaveBeenCalledWith('[daily-report] signup database counts failed: unexpected sqlite3 output: "oops"\n');
+      vi.mocked(execFileSync).mockImplementation(() => {
+        throw new Error('no such table: email_suppressions');
+      });
+      expect(collectSignupDbStats('/db', DAY)).toBeNull();
+      expect(write).toHaveBeenCalledWith('[daily-report] signup database counts failed: no such table: email_suppressions\n');
+    });
+
+    it('reads zeros from an empty migrated database', async () => {
+      vi.mocked(execFileSync).mockImplementation(await realExec());
+      const file = path.join(scratchDir('signup-db-'), 'murphys.db');
+      createMigratedDb({ path: file }).close();
+      expect(collectSignupDbStats(file, DAY)).toEqual({ emailsSent: 0, confirmedThatDay: 0, pending: 0, suppressed: 0 });
+    });
+
+    it('works against the real migrated schema through the sqlite3 CLI', async () => {
+      vi.mocked(execFileSync).mockImplementation(await realExec());
+      const file = path.join(scratchDir('signup-db-'), 'murphys.db');
+      const db = createMigratedDb({ path: file });
+      const insert = db.prepare('INSERT INTO email_subscriptions (email, token, status, confirmation_sent_at, confirmed_at) VALUES (?, ?, ?, ?, ?)');
+      insert.run('a@example.com', 'a'.repeat(48), 'pending', '2026-11-04 03:00:00', null);
+      insert.run('b@example.com', 'b'.repeat(48), 'confirmed', '2026-11-04 04:00:00', '2026-11-04 05:00:00');
+      insert.run('c@example.com', 'c'.repeat(48), 'pending', '2026-11-03 23:59:59', null);
+      insert.run('d@example.com', 'd'.repeat(48), 'pending', '2026-11-05 00:00:00', null);
+      // Exactly at the start of the day counts; a confirmation on another day does not, even when the email went out that day
+      insert.run('e@example.com', 'e'.repeat(48), 'confirmed', '2026-11-04 00:00:00', '2026-11-05 00:00:00');
+      insert.run('f@example.com', 'f'.repeat(48), 'confirmed', '2026-11-01 08:00:00', '2026-11-03 23:59:59');
+      db.prepare("INSERT INTO email_suppressions (email, reason) VALUES ('x@example.com', 'spam report')").run();
+      db.close();
+      expect(collectSignupDbStats(file, DAY)).toEqual({ emailsSent: 3, confirmedThatDay: 1, pending: 3, suppressed: 1 });
+    });
+  });
+
+  describe('buildSignupProtectionSection', () => {
+    const requests = { attempts: 60, accepted: 20, refused: 38, rateLimited: 1, failed: 1 };
+    const db = { emailsSent: 6, confirmedThatDay: 3, pending: 40, suppressed: 5 };
+    const row = (built: ReturnType<typeof buildSignupProtectionSection>, label: string) => built.items.find((item) => item.label === label);
+
+    it('shows the counts and what the 202s were', () => {
+      const built = buildSignupProtectionSection(db, requests, '2026-11-04');
+      expect(built.title).toBe('SIGNUP PROTECTION');
+      expect(row(built, 'Signup Attempts')?.value).toBe('60 on 2026-11-04 (UTC)');
+      expect(row(built, 'Refused (400: bad token, email or body)')?.value).toBe('38');
+      expect(row(built, 'Rate Limited')?.value).toBe('1');
+      expect(row(built, 'Failed (email not sent)')).toMatchObject({ value: '1', tone: 'warning' });
+      expect(row(built, 'Answered 202, No Email')?.value).toMatch(/^15 /);
+      expect(row(built, 'Confirmation Emails Sent')).toMatchObject({ value: '5 (3 confirmed that day)', tone: 'neutral' });
+      expect(row(built, 'Unconfirmed Addresses')?.value).toBe('40');
+      expect(row(built, 'Suppressed Addresses')?.value).toBe('5');
+      expect(row(built, 'Assessment')).toBeUndefined();
+    });
+
+    it('does not warn about a failed count of zero, and never shows a negative 202 count', () => {
+      const built = buildSignupProtectionSection({ ...db, emailsSent: 9 }, { ...requests, accepted: 2, failed: 0 }, '2026-11-04');
+      expect(row(built, 'Failed (email not sent)')?.tone).toBe('neutral');
+      expect(row(built, 'Answered 202, No Email')?.value).toMatch(/^0 /);
+    });
+
+    it('does not blame bots for an email outage: failed sends stamp addresses too, so they are not counted as sent', () => {
+      const outage = buildSignupProtectionSection({ ...db, emailsSent: 12, confirmedThatDay: 0 }, { ...requests, accepted: 0, failed: 12 }, '2026-11-04');
+      expect(row(outage, 'Confirmation Emails Sent')).toMatchObject({ value: '0 (0 confirmed that day)', tone: 'neutral' });
+      expect(row(outage, 'Failed (email not sent)')).toMatchObject({ value: '12', tone: 'warning' });
+      expect(row(outage, 'Assessment')).toBeUndefined();
+      expect(row(outage, 'Answered 202, No Email')?.value).toMatch(/^0 /);
+    });
+
+    it('suggests Turnstile when many confirmation emails get few confirmations', () => {
+      const built = buildSignupProtectionSection({ ...db, emailsSent: SIGNUP_EMAIL_WARN_THRESHOLD, confirmedThatDay: 1 }, { ...requests, failed: 0 }, '2026-11-04');
+      expect(row(built, 'Confirmation Emails Sent')?.tone).toBe('warning');
+      expect(row(built, 'Assessment')).toMatchObject({ tone: 'warning', value: expect.stringContaining('Turnstile') });
+    });
+
+    it('stays quiet when many emails are mostly confirmed, or when there are only a few', () => {
+      expect(row(buildSignupProtectionSection({ ...db, emailsSent: 10, confirmedThatDay: 5 }, { ...requests, failed: 0 }, '2026-11-04'), 'Assessment')).toBeUndefined();
+      expect(row(buildSignupProtectionSection({ ...db, emailsSent: 9, confirmedThatDay: 0 }, { ...requests, failed: 0 }, '2026-11-04'), 'Assessment')).toBeUndefined();
+    });
+
+    it('flags each source that is unavailable and still shows the other', () => {
+      const noLog = buildSignupProtectionSection(db, null, '2026-11-04');
+      expect(row(noLog, 'Signup Attempts')).toMatchObject({ tone: 'warning', value: expect.stringContaining('Unavailable') });
+      expect(row(noLog, 'Unconfirmed Addresses')?.value).toBe('40');
+      const noDb = buildSignupProtectionSection(null, requests, '2026-11-04');
+      expect(row(noDb, 'Confirmation Emails')).toMatchObject({ tone: 'warning', value: expect.stringContaining('Unavailable') });
+      expect(row(noDb, 'Signup Attempts')?.value).toBe('60 on 2026-11-04 (UTC)');
+      expect(row(noDb, 'Answered 202, No Email')).toBeUndefined();
+    });
+  });
+
+  describe('in the live report', () => {
+    function liveReport(sqlite: string, nginx: string, env?: string) {
+      const repoRoot = scratchDir('daily-report-signup-');
+      mkdirSync(path.join(repoRoot, 'backend'));
+      writeFileSync(path.join(repoRoot, 'backend/murphys.db'), '');
+      if (env !== undefined) vi.stubEnv('NGINX_ACCESS_LOG', env);
+      const calls: { sql: string[]; bash: string[][] } = { sql: [], bash: [] };
+      vi.mocked(execFileSync).mockImplementation((command, args) => {
+        if (command === 'sqlite3' && String(args?.[1]).includes('email_suppressions')) {
+          calls.sql.push(String(args?.[1]));
+          return sqlite;
+        }
+        if (command === 'bash' && String(args?.[1]).includes('UNREADABLE')) {
+          calls.bash.push([...(args as string[])]);
+          return nginx;
+        }
+        return '';
+      });
+      const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+      const report = collectDailyReport({ repoRoot, now: NOW });
+      return { report, calls, logged: write.mock.calls.map(([chunk]) => String(chunk)) };
+    }
+
+    it('adds the section to the text and HTML reports', () => {
+      const { report } = liveReport('12|3|400|5\n', '202 20\n400 38\n');
+      const text = renderPlainTextReport(report);
+      expect(text).toContain('SIGNUP PROTECTION');
+      expect(text).toMatch(/Signup Attempts\W+58 on 2026-11-04/);
+      expect(text).toMatch(/Refused \(400: bad token, email or body\)\W+38/);
+      expect(renderHtmlReport(report)).toContain('SIGNUP PROTECTION');
+    });
+
+    it('sits right after the pending approvals and reports the previous day, not today', () => {
+      const { report, calls } = liveReport('12|3|400|5\n', '202 20\n');
+      const titles = report.sections.map((entry) => entry.title);
+      expect(titles.indexOf('SIGNUP PROTECTION')).toBe(titles.indexOf('PENDING APPROVALS') + 1);
+      expect(calls.bash).toHaveLength(1);
+      expect(calls.bash[0].slice(3)).toEqual(['[04/Nov/2026:', '/var/log/nginx/access.log']);
+      expect(calls.sql[0]).toContain("'2026-11-04 00:00:00'");
+      expect(calls.sql[0]).toContain("'2026-11-05 00:00:00'");
+      expect(calls.sql[0]).not.toContain('2026-11-06');
+    });
+
+    it('reads the access log named by NGINX_ACCESS_LOG', () => {
+      const { calls } = liveReport('12|3|400|5\n', '202 20\n', '/srv/logs/access.log');
+      expect(calls.bash[0][4]).toBe('/srv/logs/access.log');
+    });
+
+    it('has no signup section when the database file is missing', () => {
+      const repoRoot = scratchDir('daily-report-signup-nodb-');
+      mkdirSync(path.join(repoRoot, 'backend'));
+      vi.mocked(execFileSync).mockReturnValue('');
+      vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+      const report = collectDailyReport({ repoRoot, now: NOW });
+      expect(report.sections.some((entry) => entry.title === 'SIGNUP PROTECTION')).toBe(false);
+    });
+
+    it('still produces the report when both sources fail', () => {
+      const { report, logged } = liveReport('garbage', 'UNREADABLE');
+      const found = report.sections.find((entry) => entry.title === 'SIGNUP PROTECTION');
+      expect(found?.items.map((item) => [item.label, item.tone])).toEqual([
+        ['Signup Attempts', 'warning'],
+        ['Confirmation Emails', 'warning'],
+      ]);
+      expect(logged).toContain('[daily-report] signup request counts failed: cannot read /var/log/nginx/access.log or /var/log/nginx/access.log.1\n');
+      expect(logged).toContain('[daily-report] signup database counts failed: unexpected sqlite3 output: "garbage"\n');
+      expect(report.sections.some((entry) => entry.title === 'WEBSITE ACTIVITY')).toBe(true);
+      expect(report.sections.some((entry) => entry.title === 'PENDING APPROVALS')).toBe(true);
+    });
   });
 });
