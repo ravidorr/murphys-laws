@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type Database from 'better-sqlite3';
 import { AdminLawService, type AdminSplitInput } from '../../src/services/admin-laws.service.ts';
 import { COROLLARY_RELATION } from '../../src/services/law-relations.service.ts';
@@ -118,6 +118,19 @@ describe('AdminLawService corollaries (real migrated schema)', () => {
       for (const child of result.children) {
         expect(statusOf(child.id)).toBe('published');
       }
+    });
+
+    it('tells onChange after a split, but not after a refused one', () => {
+      const onChange = vi.fn();
+      const watched = new AdminLawService(db, onChange);
+      const id = make();
+
+      expect(watched.splitLaw(id, { ...input(), corollaries: [] }).outcome).toBe('invalid');
+      expect(watched.splitLaw(999999, input()).outcome).toBe('not_found');
+      expect(onChange).not.toHaveBeenCalled();
+
+      expect(watched.splitLaw(id, input()).outcome).toBe('split');
+      expect(onChange).toHaveBeenCalledTimes(1);
     });
 
     it('links each child to the parent with the child as from_law_id and the title as the note', () => {

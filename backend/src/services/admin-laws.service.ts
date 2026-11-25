@@ -147,8 +147,12 @@ const LAW_COLUMNS = 'id, title, text, status, admin_notes, first_seen_file_path,
 export class AdminLawService {
   db: Db;
 
-  constructor(db: Db) {
+  private onChange: () => void;
+
+  /** `onChange` runs after every successful change to a law (the API uses it to drop the cached Law of the Day). */
+  constructor(db: Db, onChange: () => void = () => {}) {
     this.db = db;
+    this.onChange = onChange;
   }
 
   /**
@@ -259,7 +263,9 @@ export class AdminLawService {
         cascaded,
       };
     });
-    return apply();
+    const result = apply();
+    if (result.outcome === 'updated') this.onChange();
+    return result;
   }
 
   /**
@@ -327,7 +333,9 @@ export class AdminLawService {
     });
 
     try {
-      return apply();
+      const result = apply();
+      if (result.outcome === 'split') this.onChange();
+      return result;
     } catch (error) {
       if (error instanceof LawRelationError) {
         return { outcome: 'invalid', status: LAW_RELATION_ERROR_STATUS[error.code], message: error.message };

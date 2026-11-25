@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import Database from 'better-sqlite3';
 import { VoteService } from '../../src/services/votes.service.ts';
 
@@ -18,6 +18,15 @@ describe('VoteService', () => {
       );
     `);
         voteService = new VoteService(db);
+    });
+
+    it('tells onChange after a vote is cast, changed and removed', async () => {
+        const onChange = vi.fn();
+        const watched = new VoteService(db, onChange);
+        await watched.vote(1, 'up', 'user1');
+        await watched.vote(1, 'down', 'user1');
+        await watched.removeVote(1, 'user1');
+        expect(onChange).toHaveBeenCalledTimes(3);
     });
 
     it('should cast a vote', async () => {

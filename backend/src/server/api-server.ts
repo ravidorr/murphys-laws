@@ -104,7 +104,7 @@ export function createApiServer(options?: CreateApiServerOptions) {
   });
 
   const lawService = options?.lawService ?? new LawService(db);
-  const voteService = options?.voteService ?? new VoteService(db);
+  const voteService = options?.voteService ?? new VoteService(db, () => lawService.invalidateLawOfTheDay());
   const categoryService = options?.categoryService ?? new CategoryService(db);
   const attributionService = options?.attributionService ?? new AttributionService(db);
   const feedService = options?.feedService ?? new FeedService(lawService);
@@ -137,7 +137,7 @@ export function createApiServer(options?: CreateApiServerOptions) {
   } else if (oauthState !== 'disabled') {
     console.warn(`Admin GitHub sign-in disabled (${oauthState.replace(/_/g, ' ')}); check GITHUB_OAUTH_CLIENT_ID, GITHUB_OAUTH_CLIENT_SECRET, ADMIN_GITHUB_USERS, ADMIN_SESSION_SECRET (32+ characters) and BASE_URL`);
   }
-  const adminController = new AdminController(new AdminLawService(db), emailService);
+  const adminController = new AdminController(new AdminLawService(db, () => lawService.invalidateLawOfTheDay()), emailService);
   const adminAuthController = new AdminAuthController();
   const adminUiController = new AdminUiController();
 

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type Database from 'better-sqlite3';
 import { AdminLawService } from '../../src/services/admin-laws.service.ts';
 import { CategoryService } from '../../src/services/categories.service.ts';
@@ -278,6 +278,24 @@ describe('AdminLawService (real migrated schema)', () => {
       expect((await laws.getLawOfTheDay())?.law.id).toBe(other);
       expect((await laws.getLawOfTheDay())?.law.id).toBe(other);
       expect(db.prepare('SELECT COUNT(*) AS n FROM law_of_the_day_history WHERE featured_date = ?').get(today())).toEqual({ n: 2 });
+    });
+
+    it('shows an edit made through AdminLawService at once, so updateLaw must keep bumping updated_at', async () => {
+      expect((await laws.getLawOfTheDay())?.law.text).toBe('Zebrafish law that is featured today');
+
+      admin.updateLaw(featured, { text: 'Zebrafish law, edited by a moderator' });
+      expect((await laws.getLawOfTheDay())?.law.text).toBe('Zebrafish law, edited by a moderator');
+    });
+
+    it('tells onChange after an update, but not when the law does not exist', () => {
+      const onChange = vi.fn();
+      const watched = new AdminLawService(db, onChange);
+
+      expect(watched.updateLaw(999999, { status: 'rejected' }).outcome).toBe('not_found');
+      expect(onChange).not.toHaveBeenCalled();
+
+      expect(watched.updateLaw(other, { adminNotes: 'seen' }).outcome).toBe('updated');
+      expect(onChange).toHaveBeenCalledTimes(1);
     });
 
     it('does not override the newer pick when the rejected law is approved again', async () => {
