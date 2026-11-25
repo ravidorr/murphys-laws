@@ -13,6 +13,9 @@ import { isUsefulDuplicateMatch, scoreDuplicateSimilarity } from '../../../share
 
 type Db = InstanceType<typeof Database>;
 
+const LAW_OF_DAY_CACHE_TTL_MS = 60 * 1000;
+const LAW_OF_DAY_EMPTY_CACHE_TTL_MS = 5 * 1000;
+
 /**
  * Appended to a query over `laws l` to leave out corollaries: laws that are the "from" side of a COROLLARY_OF
  * relation whose parent is published. A corollary under an unpublished parent has no page to point at, so it stays
@@ -158,6 +161,8 @@ export interface SubmittedLaw {
 export class LawService {
   private db: Db;
   private ftsDisabled = false;
+
+  private lawOfDayCache: { date: string; value: { law: LawRow; featured_date: string } | null; expires: number } | null = null;
 
   constructor(db: Db) {
     this.db = db;
@@ -567,8 +572,46 @@ export class LawService {
     return pick.immediate();
   }
 
+  /**
+   * The Law of the Day with its full law payload. Every request used to run the pick lookup plus the ten or so
+   * queries of getLaw (votes, attributions, categories, corollaries, annotations), though the pick is the same all
+   * day, so the answer is kept in process per UTC day. The entry is dropped when the UTC date changes (checked on
+   * every call, so a new day's law is never served from yesterday's entry) and after LAW_OF_DAY_CACHE_TTL_MS, which
+   * bounds how stale the vote counts and other changes that leave the law's `updated_at` alone can be: the same
+   * minute the response's Cache-Control already allows. A rejection or an edit of the law is caught on the next
+   * call (see cachedPickIsCurrent). An empty answer (no published law yet, or the pick unreadable) is kept
+   * only LAW_OF_DAY_EMPTY_CACHE_TTL_MS, so the first law published is picked up quickly.
+   */
   async getLawOfTheDay(): Promise<{ law: LawRow; featured_date: string } | null> {
-    const pick = this.selectLawOfTheDay();
+    const now = Date.now();
+    const today = new Date(now).toISOString().split('T')[0];
+    const cached = this.lawOfDayCache;
+    if (cached && cached.date === today && cached.expires > now && this.cachedPickIsCurrent(cached.value)) return cached.value;
+
+    const value = await this.loadLawOfTheDay(today);
+    this.lawOfDayCache = {
+      date: today,
+      value,
+      expires: now + (value ? LAW_OF_DAY_CACHE_TTL_MS : LAW_OF_DAY_EMPTY_CACHE_TTL_MS)
+    };
+    return value;
+  }
+
+  /**
+   * One primary-key lookup that tells whether the cached law is still published and unedited. A moderator rejecting
+   * or editing the featured law goes through another service (AdminLawService) that cannot clear this cache, so the
+   * entry checks the row's status and `updated_at` instead of waiting out the time limit. An empty entry has no law to check.
+   */
+  private cachedPickIsCurrent(value: { law: LawRow; featured_date: string } | null): boolean {
+    if (!value) return true;
+    const row = this.db
+      .prepare("SELECT updated_at FROM laws WHERE id = ? AND status = 'published'")
+      .get(value.law.id) as { updated_at: string } | undefined;
+    return row !== undefined && row.updated_at === value.law.updated_at;
+  }
+
+  private async loadLawOfTheDay(featuredDate: string): Promise<{ law: LawRow; featured_date: string } | null> {
+    const pick = this.selectLawOfTheDay(featuredDate);
     if (!pick) return null;
 
     const law = await this.getLaw(pick.lawId);
