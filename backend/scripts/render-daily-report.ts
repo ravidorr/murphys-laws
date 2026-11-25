@@ -1456,6 +1456,188 @@ export function buildPendingApprovalsSection(
   ]);
 }
 
+/** One UTC day's counts for the daily-email signup, from the database. */
+export interface SignupDbStats {
+  /** Addresses sent a confirmation email that day (an address mailed twice counts once). */
+  emailsSent: number;
+  confirmedThatDay: number;
+  /** Unconfirmed addresses waiting now, all time. */
+  pending: number;
+  /** Addresses that must never be mailed (spam reports). */
+  suppressed: number;
+}
+
+/** One UTC day's POSTs to the signup endpoint, by nginx status. */
+export interface SignupRequestStats {
+  attempts: number;
+  accepted: number;
+  refused: number;
+  rateLimited: number;
+  failed: number;
+}
+
+/** Confirmation emails in the day at or beyond which, with few confirmations, the report suggests a CAPTCHA. */
+export const SIGNUP_EMAIL_WARN_THRESHOLD = 10;
+
+const NGINX_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/**
+ * The last complete UTC day before `now`. The report goes out at 5 AM UTC, when today holds only five hours of
+ * signups, so this section reports the whole previous day.
+ */
+export function previousUtcDay(now: Date): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1));
+}
+
+/** The bracketed start of an nginx combined-format timestamp for the UTC day of `day`, such as `[25/Nov/2026:`. */
+export function nginxDayPrefix(day: Date): string {
+  const dayOfMonth = String(day.getUTCDate()).padStart(2, '0');
+  return `[${dayOfMonth}/${NGINX_MONTHS[day.getUTCMonth()]}/${day.getUTCFullYear()}:`;
+}
+
+/**
+ * Parses the `status count` lines the nginx counting script prints. Null when the log could not be read.
+ * Any status that is not 202, 400 or 429 counts as failed (the API answers 502 when the confirmation email
+ * cannot be sent and 503 when email is off).
+ */
+export function parseSignupRequestStats(output: string): SignupRequestStats | null {
+  if (output.trim() === 'UNREADABLE') {
+    return null;
+  }
+  const stats: SignupRequestStats = { attempts: 0, accepted: 0, refused: 0, rateLimited: 0, failed: 0 };
+  for (const line of output.split('\n')) {
+    const match = /^(\d{3}) (\d+)$/.exec(line.trim());
+    if (!match) {
+      continue;
+    }
+    const count = Number(match[2]);
+    stats.attempts += count;
+    if (match[1] === '202') stats.accepted += count;
+    else if (match[1] === '400') stats.refused += count;
+    else if (match[1] === '429') stats.rateLimited += count;
+    else stats.failed += count;
+  }
+  return stats;
+}
+
+/**
+ * Counts the signup POSTs of one UTC day by status in the nginx access log and its first rotation (`.1`). Null
+ * (after logging) when neither can be read. The log's timestamps are server-local time and the server runs on UTC,
+ * which the day prefix relies on.
+ */
+export function collectSignupRequestStats(accessLog: string, day: Date): SignupRequestStats | null {
+  try {
+    const stdout = execFileSync(
+      'bash',
+      [
+        '-c',
+        [
+          // nginx rotates the log at midnight UTC, so by the 5 AM report all of yesterday is in access.log.1 and
+          // access.log only holds today; read both, whichever exist. Only when neither can be read is it unreadable.
+          'files=(); for f in "$2" "$2.1"; do [ -r "$f" ] && files+=("$f"); done',
+          '[ ${#files[@]} -gt 0 ] || { echo UNREADABLE; exit 0; }',
+          // Field 1 (before the first quote) holds the timestamp and field 2 is the request line, so a User-Agent or
+          // referrer that mentions the day or the URL does not count. index() takes the day literally, with no regex.
+          // The URL may carry a trailing slash or a query string, which the API routes accept too.
+          `awk -F'"' -v day="$1" 'index($1, day) && $2 ~ /^POST \\/api\\/v1\\/subscriptions\\/?(\\?[^ ]*)? / {split($3, a, " "); print a[1]}' "\${files[@]}" | sort | uniq -c | awk '{print $2, $1}'`,
+        ].join('; '),
+        'signup-stats',
+        nginxDayPrefix(day),
+        accessLog,
+      ],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: PENDING_COUNT_TIMEOUT_MS },
+    );
+    const stats = parseSignupRequestStats(stdout);
+    if (stats === null) {
+      throw new Error(`cannot read ${accessLog} or ${accessLog}.1`);
+    }
+    return stats;
+  } catch (error) {
+    logCollectorError('signup request counts', error);
+    return null;
+  }
+}
+
+/** Counts one UTC day's signup activity in the database through the sqlite3 CLI. Null (after logging) on any failure. */
+export function collectSignupDbStats(dbPath: string, day: Date): SignupDbStats | null {
+  const dayStart = `${day.toISOString().slice(0, 10)} 00:00:00`;
+  const dayEnd = `${new Date(day.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)} 00:00:00`;
+  try {
+    const stdout = execFileSync(
+      'sqlite3',
+      [
+        dbPath,
+        `SELECT (SELECT COUNT(*) FROM email_subscriptions WHERE confirmation_sent_at >= '${dayStart}' AND confirmation_sent_at < '${dayEnd}'), ` +
+          `(SELECT COUNT(*) FROM email_subscriptions WHERE confirmed_at >= '${dayStart}' AND confirmed_at < '${dayEnd}'), ` +
+          "(SELECT COUNT(*) FROM email_subscriptions WHERE status = 'pending'), " +
+          '(SELECT COUNT(*) FROM email_suppressions);',
+      ],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: PENDING_COUNT_TIMEOUT_MS },
+    ).trim();
+    const match = /^(\d+)\|(\d+)\|(\d+)\|(\d+)$/.exec(stdout);
+    if (!match) {
+      throw new Error(`unexpected sqlite3 output: ${JSON.stringify(stdout)}`);
+    }
+    return { emailsSent: Number(match[1]), confirmedThatDay: Number(match[2]), pending: Number(match[3]), suppressed: Number(match[4]) };
+  } catch (error) {
+    logCollectorError('signup database counts', error);
+    return null;
+  }
+}
+
+/**
+ * The signup protection section for one UTC day (`dayLabel`, such as 2026-11-04): how many signup attempts the
+ * form got, how many the token check refused, and how many confirmation emails still went out. Many emails with few confirmations means bots
+ * are getting past the token check, which is when a CAPTCHA such as Turnstile is worth adding.
+ */
+export function buildSignupProtectionSection(db: SignupDbStats | null, requests: SignupRequestStats | null, dayLabel: string): ReportSection {
+  // A send that failed (a 502) still stamps the address (SubscriptionService.releaseCooldown moves the send time back
+  // by the cooldown, it does not clear it), so the failed requests are taken off the database count. Otherwise an
+  // email outage, where nobody can confirm, would look like a bot getting past the token check.
+  const emailsSent = db === null ? 0 : Math.max(0, db.emailsSent - (requests?.failed ?? 0));
+  const items: ReportItem[] = [];
+  if (requests === null) {
+    items.push({ label: 'Signup Attempts', value: 'Unavailable - see the daily-report log', tone: 'warning' });
+  } else {
+    items.push({ label: 'Signup Attempts', value: `${requests.attempts} on ${dayLabel} (UTC)` });
+    // 400 covers a missing or bad form token, an invalid email address and an unreadable or oversized body
+    items.push({ label: 'Refused (400: bad token, email or body)', value: String(requests.refused) });
+    items.push({ label: 'Rate Limited', value: String(requests.rateLimited) });
+    items.push({
+      label: 'Failed (email not sent)',
+      value: String(requests.failed),
+      tone: requests.failed > 0 ? 'warning' : 'neutral',
+    });
+    if (db !== null) {
+      items.push({
+        label: 'Answered 202, No Email',
+        value: `${Math.max(0, requests.accepted - emailsSent)} (trap field, address limit, suppressed or already subscribed)`,
+      });
+    }
+  }
+
+  if (db === null) {
+    items.push({ label: 'Confirmation Emails', value: 'Unavailable - see the daily-report log', tone: 'warning' });
+  } else {
+    const suspicious = emailsSent >= SIGNUP_EMAIL_WARN_THRESHOLD && db.confirmedThatDay * 5 < emailsSent;
+    items.push({
+      label: 'Confirmation Emails Sent',
+      value: `${emailsSent} (${db.confirmedThatDay} confirmed that day)`,
+      tone: suspicious ? 'warning' : 'neutral',
+    });
+    items.push({ label: 'Unconfirmed Addresses', value: String(db.pending) });
+    items.push({ label: 'Suppressed Addresses', value: String(db.suppressed) });
+    if (suspicious) {
+      items.push({
+        label: 'Assessment',
+        value: 'Many confirmation emails and few confirmations: bots may be getting past the token check. Consider adding Turnstile.',
+        tone: 'warning',
+      });
+    }
+  }
+  return section('SIGNUP PROTECTION', items);
+}
+
 function collectLiveReport(now: Date, repoRoot: string): DailyReport {
   const date = now.toISOString().slice(0, 10);
   const dayOfWeek = now.getUTCDay();
@@ -1529,6 +1711,15 @@ function collectLiveReport(now: Date, repoRoot: string): DailyReport {
     );
 
     sections.push(buildPendingApprovalsSection(countPendingApprovals(dbPath), env));
+
+    const signupDay = previousUtcDay(now);
+    sections.push(
+      buildSignupProtectionSection(
+        collectSignupDbStats(dbPath, signupDay),
+        collectSignupRequestStats(process.env.NGINX_ACCESS_LOG ?? '/var/log/nginx/access.log', signupDay),
+        signupDay.toISOString().slice(0, 10),
+      ),
+    );
 
     // Same rule as LawsService.findFeaturedLawId, so the report names the law visitors saw: the newest history
     // row for the day whose law is still published (a day can have two rows after a pick was unpublished and
