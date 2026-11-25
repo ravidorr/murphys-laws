@@ -1,8 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const apiPost = vi.fn();
+const apiGet = vi.fn();
 const trackProductEvent = vi.fn();
-vi.mock('../src/utils/request.ts', () => ({ apiPost: (...args: unknown[]) => apiPost(...args) }));
+vi.mock('../src/utils/request.ts', () => ({
+  apiPost: (...args: unknown[]) => apiPost(...args),
+  apiGet: (...args: unknown[]) => apiGet(...args),
+}));
 const push = {
   isPushSupported: vi.fn(),
   getPushSubscription: vi.fn(),
@@ -30,6 +36,7 @@ describe('DailyEmailSignup', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    apiGet.mockResolvedValue({ token: 'tok-1' });
     push.isPushSupported.mockReturnValue(false);
     section = DailyEmailSignup();
     document.body.replaceChildren(section);
@@ -47,8 +54,10 @@ describe('DailyEmailSignup', () => {
     apiPost.mockResolvedValue({ status: 'check_your_email' });
     input.value = '  ann@example.com ';
     await submit();
-    expect(apiPost).toHaveBeenCalledWith('/api/v1/subscriptions', { email: 'ann@example.com' });
+    expect(apiGet).toHaveBeenCalledWith('/api/v1/subscriptions/token');
+    expect(apiPost).toHaveBeenCalledWith('/api/v1/subscriptions', { email: 'ann@example.com', token: 'tok-1', website: '' });
     expect(status.textContent).toContain('confirm your address');
+    expect(status.textContent).toContain('Check your spam folder');
     expect(input.value).toBe('');
     expect(trackProductEvent).toHaveBeenCalledWith('subscribe.email', { surface: 'home', result: 'requested' });
     expect(section.querySelector('button')!.disabled).toBe(false);
@@ -62,6 +71,155 @@ describe('DailyEmailSignup', () => {
     expect(input.value).toBe('ann@example.com');
     expect(trackProductEvent).toHaveBeenCalledWith('subscribe.email', { surface: 'home', result: 'error' });
     expect(section.querySelector('button')!.disabled).toBe(false);
+  });
+
+  it('has a trap field that people and screen readers never reach', () => {
+    const trap = section.querySelector<HTMLInputElement>('[data-daily-email-trap]')!;
+    expect(trap.name).toBe('website');
+    expect(trap.tabIndex).toBe(-1);
+    expect(trap.autocomplete).toBe('off');
+    const wrapper = trap.parentElement!;
+    expect(wrapper.classList.contains('hidden')).toBe(true);
+    expect(wrapper.getAttribute('aria-hidden')).toBe('true');
+    expect(wrapper.getAttribute('style')).toBeNull();
+  });
+
+  it('sends whatever is in the trap field, so the server can tell a bot', async () => {
+    apiPost.mockResolvedValue({ status: 'check_your_email' });
+    section.querySelector<HTMLInputElement>('[data-daily-email-trap]')!.value = 'http://spam.example';
+    input.value = 'ann@example.com';
+    await submit();
+    expect(apiPost).toHaveBeenCalledWith('/api/v1/subscriptions', { email: 'ann@example.com', token: 'tok-1', website: 'http://spam.example' });
+  });
+
+  it('fetches a fresh token after a signup so the next one has its own', async () => {
+    apiPost.mockResolvedValue({ status: 'check_your_email' });
+    apiGet.mockResolvedValueOnce({ token: 'tok-1' }).mockResolvedValueOnce({ token: 'tok-2' });
+    section = DailyEmailSignup();
+    document.body.replaceChildren(section);
+    input = section.querySelector('input')!;
+    input.value = 'ann@example.com';
+    await submit();
+    input.value = 'bob@example.com';
+    await submit();
+    expect(apiPost).toHaveBeenNthCalledWith(1, '/api/v1/subscriptions', expect.objectContaining({ token: 'tok-1' }));
+    expect(apiPost).toHaveBeenNthCalledWith(2, '/api/v1/subscriptions', expect.objectContaining({ token: 'tok-2' }));
+  });
+
+  it('sends a null token when none could be fetched, and still reports the server answer', async () => {
+    apiGet.mockRejectedValue(new Error('offline'));
+    section = DailyEmailSignup();
+    document.body.replaceChildren(section);
+    input = section.querySelector('input')!;
+    status = section.querySelector('[data-daily-email-status]')!;
+    apiPost.mockRejectedValue(new Error('Invalid request. Please check your input.'));
+    input.value = 'ann@example.com';
+    await submit();
+    expect(apiPost).toHaveBeenCalledWith('/api/v1/subscriptions', { email: 'ann@example.com', token: null, website: '' });
+    expect(apiPost).toHaveBeenCalledTimes(1);
+    expect(status.textContent).toContain('could not be started');
+  });
+
+  it('treats a response without a token as no token', async () => {
+    apiGet.mockResolvedValue({ token: 5 });
+    section = DailyEmailSignup();
+    document.body.replaceChildren(section);
+    input = section.querySelector('input')!;
+    apiPost.mockResolvedValue({});
+    input.value = 'ann@example.com';
+    await submit();
+    expect(apiPost).toHaveBeenCalledWith('/api/v1/subscriptions', expect.objectContaining({ token: null }));
+  });
+
+  describe('when the server says the form expired', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('fetches another token, waits, and tries once more', async () => {
+      apiGet.mockResolvedValueOnce({ token: 'old' }).mockResolvedValueOnce({ token: 'new' }).mockResolvedValue({ token: 'next' });
+      section = DailyEmailSignup();
+      document.body.replaceChildren(section);
+      input = section.querySelector('input')!;
+      status = section.querySelector('[data-daily-email-status]')!;
+      apiPost.mockRejectedValueOnce(new Error('The sign-up form expired. Please try again.')).mockResolvedValueOnce({ status: 'check_your_email' });
+      input.value = 'ann@example.com';
+      section.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(apiPost).toHaveBeenCalledTimes(1);
+      // The server refuses a token younger than 3 seconds, so the retry must not go out earlier
+      await vi.advanceTimersByTimeAsync(2999);
+      expect(apiPost).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1);
+      await vi.advanceTimersByTimeAsync(500);
+      expect(apiPost).toHaveBeenCalledTimes(2);
+      expect(apiPost).toHaveBeenNthCalledWith(1, '/api/v1/subscriptions', expect.objectContaining({ token: 'old' }));
+      expect(apiPost).toHaveBeenNthCalledWith(2, '/api/v1/subscriptions', expect.objectContaining({ token: 'new' }));
+      expect(status.textContent).toContain('confirm your address');
+    });
+
+    it('counts the retry delay from when the replacement token arrives, not from when it was asked for', async () => {
+      let issue: (value: { token: string }) => void = () => {};
+      apiGet.mockResolvedValueOnce({ token: 'old' }).mockReturnValueOnce(new Promise((resolve) => { issue = resolve; })).mockResolvedValue({ token: 'next' });
+      section = DailyEmailSignup();
+      document.body.replaceChildren(section);
+      input = section.querySelector('input')!;
+      apiPost.mockRejectedValueOnce(new Error('The sign-up form expired. Please try again.')).mockResolvedValueOnce({ status: 'check_your_email' });
+      input.value = 'ann@example.com';
+      section.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(apiPost).toHaveBeenCalledTimes(1);
+      issue({ token: 'new' });
+      await vi.advanceTimersByTimeAsync(3499);
+      expect(apiPost).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(apiPost).toHaveBeenCalledTimes(2);
+      expect(apiPost).toHaveBeenNthCalledWith(2, '/api/v1/subscriptions', expect.objectContaining({ token: 'new' }));
+    });
+
+    it('gives up after one retry', async () => {
+      section = DailyEmailSignup();
+      document.body.replaceChildren(section);
+      input = section.querySelector('input')!;
+      status = section.querySelector('[data-daily-email-status]')!;
+      apiPost.mockRejectedValue(new Error('The sign-up form expired. Please try again.'));
+      input.value = 'ann@example.com';
+      section.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
+      await vi.advanceTimersByTimeAsync(4000);
+      expect(apiPost).toHaveBeenCalledTimes(2);
+      expect(status.textContent).toContain('could not be started');
+      expect(input.value).toBe('ann@example.com');
+    });
+
+    it('does not retry other errors, or errors that are not Errors', async () => {
+      section = DailyEmailSignup();
+      document.body.replaceChildren(section);
+      input = section.querySelector('input')!;
+      apiPost.mockRejectedValue('boom');
+      input.value = 'ann@example.com';
+      section.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
+      await vi.advanceTimersByTimeAsync(4000);
+      expect(apiPost).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('retries on the exact text the backend sends for a refused token', () => {
+    const source = readFileSync(resolve(import.meta.dirname, '../../backend/src/controllers/subscriptions.controller.ts'), 'utf8');
+    expect(source).toContain("export const FORM_EXPIRED_MESSAGE = 'The sign-up form expired. Please try again.';");
+  });
+
+  it('uses a new token for the next try after any failure, since the server spent the old one', async () => {
+    apiGet.mockResolvedValueOnce({ token: 'tok-1' }).mockResolvedValueOnce({ token: 'tok-2' });
+    section = DailyEmailSignup();
+    document.body.replaceChildren(section);
+    input = section.querySelector('input')!;
+    apiPost.mockRejectedValueOnce(new Error('A valid email address is required')).mockResolvedValueOnce({ status: 'check_your_email' });
+    input.value = 'typo@example';
+    await submit();
+    input.value = 'ann@example.com';
+    await submit();
+    expect(apiPost).toHaveBeenCalledTimes(2);
+    expect(apiPost).toHaveBeenNthCalledWith(1, '/api/v1/subscriptions', expect.objectContaining({ token: 'tok-1' }));
+    expect(apiPost).toHaveBeenNthCalledWith(2, '/api/v1/subscriptions', expect.objectContaining({ token: 'tok-2' }));
   });
 
   it('ignores a blank submission', async () => {

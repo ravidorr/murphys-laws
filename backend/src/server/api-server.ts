@@ -153,6 +153,7 @@ export function createApiServer(options?: CreateApiServerOptions) {
 
   // Daily Law of the Day email: the subscribe call is a regex route like the embed ones, so it stays outside
   // the documented /api/v1 contract; confirm and unsubscribe are the pages the emails link to.
+  router.get(/^\/api\/v1\/subscriptions\/token\/?$/, (req, res) => subscriptionController.issueToken(req, res));
   router.post(/^\/api\/v1\/subscriptions\/?$/, (req, res) => subscriptionController.subscribe(req, res));
   // Web Push for the daily Law of the Day (regex routes, outside the documented contract like the email ones)
   router.get(/^\/api\/v1\/push\/public-key\/?$/, (req, res) => pushController.getPublicKey(req, res));

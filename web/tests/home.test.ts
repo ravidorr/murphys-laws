@@ -524,7 +524,9 @@ describe('Home view', () => {
     const other = document.createElement('span');
     el.appendChild(other);
     other.click();
-    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    // The daily email form also fetches its one-time token when the page renders; that is not a data fetch
+    const dataFetches = vi.mocked(globalThis.fetch).mock.calls.filter(([url]) => !String(url).includes('/subscriptions/token'));
+    expect(dataFetches).toHaveLength(2);
   });
 
   it('L172 B1: nav button with data-nav triggers onNavigate', async () => {

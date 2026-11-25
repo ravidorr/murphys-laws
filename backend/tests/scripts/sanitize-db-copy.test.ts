@@ -45,7 +45,7 @@ const REVIEWED_COLUMNS: Record<string, string[]> = {
     };
 
 /** Tables the migrations create that the sanitizer deliberately empties: they hold private data. */
-const EMPTIED_TABLES = ['email_subscriptions', 'push_subscriptions', 'facebook_data_deletion_requests'];
+const EMPTIED_TABLES = ['email_subscriptions', 'email_suppressions', 'push_subscriptions', 'facebook_data_deletion_requests'];
 
 type Db = ReturnType<typeof createMigratedDb>;
 
