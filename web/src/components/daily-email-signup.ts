@@ -1,4 +1,4 @@
-import { apiPost } from '../utils/request.ts';
+import { apiGet, apiPost } from '../utils/request.ts';
 import { trackProductEvent } from '../utils/metrics.ts';
 import { disablePush, enablePush, getPushSubscription, isPushSupported } from '../utils/push-notifications.ts';
 import { registerDailyEmailTool } from '../utils/webmcp-tools.ts';
@@ -14,6 +14,9 @@ const FORM_HTML = `
   <div class="section-body">
     <form class="not-found-search-form" data-daily-email-form aria-label="Subscribe to the daily law email">
       <input type="email" name="email" class="form-control" placeholder="you@example.com" aria-label="Email address" autocomplete="email" maxlength="254" required>
+      <div class="hidden" aria-hidden="true">
+        <input type="text" name="website" tabindex="-1" autocomplete="off" data-daily-email-trap>
+      </div>
       <button type="submit" class="btn primary"><span class="btn-text">Subscribe</span></button>
     </form>
     <p class="small" role="status" data-daily-email-status></p>
@@ -21,6 +24,21 @@ const FORM_HTML = `
     <p class="small" role="status" data-daily-push-status></p>
   </div>
 `;
+
+/** The server's error for any form token it refuses: missing, malformed, forged, reused, too fresh or expired. Must equal FORM_EXPIRED_MESSAGE in the backend controller; a test in each package pins the text. */
+const FORM_EXPIRED_MESSAGE = 'The sign-up form expired. Please try again.';
+/** The server refuses a token younger than 3 seconds, so a retry waits a little longer than that. */
+const TOKEN_RETRY_DELAY_MS = 3500;
+
+/** One-time token the server wants back with the address; null when it could not be fetched. */
+async function fetchFormToken(): Promise<string | null> {
+  try {
+    const response = (await apiGet('/api/v1/subscriptions/token')) as { token?: unknown };
+    return typeof response.token === 'string' ? response.token : null;
+  } catch {
+    return null;
+  }
+}
 
 /** Home page signup for the daily Law of the Day email (double opt-in, confirmed from the first email). */
 export function DailyEmailSignup(): HTMLElement {
@@ -33,7 +51,13 @@ export function DailyEmailSignup(): HTMLElement {
   const form = section.querySelector<HTMLFormElement>('[data-daily-email-form]')!;
   const input = form.querySelector<HTMLInputElement>('input[name="email"]')!;
   const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+  const trap = form.querySelector<HTMLInputElement>('[data-daily-email-trap]')!;
   const status = section.querySelector<HTMLElement>('[data-daily-email-status]')!;
+
+  // Fetched when the form appears, so it is old enough by the time a person has typed an address
+  let token = fetchFormToken();
+
+  const send = async (email: string) => apiPost('/api/v1/subscriptions', { email, token: await token, website: trap.value });
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -43,11 +67,24 @@ export function DailyEmailSignup(): HTMLElement {
     button.disabled = true;
     status.textContent = 'Sending the confirmation email...';
     try {
-      await apiPost('/api/v1/subscriptions', { email });
+      try {
+        await send(email);
+      } catch (error) {
+        if (!(error instanceof Error) || error.message !== FORM_EXPIRED_MESSAGE) throw error;
+        // The token was spent, too fresh, or from before a server restart: fetch another and try once more
+        token = fetchFormToken();
+        // The delay starts once the new token exists, so it is old enough when it is sent back
+        await token;
+        await new Promise((resolve) => setTimeout(resolve, TOKEN_RETRY_DELAY_MS));
+        await send(email);
+      }
+      token = fetchFormToken();
       trackProductEvent('subscribe.email', { surface: 'home', result: 'requested' });
-      status.textContent = 'Check your inbox and confirm your address to start the daily email.';
+      status.textContent = 'Check your inbox and confirm your address to start the daily email. Not seeing it? Check your spam folder.';
       form.reset();
     } catch {
+      // The server spends a token on every try that gets past the form check (a mistyped address too)
+      token = fetchFormToken();
       trackProductEvent('subscribe.email', { surface: 'home', result: 'error' });
       status.textContent = 'The subscription could not be started. Check the address and try again in a minute.';
     } finally {

@@ -4,6 +4,7 @@ import type { EmailService } from '../services/email.service.ts';
 import type { SubscriptionService } from '../services/subscriptions.service.ts';
 import { SITE_URL } from '../utils/constants.ts';
 import { confirmUrl } from '../utils/subscription-links.ts';
+import { FormTokenService } from '../utils/subscription-form-token.ts';
 import {
   PayloadTooLargeError,
   badRequest,
@@ -15,6 +16,9 @@ import {
 
 const TOKEN_PATTERN = /^[a-f0-9]{48}$/;
 const MAX_BODY_BYTES = 2048;
+
+/** The form shows this as its error; the page matches it to fetch a fresh token and try once more. */
+export const FORM_EXPIRED_MESSAGE = 'The sign-up form expired. Please try again.';
 
 interface ParsedQuery {
   query?: Record<string, string | string[] | undefined>;
@@ -98,33 +102,68 @@ function readToken(parsed: ParsedQuery): string | null {
 export class SubscriptionController {
   private subscriptions: SubscriptionService;
   private emailService: EmailService;
+  private formTokens: FormTokenService;
 
-  constructor(subscriptions: SubscriptionService, emailService: EmailService) {
+  constructor(
+    subscriptions: SubscriptionService,
+    emailService: EmailService,
+    formTokens: FormTokenService = new FormTokenService(process.env.SUBSCRIPTION_FORM_SECRET)
+  ) {
     this.subscriptions = subscriptions;
     this.emailService = emailService;
+    this.formTokens = formTokens;
   }
 
-  /** POST /api/v1/subscriptions with { email }. Answers the same for new and known addresses. */
+  /** GET /api/v1/subscriptions/token: the one-time token the signup form sends back with the address. */
+  issueToken(req: IncomingMessage, res: ServerResponse): void {
+    const rateLimit = checkRateLimit(getVoterIdentifier(req), 'subscribe-token');
+    if (!rateLimit.allowed) {
+      return rateLimitExceeded(res, rateLimit, req);
+    }
+    sendJson(res, 200, { token: this.formTokens.issue() }, req, rateLimit, { 'Cache-Control': 'no-store' });
+  }
+
+  /**
+   * POST /api/v1/subscriptions with { email, token }. Answers the same 202 for new, known, limited and suppressed
+   * addresses, and for a filled-in `website` field (a hidden trap field a person never sees), so the status does
+   * not tell a caller which of them it hit. Each silent outcome is logged without the address, so the effect of
+   * the limits can be seen in the API log.
+   */
   async subscribe(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const rateLimit = checkRateLimit(getVoterIdentifier(req), 'subscribe');
     if (!rateLimit.allowed) {
       return rateLimitExceeded(res, rateLimit, req);
     }
 
-    let body: { email?: unknown };
+    let body: { email?: unknown; token?: unknown; website?: unknown };
     try {
       body = await readBody(req, MAX_BODY_BYTES);
     } catch (error) {
       return badRequest(res, error instanceof PayloadTooLargeError ? 'Request body too large' : 'Invalid JSON body', req);
     }
 
+    if (typeof body.website === 'string' && body.website !== '') {
+      console.warn('[subscribe] ignored: the hidden trap field was filled');
+      return sendJson(res, 202, { status: 'check_your_email' }, req, rateLimit);
+    }
+
     if (!this.emailService.isConfigured()) {
       return sendJson(res, 503, { error: 'Email is not available right now' }, req, rateLimit);
+    }
+
+    const tokenCheck = this.formTokens.verify(body.token);
+    if (tokenCheck !== 'ok') {
+      console.warn(`[subscribe] refused: form token ${tokenCheck}`);
+      return badRequest(res, FORM_EXPIRED_MESSAGE, req);
     }
 
     const result = this.subscriptions.subscribe(body.email);
     if (result.status === 'invalid') {
       return badRequest(res, 'A valid email address is required', req);
+    }
+
+    if (result.status === 'cooldown' || result.status === 'suppressed') {
+      console.warn(`[subscribe] no email sent: ${result.status}`);
     }
 
     if (result.status === 'confirmation_needed') {
