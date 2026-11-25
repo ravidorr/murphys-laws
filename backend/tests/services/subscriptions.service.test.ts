@@ -7,6 +7,7 @@ import {
   CONFIRMATION_COOLDOWN_MS,
   CONFIRMATION_LIMIT,
   CONFIRMATION_LIMIT_WINDOW_MS,
+  CONFIRMATION_SEND_RETENTION_MS,
   STALE_PENDING_MS,
   SubscriptionService,
   normalizeEmail,
@@ -271,6 +272,35 @@ describe('SubscriptionService', () => {
       const hourLater = Date.parse('2026-11-02T09:00:00Z');
       expect(upgraded.subscribe('sent@example.com', hourLater).status).toBe('confirmation_needed');
       expect(upgraded.subscribe('sent@example.com', hourLater + CONFIRMATION_COOLDOWN_MS)).toEqual({ status: 'cooldown' });
+    });
+  });
+
+  describe('confirmation send record', () => {
+    it('records each attempt with its time and outcome, and no address', () => {
+      service.recordConfirmationSend(true, t0);
+      service.recordConfirmationSend(false, t0 + 1000);
+      expect(db.prepare('SELECT sent_at, ok FROM confirmation_sends ORDER BY id').all()).toEqual([
+        { sent_at: '2026-11-02 08:00:00', ok: 1 },
+        { sent_at: '2026-11-02 08:00:01', ok: 0 },
+      ]);
+      expect(db.prepare("SELECT name FROM pragma_table_info('confirmation_sends') ORDER BY cid").all()).toEqual([{ name: 'id' }, { name: 'sent_at' }, { name: 'ok' }]);
+    });
+
+    it('defaults to the current time', () => {
+      service.recordConfirmationSend(true);
+      const row = db.prepare('SELECT sent_at FROM confirmation_sends').get() as { sent_at: string };
+      expect(Date.parse(`${row.sent_at.replace(' ', 'T')}Z`)).toBeGreaterThan(Date.now() - 60_000);
+    });
+
+    it('refuses an outcome that is not 0 or 1', () => {
+      expect(() => db.prepare('INSERT INTO confirmation_sends (ok) VALUES (2)').run()).toThrow(/CHECK/);
+    });
+
+    it('is pruned with the stale pending addresses, keeping what is inside the retention window', () => {
+      service.recordConfirmationSend(true, t0);
+      service.recordConfirmationSend(true, t0 + CONFIRMATION_SEND_RETENTION_MS);
+      service.purgeStalePending(t0 + CONFIRMATION_SEND_RETENTION_MS + 1000);
+      expect(db.prepare('SELECT sent_at FROM confirmation_sends').all()).toEqual([{ sent_at: '2027-01-31 08:00:00' }]);
     });
   });
 

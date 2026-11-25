@@ -1127,7 +1127,7 @@ describe('signup protection section', () => {
       vi.mocked(execFileSync).mockReturnValue('12|3|400|5\n');
       expect(collectSignupDbStats('/db', DAY)).toEqual({ emailsSent: 12, confirmedThatDay: 3, pending: 400, suppressed: 5 });
       const sql = String(vi.mocked(execFileSync).mock.calls.at(-1)?.[1]?.[1]);
-      expect(sql).toContain("confirmation_sent_at >= '2026-11-04 00:00:00' AND confirmation_sent_at < '2026-11-05 00:00:00'");
+      expect(sql).toContain("FROM confirmation_sends WHERE ok = 1 AND sent_at >= '2026-11-04 00:00:00' AND sent_at < '2026-11-05 00:00:00'");
       expect(sql).toContain("confirmed_at >= '2026-11-04 00:00:00' AND confirmed_at < '2026-11-05 00:00:00'");
     });
 
@@ -1154,14 +1154,23 @@ describe('signup protection section', () => {
       vi.mocked(execFileSync).mockImplementation(await realExec());
       const file = path.join(scratchDir('signup-db-'), 'murphys.db');
       const db = createMigratedDb({ path: file });
-      const insert = db.prepare('INSERT INTO email_subscriptions (email, token, status, confirmation_sent_at, confirmed_at) VALUES (?, ?, ?, ?, ?)');
-      insert.run('a@example.com', 'a'.repeat(48), 'pending', '2026-11-04 03:00:00', null);
-      insert.run('b@example.com', 'b'.repeat(48), 'confirmed', '2026-11-04 04:00:00', '2026-11-04 05:00:00');
-      insert.run('c@example.com', 'c'.repeat(48), 'pending', '2026-11-03 23:59:59', null);
-      insert.run('d@example.com', 'd'.repeat(48), 'pending', '2026-11-05 00:00:00', null);
-      // Exactly at the start of the day counts; a confirmation on another day does not, even when the email went out that day
-      insert.run('e@example.com', 'e'.repeat(48), 'confirmed', '2026-11-04 00:00:00', '2026-11-05 00:00:00');
-      insert.run('f@example.com', 'f'.repeat(48), 'confirmed', '2026-11-01 08:00:00', '2026-11-03 23:59:59');
+      const insert = db.prepare('INSERT INTO email_subscriptions (email, token, status, confirmed_at) VALUES (?, ?, ?, ?)');
+      insert.run('a@example.com', 'a'.repeat(48), 'pending', null);
+      insert.run('b@example.com', 'b'.repeat(48), 'confirmed', '2026-11-04 05:00:00');
+      insert.run('c@example.com', 'c'.repeat(48), 'pending', null);
+      insert.run('d@example.com', 'd'.repeat(48), 'pending', null);
+      // Exactly at the start of the day counts; a confirmation on another day does not
+      insert.run('e@example.com', 'e'.repeat(48), 'confirmed', '2026-11-05 00:00:00');
+      insert.run('f@example.com', 'f'.repeat(48), 'confirmed', '2026-11-03 23:59:59');
+      // Sends are counted from the send record: successes inside the day, not failures and not the neighbouring days,
+      // whatever a later resend did to the subscription row
+      const send = db.prepare('INSERT INTO confirmation_sends (sent_at, ok) VALUES (?, ?)');
+      send.run('2026-11-04 00:00:00', 1);
+      send.run('2026-11-04 03:00:00', 1);
+      send.run('2026-11-04 04:00:00', 1);
+      send.run('2026-11-04 05:00:00', 0);
+      send.run('2026-11-03 23:59:59', 1);
+      send.run('2026-11-05 00:00:00', 1);
       db.prepare("INSERT INTO email_suppressions (email, reason) VALUES ('x@example.com', 'spam report')").run();
       db.close();
       expect(collectSignupDbStats(file, DAY)).toEqual({ emailsSent: 3, confirmedThatDay: 1, pending: 3, suppressed: 1 });
@@ -1180,8 +1189,8 @@ describe('signup protection section', () => {
       expect(row(built, 'Refused (400: bad token, email or body)')?.value).toBe('38');
       expect(row(built, 'Rate Limited')?.value).toBe('1');
       expect(row(built, 'Failed (email not sent)')).toMatchObject({ value: '1', tone: 'warning' });
-      expect(row(built, 'Answered 202, No Email')?.value).toMatch(/^15 /);
-      expect(row(built, 'Confirmation Emails Sent')).toMatchObject({ value: '5 (3 confirmed that day)', tone: 'neutral' });
+      expect(row(built, 'Answered 202, No Email')?.value).toMatch(/^14 /);
+      expect(row(built, 'Confirmation Emails Sent')).toMatchObject({ value: '6 (3 confirmed that day)', tone: 'neutral' });
       expect(row(built, 'Unconfirmed Addresses')?.value).toBe('40');
       expect(row(built, 'Suppressed Addresses')?.value).toBe('5');
       expect(row(built, 'Assessment')).toBeUndefined();
@@ -1193,12 +1202,11 @@ describe('signup protection section', () => {
       expect(row(built, 'Answered 202, No Email')?.value).toMatch(/^0 /);
     });
 
-    it('does not blame bots for an email outage: failed sends stamp addresses too, so they are not counted as sent', () => {
-      const outage = buildSignupProtectionSection({ ...db, emailsSent: 12, confirmedThatDay: 0 }, { ...requests, accepted: 0, failed: 12 }, '2026-11-04');
+    it('does not blame bots for an email outage: nothing was sent, so the sent count is zero whatever failed', () => {
+      const outage = buildSignupProtectionSection({ ...db, emailsSent: 0, confirmedThatDay: 0 }, { ...requests, accepted: 0, failed: 12 }, '2026-11-04');
       expect(row(outage, 'Confirmation Emails Sent')).toMatchObject({ value: '0 (0 confirmed that day)', tone: 'neutral' });
       expect(row(outage, 'Failed (email not sent)')).toMatchObject({ value: '12', tone: 'warning' });
       expect(row(outage, 'Assessment')).toBeUndefined();
-      expect(row(outage, 'Answered 202, No Email')?.value).toMatch(/^0 /);
     });
 
     it('suggests Turnstile when many confirmation emails get few confirmations', () => {
