@@ -553,6 +553,7 @@ describe('nginx scanner defense', () => {
     '/core/static',
     '/core/other',
     '/rest/applinksx',
+    '/sslvpn-portal',
     '/law/core/static/x',
     '/security',
     '/security?x=1',
@@ -1235,6 +1236,13 @@ describe('nginx legacy URL redirects', () => {
     expect(conf).toMatch(/^\s*rewrite \^\/\(\.\+\)\/\$ \/\$1 permanent;$/m);
     expect('/murphy/'.replace(/^\/(.+)\/$/, '/$1')).toBe('/murphy');
     expect(conf).toContain('location = /murphy {');
+  });
+
+  it('sends /security/ to the security.txt file in two hops: the trailing-slash rewrite, then the exact redirect', () => {
+    expect(conf).toMatch(/^\s*rewrite \^\/\(\.\+\)\/\$ \/\$1 permanent;$/m);
+    expect('/security/'.replace(/^\/(.+)\/$/, '/$1')).toBe('/security');
+    expect(conf).toContain('location = /security {');
+    expect(isScannerPath('/security/')).toBe(false);
   });
 
   it('redirects the long policy slugs to the Privacy and Terms pages that the site serves and links in its footer', () => {
