@@ -544,6 +544,19 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     'agentwebmap-bot': 'agentwebmap-bot/0.2 (+https://agentwebmap.com)',
     unfragilebot: 'UnfragileBot/1.0 (+https://unfragile.ai/bot; AI infrastructure search index)',
     reflectionbot: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Reflectionbot/1.0; +https://reflection.ai/bot) Chrome/151.0.0.0 Safari/537.36',
+    'clueweb-crawler': 'ClueWeb-Crawler/1.0 (+https://boston.lti.cs.cmu.edu/CMU-ClueWeb-Crawler/; mailto:cmu-clueweb-crawler@andrew.cmu.edu)',
+    barkrowler: 'Mozilla/5.0 (compatible; Barkrowler/0.9; +https://babbar.tech/crawler)',
+    'ibou-search': 'Mozilla/5.0 (compatible; ibou-search/2.0; +https://ibou.com/crawlers.html)',
+    coccocbot: 'Mozilla/5.0 (compatible; coccocbot-web/1.0; +http://help.coccoc.com/searchengine)',
+    ias_crawler: 'IAS Crawler (ias_crawler; http://integralads.com/site-indexing-policy/)',
+    internetarchivebot: 'IABot/2.0 (+https://meta.wikimedia.org/wiki/InternetArchiveBot/FAQ_for_sysadmins) (Checking if link from Wikipedia is broken and needs removal)',
+    chainofsalebot: 'chainofsalebot/0.1 (+https://chainofsale.com/crawler/)',
+    duckassistbot: 'DuckAssistBot/1.2; (+http://duckduckgo.com/duckassistbot.html)',
+    basisadstxtcrawler: 'Mozilla/5.0 (compatible; BasisAdsTxtCrawler/2.0; +https://basis.com)',
+    criteobot: 'CriteoBot/0.1 (+https://www.criteo.com/criteo-crawler/)',
+    qwantbot: 'Mozilla/5.0 (compatible; Qwantbot/1.0; +https://help.qwant.com/bot/)',
+    kakaobot: 'Mozilla/5.0 (compatible; KakaoBot/1.0; +https://cs.kakao.com/helps_html/1073213012)',
+    'mwmbl-crawler': 'mwmbl-crawler/2.0.8 (https://github.com/mwmbl/mwmbl/)',
   };
   // Hostile or unrecognised agents that must stay in the report, one request each.
   const UNKNOWN = [
@@ -556,6 +569,15 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     'Mozilla/5.0 (compatible; SomeNewCrawler/1.0)',
     'Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity',
     'Mozilla/5.0 (compatible; WP-Safe-Scanner/1.0)',
+  ];
+
+  // Scanners and unknowns seen in the 26 November 2026 report that stay listed. Kept out of UNKNOWN because the report shows
+  // only the top 10 rows and UNKNOWN already fills them.
+  const STAY_LISTED = [
+    'Mozilla/5.0 (compatible; Taktikal-Scanner/5.0; +https://taktikal.next.fasttvltd.com/bot)',
+    'research-scanner (+https://github.com/Deckris/favicon-internet-scanner)',
+    'KauaiBot runid=dev-test',
+    'h9p3r.fr bot',
   ];
 
   // Agents with no `bot`, `crawler` or `spider` in them whose name says `scan`: only the `scan` rule lists them.
@@ -603,6 +625,10 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     expect(rows[0]).toBe('  2 - EvilScraperBot/3.0');
     // Agents seen once are listed in no guaranteed order.
     expect(rows.slice(1).sort()).toEqual(UNKNOWN.slice(1).map((agent) => `  1 - ${agent}`).sort());
+  });
+
+  it.each(STAY_LISTED)('keeps listing %s', (userAgent) => {
+    expect(agentRows(runAnalyzer(sandbox(), requests([userAgent])))).toEqual([`  1 - ${userAgent}`]);
   });
 
   it.each(SCAN_AGENTS)('lists a crawler-like agent that says scan: %s', (userAgent) => {
