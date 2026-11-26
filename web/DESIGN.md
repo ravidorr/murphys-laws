@@ -498,7 +498,8 @@ depends on inline values or presentation data in domain models.
 
 Whole-item links (the law text on `law-card-mini`, the category card) are not
 underlined at rest; hover and keyboard focus underline them. Do not add a
-resting underline to them.
+resting underline to them, except that high-contrast mode (`theme.css`)
+underlines links, the law text included.
 
 Buttons and inputs use a visible blue focus ring. Hover transitions use
 150-200 ms; pressed states dim rather than move. Under
