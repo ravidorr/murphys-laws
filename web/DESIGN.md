@@ -496,6 +496,10 @@ success and error states. State changes use semantic attributes and predefined
 classes on web, and native control state on iOS and Android; presentation never
 depends on inline values or presentation data in domain models.
 
+Whole-item links (the law text on `law-card-mini`, the category card) are not
+underlined at rest; hover and keyboard focus underline them. Do not add a
+resting underline to them.
+
 Buttons and inputs use a visible blue focus ring. Hover transitions use
 150-200 ms; pressed states dim rather than move. Under
 `prefers-reduced-motion: reduce`, non-essential transitions and animations
