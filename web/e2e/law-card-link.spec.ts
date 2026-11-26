@@ -4,14 +4,22 @@ import type * as Playwright from '@playwright/test';
 const require = createRequire(import.meta.url);
 const { expect, test }: typeof Playwright = require('@playwright/test');
 
-test('law card links are underlined at rest so touch visitors can tell they open', async ({ page }) => {
+test('law card links are not underlined at rest, and hover and keyboard focus underline them', async ({ page }) => {
   await page.goto('/browse');
   const link = page.locator('.law-card-link').first();
   await expect(link).toBeVisible({ timeout: 10000 });
 
-  // No hover or focus: the cue must already be there
   await page.mouse.move(0, 0);
   await expect(link).not.toBeFocused();
+  await expect(link).toHaveCSS('text-decoration-line', 'none');
+
+  await link.hover();
   await expect(link).toHaveCSS('text-decoration-line', 'underline');
-  await expect(link).toHaveCSS('text-decoration-thickness', '1px');
+
+  await page.mouse.move(0, 0);
+  await link.focus();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Shift+Tab');
+  await expect(link).toBeFocused();
+  await expect(link).toHaveCSS('text-decoration-line', 'underline');
 });
