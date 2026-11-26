@@ -1350,7 +1350,7 @@
 
 /* Law text is not underlined at rest: a whole sentence underlined reads as noise, and every other whole-item link
    (the category card) underlines only on hover and keyboard focus. Touch visitors, who never hover, lose the resting
-   cue #299 added; the category page's "Read the full law" link is the only non-hover cue left, so a touch cue for
+   cue PR 299 added; the category page's "Read the full law" link is the only non-hover cue left, so a touch cue for
    the other surfaces is a separate design decision. High-contrast mode still underlines it (theme.css). */
 .law-card-link {
   color: inherit;
