@@ -1555,6 +1555,147 @@
   margin-top: var(--space-8);
 }
 
+/* Internal link lists (Explore nearby, related links, crawlable indexes). Plain label-only lists are a bare
+   responsive grid of links. Rows with a description become link tiles: the label link is stretched over the whole
+   tile, nothing is underlined at rest, hover and keyboard focus underline the label, and the arrow is always
+   visible so touch users see the tile opens. */
+.internal-link-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.internal-link-list li:has(> span) {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-10) var(--space-4) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--rounded-xl);
+  background: var(--surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.internal-link-list li:has(> span):hover,
+.internal-link-list li:has(> span):focus-within {
+  border-color: var(--link);
+  box-shadow: 0 4px 12px var(--shadow-light);
+}
+
+.internal-link-list li:has(> span):active {
+  opacity: 0.85;
+}
+
+.internal-link-list li:has(> span) > a {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-snug);
+  color: var(--fg);
+  text-decoration: none;
+  overflow-wrap: break-word;
+}
+
+/* The stretched hit area covers the tile. Keyboard focus shows twice: the global focus ring stays on the label and the
+   tile border turns link-coloured */
+.internal-link-list li:has(> span) > a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.internal-link-list li:has(> span) > a:hover,
+.internal-link-list li:has(> span) > a:focus-visible {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+
+.internal-link-list li:has(> span) > span {
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--muted-fg);
+}
+
+.internal-link-list li:has(> span)::after {
+  content: "\2192";
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  color: var(--muted-fg);
+  line-height: 1;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.internal-link-list li:has(> span):hover::after,
+.internal-link-list li:has(> span):focus-within::after {
+  color: var(--link);
+  transform: translateX(2px);
+}
+
+/* High-contrast mode underlines links, the tile label included (DESIGN.md, States) */
+@media (prefers-contrast: more) {
+  .internal-link-list li:has(> span) > a {
+    text-decoration: underline;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .internal-link-list li:has(> span),
+  .internal-link-list li:has(> span)::after {
+    transition: none;
+  }
+}
+
+/* Dark mode: --surface and --link are light-theme tokens, so the tile takes the dark surface and link tokens, and the label keeps the foreground colour in every link state */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .internal-link-list li:has(> span) {
+    background: var(--dark-surface);
+  }
+
+  :root:not([data-theme="light"]) .internal-link-list li:has(> span) > a,
+  :root:not([data-theme="light"]) .internal-link-list li:has(> span) > a:visited,
+  :root:not([data-theme="light"]) .internal-link-list li:has(> span) > a:hover,
+  :root:not([data-theme="light"]) .internal-link-list li:has(> span) > a:focus-visible {
+    color: var(--dark-fg-primary);
+  }
+
+  :root:not([data-theme="light"]) .internal-link-list li:has(> span):hover,
+  :root:not([data-theme="light"]) .internal-link-list li:has(> span):focus-within {
+    border-color: var(--dark-link);
+  }
+
+  :root:not([data-theme="light"]) .internal-link-list li:has(> span):hover::after,
+  :root:not([data-theme="light"]) .internal-link-list li:has(> span):focus-within::after {
+    color: var(--dark-link);
+  }
+}
+
+:root[data-theme="dark"] .internal-link-list li:has(> span) {
+  background: var(--dark-surface);
+}
+
+:root[data-theme="dark"] .internal-link-list li:has(> span) > a,
+:root[data-theme="dark"] .internal-link-list li:has(> span) > a:visited,
+:root[data-theme="dark"] .internal-link-list li:has(> span) > a:hover,
+:root[data-theme="dark"] .internal-link-list li:has(> span) > a:focus-visible {
+  color: var(--dark-fg-primary);
+}
+
+:root[data-theme="dark"] .internal-link-list li:has(> span):hover,
+:root[data-theme="dark"] .internal-link-list li:has(> span):focus-within {
+  border-color: var(--dark-link);
+}
+
+:root[data-theme="dark"] .internal-link-list li:has(> span):hover::after,
+:root[data-theme="dark"] .internal-link-list li:has(> span):focus-within::after {
+  color: var(--dark-link);
+}
+
 /* Dark mode: adjust favorite color */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
