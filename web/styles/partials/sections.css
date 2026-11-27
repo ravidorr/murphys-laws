@@ -1626,6 +1626,7 @@
   position: absolute;
   top: var(--space-4);
   right: var(--space-4);
+  pointer-events: none;
   color: var(--muted-fg);
   line-height: 1;
   transition: color 0.15s ease, transform 0.15s ease;
