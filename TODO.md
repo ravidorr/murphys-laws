@@ -17,6 +17,11 @@ This document outlines additional tasks and potential improvements for the Murph
   disappear for visitors then. `web/tests/origin-trial-token.test.ts` warns from 2027-02-13 and fails from 2027-03-23. Register again at
   <https://developer.chrome.com/origintrials/> for `https://murphys-laws.com` with subdomain matching on and third-party matching off.
 
+- [ ] **Find where `/null` and `/law/null` come from:** Meta's crawlers (`meta-externalagent`, `meta-webindexer`) request them a few times a day with a
+  law page (`/law/2571`) or `/favorites` as referrer, but the rendered pages hold no link to them. Check the client-side code that
+  builds a law href or a navigation target from a value that can be `null` (for example a missing law id), then fix it at the source
+  and redirect or block the path as the 404 triage skill says.
+
 ## Performance
 
 - [ ] **Serve `/manifest.webmanifest` with its real type:** the server sends the manifest as `application/octet-stream`
