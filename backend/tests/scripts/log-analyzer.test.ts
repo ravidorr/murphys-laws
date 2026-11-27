@@ -557,6 +557,10 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     qwantbot: 'Mozilla/5.0 (compatible; Qwantbot/1.0; +https://help.qwant.com/bot/)',
     kakaobot: 'Mozilla/5.0 (compatible; KakaoBot/1.0; +https://cs.kakao.com/helps_html/1073213012)',
     'mwmbl-crawler': 'mwmbl-crawler/2.0.8 (https://github.com/mwmbl/mwmbl/)',
+    dataforseobot: 'Mozilla/5.0 (compatible; DataForSeoBot/1.0; +https://dataforseo.com/dataforseo-bot)',
+    yandexrenderresourcesbot: 'Mozilla/5.0 (compatible; YandexRenderResourcesBot/1.0; +http://yandex.com/bots) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+    velenpublicwebcrawler: 'Mozilla/5.0 (compatible; VelenPublicWebCrawler/1.0; +https://velen.io)',
+    kosiceeventsbot: 'KosiceEventsBot/0.1 (+https://github.com/david-vendel/events)',
   };
   // Hostile or unrecognised agents that must stay in the report, one request each.
   const UNKNOWN = [
@@ -578,6 +582,9 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     'research-scanner (+https://github.com/Deckris/favicon-internet-scanner)',
     'KauaiBot runid=dev-test',
     'h9p3r.fr bot',
+    // 27 November 2026: a bare IP as the info URL and a name that says nothing about an owner, so unknown rather than a known crawler.
+    'Mozilla/5.0 (compatible; StyxSearchBot/0.2; +http://35.90.213.25/)',
+    'Lightpanda/1.0 internal-testing-crawler',
   ];
 
   // Agents with no `bot`, `crawler` or `spider` in them whose name says `scan`: only the `scan` rule lists them.
