@@ -561,6 +561,16 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     yandexrenderresourcesbot: 'Mozilla/5.0 (compatible; YandexRenderResourcesBot/1.0; +http://yandex.com/bots) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
     velenpublicwebcrawler: 'Mozilla/5.0 (compatible; VelenPublicWebCrawler/1.0; +https://velen.io)',
     kosiceeventsbot: 'KosiceEventsBot/0.1 (+https://github.com/david-vendel/events)',
+    'azureai-searchbot': 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; AzureAI-SearchBot/1.0;',
+    fowlguardbot: 'Mozilla/5.0 (compatible; FowlguardBot/1.0; +https://fowlguard.com/bot)',
+    corexresearchbot: 'CorexResearchBot/0.1 (Corex news collection; robots.txt respected; polite pace; +mailto:office@mpconsulting.au)',
+    findlingbot: 'FindlingBot/0.1 (+https://suche.3xd.eu/bot.html)',
+    pathfinderspider: 'PathfinderSpider/devel (+https://github.com/AuditAds/pathfinder)',
+    threadsearch: 'threadsearch/0.1 (+https://threadsearch.app/crawler)',
+    viralpurplecowbot: 'ViralPurpleCowBot/0.1 (+https://viralpurplecow.com/bot/)',
+    sofyabot: 'SofyaBot/1.0 (+https://sofya.co/bot)',
+    magnumbot: 'MagnumBot/1.0 (+https://hellomagnum.com; ari@hellomagnum.com)',
+    apcosysbot: 'ApcosysBot/1.0 (+https://apcosys.net)',
   };
   // Hostile or unrecognised agents that must stay in the report, one request each.
   const UNKNOWN = [
@@ -585,6 +595,10 @@ describe('log-analyzer.sh suspicious User-Agents', () => {
     // 27 November 2026: a bare IP as the info URL and a name that says nothing about an owner, so unknown rather than a known crawler.
     'Mozilla/5.0 (compatible; StyxSearchBot/0.2; +http://35.90.213.25/)',
     'Lightpanda/1.0 internal-testing-crawler',
+    // 28 November 2026: a scanner by name (kx360-lane-a-widescan asked for /graphql), and an agent with no owner page.
+    // fresh-domain-watch names only a mailto opt-out address, so it stays listed.
+    'Mozilla/5.0 (compatible; kx360-lane-a-widescan/1.0)',
+    'Mozilla/5.0 (compatible; fresh-domain-watch/1.0; +mailto:crawler-optout-8fcf75@euploading.com; opt-out: email UNSUB CRAWLER yourdomain.com)',
   ];
 
   // Agents with no `bot`, `crawler` or `spider` in them whose name says `scan`: only the `scan` rule lists them.
