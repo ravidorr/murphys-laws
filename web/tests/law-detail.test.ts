@@ -342,11 +342,12 @@ describe('LawDetail view', () => {
       expect(el.textContent).not.toMatch(/Law Not Found|doesn't exist/);
       expect(el.querySelector('[data-not-found] [data-action="retry-law"]')).toBeTruthy();
       expect(getExportContent()).toBeNull();
-      expect(track).toHaveBeenCalledWith('law_not_found', expect.objectContaining({
+      expect(track).toHaveBeenCalledWith('law_load_failed', expect.objectContaining({
         law_id: '1',
         failure_reason: reason,
         is_retry: false,
       }));
+      expect(track).not.toHaveBeenCalledWith('law_not_found', expect.anything());
     });
 
     it('announces the load failure as an alert and not the "Law Not Found" state', async () => {
@@ -1485,6 +1486,7 @@ describe('LawDetail view', () => {
           referrer_domain: 'direct',
         });
       }, { timeout: 500 });
+      expect(track.mock.calls.map(call => call[0])).toEqual(['law_not_found']);
     });
 
     it('reports a missing law ID', () => {
@@ -1495,6 +1497,7 @@ describe('LawDetail view', () => {
         is_retry: false,
         referrer_domain: 'direct',
       });
+      expect(track.mock.calls.map(call => call[0])).toEqual(['law_not_found']);
     });
 
     it('reports failed retries', async () => {
@@ -1505,12 +1508,29 @@ describe('LawDetail view', () => {
       (el.querySelector('[data-action="retry-law"]') as HTMLElement).click();
 
       await vi.waitFor(() => {
-        expect(track).toHaveBeenCalledWith('law_not_found', expect.objectContaining({
+        expect(track).toHaveBeenCalledWith('law_load_failed', expect.objectContaining({
           failure_reason: 'network',
           is_retry: true,
         }));
       }, { timeout: 500 });
-      expect(track).toHaveBeenCalledTimes(2);
+      expect(track.mock.calls.map(call => call[0])).toEqual(['law_load_failed', 'law_load_failed']);
+    });
+
+    it.each([
+      ['a load failure then a 404', 503, 404, ['law_load_failed', 'law_not_found']],
+      ['a 404 then a load failure', 404, 503, ['law_not_found', 'law_load_failed']],
+    ])('names each event by its own outcome across a retry: %s', async (_name, firstStatus, retryStatus, expectedNames) => {
+      globalThis.fetch = vi.fn()
+        .mockResolvedValueOnce({ ok: false, status: firstStatus })
+        .mockResolvedValueOnce({ ok: false, status: retryStatus });
+      const el = LawDetail({ lawId: '7', onNavigate: () => { } });
+      await vi.waitFor(() => expect(el.querySelector('[data-action="retry-law"]')).toBeTruthy(), { timeout: 500 });
+
+      (el.querySelector('[data-action="retry-law"]') as HTMLElement).click();
+
+      await vi.waitFor(() => expect(track).toHaveBeenCalledTimes(2), { timeout: 500 });
+      expect(track.mock.calls.map(call => call[0])).toEqual(expectedNames);
+      expect(track.mock.calls[1]?.[1]).toMatchObject({ is_retry: true, http_status: retryStatus });
     });
 
     it('reports copies from the main card and from related law cards', async () => {
@@ -1831,6 +1851,9 @@ describe('LawDetail prerendered law', () => {
     ['a forbidden answer', 'http_error', () => vi.fn().mockResolvedValue({ ok: false, status: 403 })],
     ['a server error', 'server_error', () => vi.fn().mockResolvedValue({ ok: false, status: 503 })],
     ['a network failure', 'network', () => vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))],
+    ['a timeout', 'timeout', () => vi.fn().mockRejectedValue(new DOMException('signal timed out', 'TimeoutError'))],
+    ['a non-JSON answer', 'invalid_response', () => vi.fn().mockRejectedValue(new Error('API returned non-JSON response'))],
+    ['an unexpected error', 'unknown', () => vi.fn().mockRejectedValue(new Error('Unexpected render failure'))],
   ])('keeps the prerendered law with a load-failure notice on %s', async (_name, reason, fetchMock) => {
     globalThis.fetch = fetchMock();
     const el = LawDetail({ lawId: '7', onNavigate: () => { }, prerendered: prerenderedMain() });
@@ -1845,12 +1868,13 @@ describe('LawDetail prerendered law', () => {
     expect(shown(el, '[data-not-found]')).toBe(false);
     expect(shown(el, '[data-loading]')).toBe(false);
     expect(el.textContent).not.toMatch(/Law Not Found/);
-    expect(track).toHaveBeenCalledWith('law_not_found', expect.objectContaining({
+    expect(track).toHaveBeenCalledWith('law_load_failed', expect.objectContaining({
       law_id: '7',
       failure_reason: reason,
       showed_prerendered_law: true,
       is_retry: false,
     }));
+    expect(track.mock.calls.map(call => call[0])).toEqual(['law_load_failed']);
   });
 
   it('leaves the Try Again button named by its visible text, as in the other error states', async () => {
@@ -1881,7 +1905,7 @@ describe('LawDetail prerendered law', () => {
     await vi.waitFor(() => expect(shown(el, '[data-not-found]')).toBe(true), { timeout: 500 });
     expect(shown(el, '[data-prerendered-law]')).toBe(false);
     expect(el.querySelector('[data-not-found] .empty-state-title')?.textContent).toBe("We couldn't load this law");
-    expect(track).toHaveBeenCalledWith('law_not_found', {
+    expect(track).toHaveBeenCalledWith('law_load_failed', {
       law_id: '7',
       failure_reason: 'server_error',
       http_status: 503,
@@ -1902,6 +1926,7 @@ describe('LawDetail prerendered law', () => {
     expect(el.querySelector('[data-prerendered-law]')?.hasChildNodes()).toBe(false);
     expect(el.textContent).toMatch(/Law Not Found/);
     expect(track).toHaveBeenCalledWith('law_not_found', expect.objectContaining({ failure_reason: reason }));
+    expect(track.mock.calls.map(call => call[0])).toEqual(['law_not_found']);
     expect(track.mock.calls[0]?.[1]).not.toHaveProperty('showed_prerendered_law');
   });
 
@@ -1910,6 +1935,7 @@ describe('LawDetail prerendered law', () => {
 
     expect(shown(el, '[data-not-found]')).toBe(true);
     expect(shown(el, '[data-prerendered-law]')).toBe(false);
+    expect(track.mock.calls.map(call => call[0])).toEqual(['law_not_found']);
     expect(track.mock.calls[0]?.[1]).not.toHaveProperty('showed_prerendered_law');
   });
 
@@ -1972,7 +1998,7 @@ describe('LawDetail prerendered law', () => {
       expect(el.querySelectorAll('[data-prerendered-law] [data-action="retry-law"]')).toHaveLength(1);
       expect(button.disabled).toBe(false);
       expect(document.activeElement).toBe(el.querySelector('[data-prerendered-law] [data-action="retry-law"]'));
-      expect(track).toHaveBeenLastCalledWith('law_not_found', expect.objectContaining({
+      expect(track).toHaveBeenLastCalledWith('law_load_failed', expect.objectContaining({
         showed_prerendered_law: true,
         is_retry: true,
       }));

@@ -22,6 +22,7 @@ export type PendoTrackEventName =
   | 'law_vote_failed'
   | 'law_shared'
   | 'law_not_found'
+  | 'law_load_failed'
   | 'law_favorite_toggled'
   | 'favorites_cleared'
   | 'calculator_viewed'

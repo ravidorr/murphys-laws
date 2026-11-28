@@ -209,9 +209,13 @@ export function LawDetail({ lawId, onNavigate, onStructuredData, prerendered }: 
     markedNoindex = true;
   }
 
-  // A page view of /law/:id can't tell a broken inbound link from a successful view
-  function trackLawNotFound(failure: LawLoadFailure, isRetry: boolean, showedPrerenderedLaw = false) {
-    trackPendoEvent('law_not_found', {
+  // A page view of /law/:id can't tell a broken inbound link from a successful view.
+  // Only a missing law is a law_not_found. Any other failure (a refused request, a server error, a timeout,
+  // a network failure, a non-JSON answer) says nothing about whether the law exists, so it goes to
+  // law_load_failed instead and the missing-law count stays a count of broken links.
+  function trackLawLoadOutcome(failure: LawLoadFailure, isRetry: boolean, showedPrerenderedLaw = false) {
+    const eventName = MISSING_LAW_REASONS.has(failure.failure_reason) ? 'law_not_found' : 'law_load_failed';
+    trackPendoEvent(eventName, {
       law_id: lawId || undefined,
       ...failure,
       // Set only when the visitor still sees the law that came with the page, so a load failure that
@@ -579,7 +583,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData, prerendered }: 
     const failure = { failure_reason: 'missing_id' };
     showNotFound(failure);
     clearExportContent();
-    trackLawNotFound(failure, false);
+    trackLawLoadOutcome(failure, false);
   } else {
     revealPrerenderedLaw();
     fetchLaw(lawId)
@@ -594,7 +598,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData, prerendered }: 
         if (!showedPrerenderedLaw) showNotFound(failure);
         clearExportContent();
         markMissingLaw(failure);
-        trackLawNotFound(failure, false, showedPrerenderedLaw);
+        trackLawLoadOutcome(failure, false, showedPrerenderedLaw);
       });
   }
 
@@ -626,7 +630,7 @@ export function LawDetail({ lawId, onNavigate, onStructuredData, prerendered }: 
           if (!showedPrerenderedLaw) showNotFound(failure, true);
           clearExportContent();
           markMissingLaw(failure);
-          trackLawNotFound(failure, true, showedPrerenderedLaw);
+          trackLawLoadOutcome(failure, true, showedPrerenderedLaw);
         });
       return;
     }
