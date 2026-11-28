@@ -105,7 +105,7 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
   }
 
   // Report a law opened from the results list (not the sidebar widgets) with its 1-based rank across pages
-  function trackResultOpened(lawCard: HTMLElement, openMethod: 'card_click' | 'title_link' | 'keyboard') {
+  function trackResultOpened(lawCard: HTMLElement, openMethod: 'card_click' | 'title_link' | 'law_page_cue' | 'keyboard') {
     const resultsList = lawCard.closest('#browse-laws-list');
     if (!resultsList) return;
     const pageIndex = Array.from(resultsList.querySelectorAll('.law-card-mini')).indexOf(lawCard);
@@ -146,8 +146,9 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
       `;
     }
 
-    // Use shared law card renderer with search highlighting (eliminates ~30 lines of duplicate HTML)
-    return renderLawCards(laws, { searchQuery: query });
+    // Use shared law card renderer with search highlighting (eliminates ~30 lines of duplicate HTML).
+    // Each card shows the whole law, so the "Read the full law" cue tells searchers there is more to open.
+    return renderLawCards(laws, { searchQuery: query, showLawPageCue: true });
   }
 
   // Title the results card for what it holds: search matches or the full archive
@@ -334,8 +335,10 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
     }
 
     // Handle navigation buttons and links (shared utility); a result's title link opens the law here
-    const titleLinkCard = t.closest('[data-nav="law"]')?.closest<HTMLElement>('.law-card-mini');
-    if (titleLinkCard) trackResultOpened(titleLinkCard, 'title_link');
+    const openedLink = t.closest('[data-nav="law"]');
+    const titleLinkCard = openedLink?.closest<HTMLElement>('.law-card-mini');
+    // The "Read the full law" cue is reported apart from the title link, so its effect can be judged on its own
+    if (titleLinkCard) trackResultOpened(titleLinkCard, openedLink!.classList.contains('law-card-more-link') ? 'law_page_cue' : 'title_link');
     // Submitting from an empty search carries the search words to the form; navigate() keeps this URL
     if (t.closest('.empty-state [data-nav="submit"]') && currentFilters.q) {
       history.pushState({ name: 'submit' }, '', submitPrefillUrl(currentFilters.q));

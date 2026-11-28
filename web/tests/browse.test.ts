@@ -2196,6 +2196,25 @@ describe('Browse view', () => {
       expect(onNavigate).toHaveBeenCalledTimes(3);
     });
 
+    it('shows the full law cue on each result and reports it apart from the title link', async () => {
+      window.history.replaceState({ searchTracked: true }, '', '/browse?q=law&page=2');
+      const onNavigate = vi.fn();
+      const el = Browse({ onNavigate });
+      await waitForResults(el);
+      const [firstCard] = Array.from(el.querySelectorAll<HTMLElement>('#browse-laws-list .law-card-mini'));
+      const cue = firstCard!.querySelector<HTMLAnchorElement>('.law-card-more-link')!;
+
+      expect(cue.textContent).toBe('Read the full law');
+      expect(cue.getAttribute('href')).toBe('/law/1');
+      cue.click();
+
+      expect(track).toHaveBeenCalledWith('search_result_opened', expect.objectContaining({
+        law_id: '1', result_position: 26, open_method: 'law_page_cue'
+      }));
+      expect(track).not.toHaveBeenCalledWith('search_result_opened', expect.objectContaining({ open_method: 'title_link' }));
+      expect(onNavigate).toHaveBeenCalledWith('law', '1');
+    });
+
     it('does not report laws opened from the sidebar widgets', async () => {
       vi.mocked(api.fetchTopVoted).mockResolvedValue({
         data: [{ id: 99, title: 'Widget Law', text: 'Shown in Top Voted', upvotes: 50, downvotes: 0 }],
