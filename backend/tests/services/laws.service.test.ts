@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import Database from 'better-sqlite3';
-import { LawService, buildFtsMatchQuery } from '../../src/services/laws.service.ts';
+import { LawService, buildFtsMatchQuery, buildFtsRankingQueries } from '../../src/services/laws.service.ts';
 import { VoteService } from '../../src/services/votes.service.ts';
 
 function enableFts(db: InstanceType<typeof Database>): void {
@@ -113,6 +113,27 @@ describe('LawService', () => {
   it('builds escaped prefix terms from multi-word and punctuated searches', () => {
     expect(buildFtsMatchQuery('Technology, failure!')).toBe('"technology"* OR "failure"*');
     expect(buildFtsMatchQuery('a --')).toBe('');
+  });
+
+  it('builds phrase and all-words ranking queries only for multi-word searches', () => {
+    expect(buildFtsRankingQueries('If a thing, fail!')).toEqual({
+      phrase: '"if a thing fail"*',
+      allWords: '"if"* AND "thing"* AND "fail"*',
+    });
+    expect(buildFtsRankingQueries('technology')).toBeNull();
+    expect(buildFtsRankingQueries('')).toBeNull();
+  });
+
+  it('ranks laws with the exact phrase, then all the words, ahead of laws with only some of them', async () => {
+    enableFts(db);
+    const oneWord = Number(db.prepare("INSERT INTO laws (title, text) VALUES ('Toast', 'Toast toast toast always lands badly')").run().lastInsertRowid);
+    const allWords = Number(db.prepare("INSERT INTO laws (title, text) VALUES ('Breakfast', 'The buttered side is the side the toast lands on')").run().lastInsertRowid);
+    const phrase = Number(db.prepare("INSERT INTO laws (title, text) VALUES ('Jennings', 'Buttered toast always lands face down')").run().lastInsertRowid);
+
+    const result = await lawService.listLaws({ q: 'buttered toast', sort: 'relevance', limit: 10, offset: 0 });
+
+    expect(result.total).toBe(3);
+    expect(result.data.map((law) => law.id)).toEqual([phrase, allWords, oneWord]);
   });
 
   it('uses FTS prefixes and relevance ranking while preserving category filters', async () => {

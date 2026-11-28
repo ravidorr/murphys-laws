@@ -131,16 +131,34 @@ export interface SuggestionsParams {
   limit?: number;
 }
 
-export function buildFtsMatchQuery(query: string): string {
-  const tokens = query
+function tokenizeSearchQuery(query: string): string[] {
+  return query
     .normalize('NFKC')
     .toLowerCase()
-    .match(/[\p{L}\p{N}]+/gu)
-    ?.filter((token) => token.length >= 2)
-    .slice(0, 10) ?? [];
+    .match(/[\p{L}\p{N}]+/gu) ?? [];
+}
+
+export function buildFtsMatchQuery(query: string): string {
+  const tokens = tokenizeSearchQuery(query)
+    .filter((token) => token.length >= 2)
+    .slice(0, 10);
   return [...new Set(tokens)]
     .map((token) => `"${token.replace(/"/g, '""')}"*`)
     .join(' OR ');
+}
+
+/**
+ * FTS queries that rank a multi-word search: the exact phrase (every typed word in order, the last one as a prefix)
+ * and all the typed words in any order. The match query links the words with OR so a search still finds laws that
+ * hold only some of them; these put the laws that hold the phrase, then all the words, ahead of them. Null for a
+ * one-word search, where there is nothing to rank by.
+ */
+export function buildFtsRankingQueries(query: string): { phrase: string; allWords: string } | null {
+  const phraseTokens = tokenizeSearchQuery(query).slice(0, 10);
+  if (phraseTokens.length < 2) return null;
+  const phrase = `"${phraseTokens.join(' ').replace(/"/g, '""')}"*`;
+  const allWords = buildFtsMatchQuery(query).split(' OR ').join(' AND ');
+  return { phrase, allWords };
 }
 
 export interface SubmitLawParams {
@@ -221,6 +239,7 @@ export class LawService {
     const hasAttribution = attribution && attribution.length > 0;
     const ftsQuery = buildFtsMatchQuery(q);
     const useFts = Boolean(hasQ && ftsQuery && this.hasFtsIndex());
+    const ftsRanking = useFts && sort === 'relevance' ? buildFtsRankingQueries(q) : null;
 
     const like = `%${q}%`;
     const attributionLike = `%${attribution}%`;
@@ -270,11 +289,15 @@ export class LawService {
 
     // Build ORDER BY clause based on sort parameter
     const orderDirection = order === 'asc' ? 'ASC' : 'DESC';
+    // A multi-word search lists laws with the exact phrase first, then laws with all the words, then the rest.
+    const phraseFirst = ftsRanking
+      ? `CASE WHEN l.id IN (SELECT rowid FROM laws_fts WHERE laws_fts MATCH ?) THEN 0 WHEN l.id IN (SELECT rowid FROM laws_fts WHERE laws_fts MATCH ?) THEN 1 ELSE 2 END ASC, `
+      : '';
     let orderBy;
     switch (sort) {
       case 'relevance':
         orderBy = useFts
-          ? `(SELECT bm25(laws_fts, 5.0, 1.0) FROM laws_fts WHERE rowid = l.id AND laws_fts MATCH ?) ASC, score DESC, l.id DESC`
+          ? `${phraseFirst}(SELECT bm25(laws_fts, 5.0, 1.0) FROM laws_fts WHERE rowid = l.id AND laws_fts MATCH ?) ASC, score DESC, l.id DESC`
           : `score DESC, upvotes DESC, l.id DESC`;
         break;
       case 'upvotes':
@@ -300,6 +323,7 @@ export class LawService {
       const countResult = countStmt.get(...countParams) as CountRow | undefined;
       const total = countResult ? countResult.total : 0;
 
+      if (ftsRanking) listParams.push(ftsRanking.phrase, ftsRanking.allWords);
       if (sort === 'relevance' && useFts) listParams.push(ftsQuery);
       listParams.push(limit, offset);
       const listStmt = this.db.prepare(listSql);
