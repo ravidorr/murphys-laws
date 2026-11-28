@@ -1356,6 +1356,8 @@ describe('nginx legacy URL redirects', () => {
     ['/rss/murphys-laws.rss', '/api/v1/feed.rss'],
     // /rss.xml is the conventional feed path that readers and crawlers guess
     ['/rss.xml', '/api/v1/feed.rss'],
+    // /feed is the other conventional feed path
+    ['/feed', '/api/v1/feed.rss'],
     // /law is the parent of /law/N: the law breadcrumb is Home > Browse > Category > Law
     ['/law', '/browse'],
     // Meta's crawlers extract a null URL value from law pages and /favorites
