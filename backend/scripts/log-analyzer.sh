@@ -124,7 +124,9 @@ todays_requests() {
 # (Apple, Google, Bing, OpenAI, Anthropic, Meta, Amazon, Huawei, Majestic, Sentry, UptimeRobot, ByteDance, Sogou,
 # comScore, YaCy, ElevenLabs, Seznam, SE Ranking, Semrush's site auditor, Nokia, NikySearch, AgentWebMap,
 # Unfragile, Reflection AI, CMU ClueWeb, Babbar, ibou, Coc Coc, Integral Ad Science, the Internet Archive's link
-# checker, Criteo, Qwant, Kakao, Basis, DuckAssist, DataForSEO, Yandex's render-resources bot, Velen, Kosice Events
+# checker, Criteo, Qwant, Kakao, Basis, DuckAssist, DataForSEO, Yandex's render-resources bot, Velen, Kosice Events,
+# Microsoft's Azure AI Search, Fowlguard, Corex, Findling, AuditAds' Pathfinder, ThreadSearch, ViralPurpleCow, Sofya,
+# Magnum, Apcosys
 # and the smaller AI-search and research crawlers that name themselves, most with a contact URL, and the like).
 # Their User-Agents or URLs carry `bot`, `crawler` or `spider`, so the generic filter below listed them although
 # they are not hostile. Every entry names a crawler whose real User-Agent contains one of those words, except
@@ -132,7 +134,7 @@ todays_requests() {
 # A User-Agent can be forged, so this hides a forger of these names too, with one limit: a User-Agent that
 # also carries an attack-tool name or `scan` (see ATTACK_TOOL_REGEX) is always listed, so a scanner cannot hide
 # behind an appended `Googlebot`.
-KNOWN_BOT_REGEX='applebot|googlebot|bingbot|duckduckbot|yandexbot|baiduspider|gptbot|oai-searchbot|chatgpt-user|claudebot|perplexitybot|meta-externalagent|meta-externalfetcher|amazonbot|petalbot|mj12bot|ahrefsbot|semrushbot|dotbot|sentryuptimebot|uptimerobot|bytespider|sogou web spider|generalretrievalbot|kamatabot|keenablebot|exasearchbot|mcpcensus|publisherradar|remotejobsiq-bot|findisebot|crolbot|riverbot|hnresearchcrawler|aiwebindex|startmebot|shapbot|proximic|yacybot|meta-webindexer|elevenlabscrawler|facebookexternalhit|serankingbacklinksbot|siteauditbot|seznambot|genomecrawler|sirdatabot|nikybot|agentwebmap-bot|unfragilebot|reflectionbot|clueweb-crawler|barkrowler|ibou-search|coccocbot|ias_crawler|internetarchivebot|chainofsalebot|duckassistbot|basisadstxtcrawler|criteobot|qwantbot|kakaobot|mwmbl-crawler|dataforseobot|yandexrenderresourcesbot|velenpublicwebcrawler|kosiceeventsbot'
+KNOWN_BOT_REGEX='applebot|googlebot|bingbot|duckduckbot|yandexbot|baiduspider|gptbot|oai-searchbot|chatgpt-user|claudebot|perplexitybot|meta-externalagent|meta-externalfetcher|amazonbot|petalbot|mj12bot|ahrefsbot|semrushbot|dotbot|sentryuptimebot|uptimerobot|bytespider|sogou web spider|generalretrievalbot|kamatabot|keenablebot|exasearchbot|mcpcensus|publisherradar|remotejobsiq-bot|findisebot|crolbot|riverbot|hnresearchcrawler|aiwebindex|startmebot|shapbot|proximic|yacybot|meta-webindexer|elevenlabscrawler|facebookexternalhit|serankingbacklinksbot|siteauditbot|seznambot|genomecrawler|sirdatabot|nikybot|agentwebmap-bot|unfragilebot|reflectionbot|clueweb-crawler|barkrowler|ibou-search|coccocbot|ias_crawler|internetarchivebot|chainofsalebot|duckassistbot|basisadstxtcrawler|criteobot|qwantbot|kakaobot|mwmbl-crawler|dataforseobot|yandexrenderresourcesbot|velenpublicwebcrawler|kosiceeventsbot|azureai-searchbot|fowlguardbot|corexresearchbot|findlingbot|pathfinderspider|threadsearch|viralpurplecowbot|sofyabot|magnumbot|apcosysbot'
 ATTACK_TOOL_REGEX='nikto|sqlmap|havij|acunetix|scan'
 
 # The User-Agent of every one of today's requests whose line matches the generic bot/crawler/spider/attack-tool
