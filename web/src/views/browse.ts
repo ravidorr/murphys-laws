@@ -2,9 +2,9 @@
 // Refactored to use shared law card renderer
 
 import templateHtml from '@views/templates/browse.html?raw';
-import { fetchLaws } from '../utils/api.ts';
+import { fetchLaws, fetchTopVoted } from '../utils/api.ts';
 import { renderLoadingHTML } from '../components/loading.ts';
-import { getRandomLoadingMessage, LAWS_PER_PAGE } from '../utils/constants.ts';
+import { getRandomLoadingMessage, LAWS_PER_PAGE, WIDGET_CARD_COUNT } from '../utils/constants.ts';
 import { addVotingListeners } from '../utils/voting.ts';
 import { hydrateIcons } from '@utils/icons.ts';
 import { renderLawCards } from '../utils/law-card-renderer.ts';
@@ -150,6 +150,26 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
     return renderLawCards(laws, { searchQuery: query });
   }
 
+  // A search that finds nothing still offers a few laws to open, since the discovery widgets are hidden while
+  // searching. They sit outside the results list, so opening one is not reported as a search result.
+  function showEmptySuggestions(generation: number) {
+    if (laws.length > 0 || !hasActiveFilters(currentFilters)) return;
+    fetchTopVoted(WIDGET_CARD_COUNT)
+      .then((data) => {
+        if (generation !== loadGeneration) return;
+        const suggestions = data && Array.isArray(data.data) ? data.data.slice(0, WIDGET_CARD_COUNT) : [];
+        if (suggestions.length === 0) return;
+        const section = el.querySelector<HTMLElement>('#browse-empty-suggestions')!;
+        const list = section.querySelector<HTMLElement>('[data-empty-suggestions-list]')!;
+        list.innerHTML = renderLawCards(suggestions);
+        hydrateIcons(list);
+        initSharePopovers(list);
+        section.hidden = false;
+      })
+      // Suggestions are a bonus: if they can't load, the empty state stands on its own
+      .catch(() => undefined);
+  }
+
   // Title the results card for what it holds: search matches or the full archive
   function updateResultsTitle() {
     const resultsTitle = el.querySelector('#browse-results-title')!;
@@ -237,6 +257,7 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
       btn.setAttribute('disabled', 'true');
     });
     cardText.innerHTML = renderLoadingHTML();
+    el.querySelector<HTMLElement>('#browse-empty-suggestions')!.hidden = true;
 
     try {
       const offset = (page - 1) * LAWS_PER_PAGE;
@@ -260,6 +281,7 @@ export function Browse({ searchQuery = '', onNavigate }: { searchQuery?: string;
         pendingSearchSurface = null;
       }
       await updateDisplay();
+      showEmptySuggestions(generation);
       // A search from the header or home box lands on its matches (or the empty state), not on the page intro
       if (revealAfterLoad) revealResults(generation);
 

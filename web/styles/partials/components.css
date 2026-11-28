@@ -845,6 +845,12 @@ textarea.form-control,
   gap: 0.5rem;
 }
 
+/* Suggested laws under an empty search result */
+.browse-empty-suggestions {
+  padding: 1.5rem 1rem 0;
+  border-top: 1px solid var(--border);
+}
+
 .sort-select {
   width: auto;
   height: var(--component-control-min-size);

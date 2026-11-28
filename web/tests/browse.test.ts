@@ -2218,6 +2218,119 @@ describe('Browse view', () => {
     });
   });
 
+  describe('empty search suggestions', () => {
+    const suggestionsSection = (el: HTMLElement) => el.querySelector('#browse-empty-suggestions') as HTMLElement;
+    const topVotedResponse = {
+      data: [{ id: 99, title: 'Suggested Law', text: 'Shown when a search finds nothing', upvotes: 50, downvotes: 0 }],
+      total: 1,
+      limit: 3,
+      offset: 0
+    };
+
+    beforeEach(() => {
+      vi.spyOn(window, 'scrollTo').mockImplementation(() => { });
+    });
+
+    it('offers top voted laws under a search with no matches, outside the reported results', async () => {
+      const track = vi.fn();
+      window.pendo = { track };
+      fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
+      vi.mocked(api.fetchTopVoted).mockResolvedValue(topVotedResponse);
+      window.history.replaceState({ searchTracked: true }, '', '/browse?q=zebra');
+      const onNavigate = vi.fn();
+
+      const el = Browse({ onNavigate });
+      let suggestedCard: HTMLElement | null = null;
+      await vi.waitFor(() => {
+        suggestedCard = el.querySelector('#browse-empty-suggestions .law-card-mini[data-law-id="99"]');
+        expect(suggestedCard).toBeTruthy();
+      }, { timeout: 1000 });
+
+      expect(suggestionsSection(el).hidden).toBe(false);
+      expect(suggestionsSection(el).textContent).toContain('Try one of these laws instead');
+      expect(el.querySelector('#browse-laws-list .empty-state')).toBeTruthy();
+      expect(api.fetchTopVoted).toHaveBeenCalledWith(3);
+
+      suggestedCard!.click();
+
+      expect(onNavigate).toHaveBeenCalledWith('law', '99');
+      expect(track).not.toHaveBeenCalledWith('search_result_opened', expect.anything());
+      delete window.pendo;
+    });
+
+    it('keeps the suggestions hidden when the search has matches', async () => {
+      vi.mocked(api.fetchTopVoted).mockResolvedValue(topVotedResponse);
+      window.history.replaceState({ searchTracked: true }, '', '/browse?q=law');
+
+      const el = Browse({ onNavigate: () => { } });
+      await vi.waitFor(() => {
+        expect(el.querySelector('#browse-laws-list .law-card-mini')).toBeTruthy();
+      }, { timeout: 1000 });
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(suggestionsSection(el).hidden).toBe(true);
+      expect(el.querySelector('#browse-empty-suggestions .law-card-mini')).toBeNull();
+    });
+
+    it('keeps the suggestions hidden when the archive is empty without a search', async () => {
+      fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
+      vi.mocked(api.fetchTopVoted).mockResolvedValue(topVotedResponse);
+
+      const el = Browse({ onNavigate: () => { } });
+      await vi.waitFor(() => {
+        expect(el.querySelector('#browse-laws-list .empty-state')).toBeTruthy();
+      }, { timeout: 1000 });
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(suggestionsSection(el).hidden).toBe(true);
+    });
+
+    it.each([
+      ['fails', () => vi.mocked(api.fetchTopVoted).mockRejectedValue(new Error('Top voted failed'))],
+      ['returns no laws', () => vi.mocked(api.fetchTopVoted).mockResolvedValue({ data: [], total: 0, limit: 3, offset: 0 })],
+      ['returns no data', () => vi.mocked(api.fetchTopVoted).mockResolvedValue(null as unknown as typeof topVotedResponse)],
+    ])('keeps the suggestions hidden when Top Voted %s', async (_label, mockTopVoted) => {
+      fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
+      mockTopVoted();
+      window.history.replaceState({ searchTracked: true }, '', '/browse?q=zebra');
+
+      const el = Browse({ onNavigate: () => { } });
+      await vi.waitFor(() => {
+        expect(el.querySelector('#browse-laws-list .empty-state')).toBeTruthy();
+      }, { timeout: 1000 });
+      await vi.waitFor(() => expect(api.fetchTopVoted).toHaveBeenCalledTimes(2), { timeout: 1000 });
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(suggestionsSection(el).hidden).toBe(true);
+    });
+
+    it('drops suggestions that arrive after a newer search started', async () => {
+      fetchLawsSpy.mockResolvedValue({ data: [], total: 0, limit: 25, offset: 0 });
+      let resolveSuggestions: (value: typeof topVotedResponse) => void = () => { };
+      vi.mocked(api.fetchTopVoted)
+        .mockResolvedValueOnce({ data: [], total: 0, limit: 3, offset: 0 })
+        .mockReturnValueOnce(new Promise(resolve => { resolveSuggestions = resolve; }))
+        .mockResolvedValue({ data: [], total: 0, limit: 3, offset: 0 });
+      window.history.replaceState({ searchTracked: true }, '', '/browse?q=zebra');
+
+      const el = Browse({ onNavigate: () => { } });
+      await vi.waitFor(() => expect(api.fetchTopVoted).toHaveBeenCalledTimes(2), { timeout: 1000 });
+
+      let resolveSearch: (value: Awaited<ReturnType<typeof api.fetchLaws>>) => void = () => { };
+      fetchLawsSpy.mockReturnValueOnce(new Promise(resolve => { resolveSearch = resolve; }));
+      (el.querySelector('#search-keyword') as HTMLInputElement).value = 'gravity';
+      (el.querySelector('#search-btn') as HTMLButtonElement).click();
+      await vi.waitFor(() => expect(fetchLawsSpy).toHaveBeenCalledTimes(2), { timeout: 1000 });
+
+      resolveSuggestions(topVotedResponse);
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(suggestionsSection(el).hidden).toBe(true);
+      expect(el.querySelector('#browse-empty-suggestions .law-card-mini')).toBeNull();
+      resolveSearch({ data: [], total: 0, limit: 25, offset: 0 });
+    });
+  });
+
   describe('search results reveal', () => {
     let scrollToSpy: ReturnType<typeof vi.fn>;
     const originalScrollTo = window.scrollTo;
